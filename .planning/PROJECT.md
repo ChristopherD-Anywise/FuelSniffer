@@ -12,12 +12,11 @@ Always-current fuel prices near me, so I never overpay for fuel.
 
 ### Validated
 
-(None yet — ship to validate)
+- Scrape fuel prices every 15 minutes from Queensland fuel data sources — Validated in Phase 1: Data Pipeline
+- Store today's data at 15-minute intervals, historical data at hourly intervals — Validated in Phase 1: Data Pipeline
 
 ### Active
 
-- [ ] Scrape fuel prices every 15 minutes from Queensland fuel data sources
-- [ ] Store today's data at 15-minute intervals, historical data at hourly intervals
 - [ ] Web dashboard accessible from desktop and mobile browsers
 - [ ] Filter stations by distance from user (default 20km radius around North Lakes)
 - [ ] Filter by fuel type (Unleaded 91, Unleaded 95, Unleaded 98, Diesel, E10, E85)
@@ -77,4 +76,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-03-22 after initialization*
+*Last updated: 2026-03-23 after Phase 1: Data Pipeline completion*
