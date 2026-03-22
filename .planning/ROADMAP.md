@@ -34,7 +34,7 @@
 Plans:
 - [x] 01-01-PLAN.md — Project scaffold, Docker Compose, vitest setup, failing test stubs
 - [x] 01-02-PLAN.md — TimescaleDB schema, Drizzle ORM, SQL migration files (hypertable, cagg, retention)
-- [ ] 01-03-PLAN.md — QLD API client with auth/retry/Zod, price normaliser with rawToPrice and haversine filter
+- [x] 01-03-PLAN.md — QLD API client with auth/retry/Zod, price normaliser with rawToPrice and haversine filter
 - [ ] 01-04-PLAN.md — Scraper writer + scheduler + instrumentation hook + /api/health endpoint
 
 ### Phase 2: Core Dashboard
@@ -86,7 +86,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Pipeline | 2/4 | In Progress|  |
+| 1. Data Pipeline | 3/4 | In Progress|  |
 | 2. Core Dashboard | 0/? | Not started | - |
 | 3. Trend Features | 0/? | Not started | - |
 | 4. Alerts and Push | 0/? | Not started | - |

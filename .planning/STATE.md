@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-22T22:40:13.830Z"
+last_updated: "2026-03-22T22:42:00.851Z"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State: FuelSniffer
@@ -28,7 +28,7 @@ progress:
 ## Current Position
 
 Phase: 01 (data-pipeline) — EXECUTING
-Plan: 3 of 4
+Plan: 4 of 4
 
 ## Phase Summary
 
@@ -54,6 +54,7 @@ Plan: 3 of 4
 ---
 | Phase 01-data-pipeline P01 | 5 | 2 tasks | 11 files |
 | Phase 01-data-pipeline P02 | 5 | 2 tasks | 8 files |
+| Phase 01-data-pipeline P03 | 7 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -66,6 +67,9 @@ Plan: 3 of 4
 | Scraper writes directly to DB | No internal HTTP hop — scraper shares DB config with Next.js app. | Phase 1 |
 | Caddy as reverse proxy | TLS termination required for Service Workers (push notifications). | Phase 2 |
 | Phase 5 gated on data maturity | Cycle detection on <30 days of data produces misleading results. Explicit gate before starting. | Phase 5 |
+| setTimeout spy over vi.useFakeTimers for retry tests | vitest 4.x fake timers cause unhandled rejection race condition; spy makes delays resolve synchronously | Phase 1 |
+| geoRegionLevel=3 + geoRegionId=1 as QLD API defaults | Exact North Brisbane region ID unknown until live API access; state-level query is safe default | Phase 1 |
+| normalisePrice returns null on encoding error | Scraper must never crash on single bad price record; invalid prices logged and skipped | Phase 1 |
 
 ### Critical Correctness Constraints (must be right in Phase 1)
 
@@ -98,7 +102,7 @@ None currently.
 
 ## Session Continuity
 
-**Last session:** 2026-03-22T22:40:13.827Z
+**Last session:** 2026-03-22T22:42:00.849Z
 **Next action:** Start Phase 1. Register with fuelpricesqld.com.au and confirm QLD API auth before writing any scraper code. Run `/gsd:plan-phase 1`.
 
 ---
