@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     environment: 'node',
     globals: true,
-    reporter: 'verbose',
+    reporters: ['verbose'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],
