@@ -79,30 +79,30 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Pending | Pending |
-| DATA-02 | Pending | Pending |
-| DATA-03 | Pending | Pending |
-| DATA-04 | Pending | Pending |
-| DATA-05 | Pending | Pending |
-| DASH-01 | Pending | Pending |
-| DASH-02 | Pending | Pending |
-| DASH-03 | Pending | Pending |
-| DASH-04 | Pending | Pending |
-| DASH-05 | Pending | Pending |
-| TRND-01 | Pending | Pending |
-| TRND-02 | Pending | Pending |
-| TRND-03 | Pending | Pending |
-| TRND-04 | Pending | Pending |
-| ALRT-01 | Pending | Pending |
-| ALRT-02 | Pending | Pending |
-| ALRT-03 | Pending | Pending |
-| ACCS-01 | Pending | Pending |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Pending |
+| DATA-05 | Phase 1 | Pending |
+| DASH-01 | Phase 2 | Pending |
+| DASH-02 | Phase 2 | Pending |
+| DASH-03 | Phase 2 | Pending |
+| DASH-04 | Phase 2 | Pending |
+| DASH-05 | Phase 2 | Pending |
+| ACCS-01 | Phase 2 | Pending |
+| TRND-01 | Phase 3 | Pending |
+| TRND-02 | Phase 3 | Pending |
+| TRND-03 | Phase 3 | Pending |
+| ALRT-01 | Phase 4 | Pending |
+| ALRT-02 | Phase 4 | Pending |
+| ALRT-03 | Phase 4 | Pending |
+| TRND-04 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 18 total
-- Mapped to phases: 0
-- Unmapped: 18
+- Mapped to phases: 18
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-23*
-*Last updated: 2026-03-23 after initial definition*
+*Last updated: 2026-03-23 after roadmap phase mapping*
