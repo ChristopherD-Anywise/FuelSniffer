@@ -9,7 +9,7 @@
 
 ## Phases
 
-- [ ] **Phase 1: Data Pipeline** — QLD API integration, TimescaleDB schema, scraper with health monitoring
+- [x] **Phase 1: Data Pipeline** — QLD API integration, TimescaleDB schema, scraper with health monitoring (completed 2026-03-22)
 - [ ] **Phase 2: Core Dashboard** — Responsive price list, filters, station detail, access control; the MVP shared with friends
 - [ ] **Phase 3: Trend Features** — Price history charts, station comparison, delta indicators, map view (buildable after 7-14 days of data)
 - [ ] **Phase 4: Alerts and Push** — Web Push price threshold alerts with VAPID, Service Worker, and subscription lifecycle management
@@ -35,7 +35,7 @@ Plans:
 - [x] 01-01-PLAN.md — Project scaffold, Docker Compose, vitest setup, failing test stubs
 - [x] 01-02-PLAN.md — TimescaleDB schema, Drizzle ORM, SQL migration files (hypertable, cagg, retention)
 - [x] 01-03-PLAN.md — QLD API client with auth/retry/Zod, price normaliser with rawToPrice and haversine filter
-- [ ] 01-04-PLAN.md — Scraper writer + scheduler + instrumentation hook + /api/health endpoint
+- [x] 01-04-PLAN.md — Scraper writer + scheduler + instrumentation hook + /api/health endpoint
 
 ### Phase 2: Core Dashboard
 **Goal**: Friends can open the dashboard on their phone and immediately see the cheapest fuel near North Lakes
@@ -86,7 +86,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Pipeline | 3/4 | In Progress|  |
+| 1. Data Pipeline | 4/4 | Complete   | 2026-03-22 |
 | 2. Core Dashboard | 0/? | Not started | - |
 | 3. Trend Features | 0/? | Not started | - |
 | 4. Alerts and Push | 0/? | Not started | - |
