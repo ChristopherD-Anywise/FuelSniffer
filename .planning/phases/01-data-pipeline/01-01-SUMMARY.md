@@ -155,6 +155,20 @@ None for this plan. External service setup (QLD API token, healthchecks.io) is r
 - `npx vitest run` exits with 4 FAIL files (correct RED state, expected before implementation)
 - `npx tsc --noEmit` exits 0 (no TypeScript errors)
 
+## Self-Check: PASSED
+
+- FOUND: fuelsniffer/docker-compose.yml
+- FOUND: fuelsniffer/vitest.config.ts
+- FOUND: fuelsniffer/src/__tests__/normaliser.test.ts
+- FOUND: fuelsniffer/src/__tests__/api-client.test.ts
+- FOUND: fuelsniffer/src/__tests__/scraper.test.ts
+- FOUND: fuelsniffer/src/__tests__/health.test.ts
+- FOUND: .planning/phases/01-data-pipeline/01-01-SUMMARY.md
+- FOUND commit: 8cb68d8 (Task 1 - scaffold)
+- FOUND commit: 1ef2456 (Task 2 - vitest stubs)
+- FOUND commit: 8a3adda (Fix - vitest config)
+- FOUND commit: bb53180 (Final metadata)
+
 ---
 *Phase: 01-data-pipeline*
 *Completed: 2026-03-23*
