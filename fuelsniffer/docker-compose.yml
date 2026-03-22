@@ -1,0 +1,26 @@
+services:
+  timescaledb:
+    image: timescale/timescaledb:2.24.0-pg17
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: fuelsniffer
+      POSTGRES_USER: fuelsniffer
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./data/timescaledb:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  app:
+    build: .
+    environment:
+      DATABASE_URL: postgresql://fuelsniffer:${DB_PASSWORD}@timescaledb:5432/fuelsniffer
+      QLD_API_TOKEN: ${QLD_API_TOKEN}
+      HEALTHCHECKS_PING_URL: ${HEALTHCHECKS_PING_URL}
+      TZ: Australia/Brisbane
+      NODE_ENV: production
+    depends_on:
+      - timescaledb
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
