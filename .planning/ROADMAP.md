@@ -29,7 +29,13 @@
   3. All timestamps stored in UTC; display conversion uses `Australia/Brisbane` (UTC+10, no DST)
   4. `/api/health` endpoint reports last successful scrape time; healthchecks.io dead-man's-switch fires if scraper goes silent
   5. Raw 15-minute rows exist for today; hourly continuous aggregate materialises automatically; 2-day raw retention policy active
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Project scaffold, Docker Compose, vitest setup, failing test stubs
+- [ ] 01-02-PLAN.md — TimescaleDB schema, Drizzle ORM, SQL migration files (hypertable, cagg, retention)
+- [ ] 01-03-PLAN.md — QLD API client with auth/retry/Zod, price normaliser with rawToPrice and haversine filter
+- [ ] 01-04-PLAN.md — Scraper writer + scheduler + instrumentation hook + /api/health endpoint
 
 ### Phase 2: Core Dashboard
 **Goal**: Friends can open the dashboard on their phone and immediately see the cheapest fuel near North Lakes
@@ -80,7 +86,7 @@
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Pipeline | 0/? | Not started | - |
+| 1. Data Pipeline | 0/4 | In progress | - |
 | 2. Core Dashboard | 0/? | Not started | - |
 | 3. Trend Features | 0/? | Not started | - |
 | 4. Alerts and Push | 0/? | Not started | - |
@@ -126,4 +132,4 @@
 ---
 
 *Roadmap created: 2026-03-23*
-*Last updated: 2026-03-23 after initial creation*
+*Last updated: 2026-03-23 — Phase 1 planned (4 plans, 3 waves)*
