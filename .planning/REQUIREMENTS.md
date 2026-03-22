@@ -9,7 +9,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Data Ingestion
 
-- [ ] **DATA-01**: System registers with QLD Fuel Price API and authenticates via subscriber token
+- [x] **DATA-01**: System registers with QLD Fuel Price API and authenticates via subscriber token
 - [ ] **DATA-02**: Scraper polls QLD API every 15 minutes and stores prices for all fuel types
 - [ ] **DATA-03**: Scraper health monitoring with heartbeat checks and failure alerts
 - [ ] **DATA-04**: Today's data stored at 15-minute intervals
@@ -79,7 +79,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete |
 | DATA-02 | Phase 1 | Pending |
 | DATA-03 | Phase 1 | Pending |
 | DATA-04 | Phase 1 | Pending |
