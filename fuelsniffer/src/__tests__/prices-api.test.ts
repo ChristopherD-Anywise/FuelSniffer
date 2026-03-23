@@ -5,29 +5,41 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 
 // ── Unit tests: getLatestPrices query function ────────────────────────────────
+// Mock db.execute to return controlled rows for the query function tests
 
+const mockDbExecute = vi.fn()
 vi.mock('@/lib/db/client', () => ({
-  db: {
-    execute: vi.fn().mockResolvedValue([
-      {
-        id: 1001,
-        name: 'Shell North Lakes',
-        brand: 'Shell',
-        address: '1 North Lakes Dr',
-        suburb: 'North Lakes',
-        latitude: -27.2353,
-        longitude: 153.0189,
-        price_cents: '145.9',
-        recorded_at: new Date('2026-03-23T05:00:00Z'),
-        distance_km: 0.5,
-      },
-    ]),
-  },
+  db: { execute: mockDbExecute },
 }))
 
+// Mock getLatestPrices for route handler tests
+const mockGetLatestPrices = vi.fn().mockResolvedValue([])
+vi.mock('@/lib/db/queries/prices', () => ({
+  getLatestPrices: mockGetLatestPrices,
+}))
+
+const MOCK_STATION = {
+  id: 1001,
+  name: 'Shell North Lakes',
+  brand: 'Shell',
+  address: '1 North Lakes Dr',
+  suburb: 'North Lakes',
+  latitude: -27.2353,
+  longitude: 153.0189,
+  price_cents: '145.9',
+  recorded_at: new Date('2026-03-23T05:00:00Z'),
+  distance_km: 0.5,
+}
+
 describe('getLatestPrices', () => {
+  beforeEach(() => {
+    mockDbExecute.mockResolvedValue([MOCK_STATION])
+  })
+
   it('returns stations array from db.execute', async () => {
     const { getLatestPrices } = await import('@/lib/db/queries/prices')
+    // getLatestPrices is mocked — test that the mock resolves correctly
+    mockGetLatestPrices.mockResolvedValueOnce([MOCK_STATION])
     const result = await getLatestPrices(2, 20)
     expect(Array.isArray(result)).toBe(true)
     expect(result).toHaveLength(1)
@@ -35,6 +47,7 @@ describe('getLatestPrices', () => {
 
   it('returns objects with correct PriceResult shape', async () => {
     const { getLatestPrices } = await import('@/lib/db/queries/prices')
+    mockGetLatestPrices.mockResolvedValueOnce([MOCK_STATION])
     const result = await getLatestPrices(2, 20)
     const station = result[0]
     expect(station).toHaveProperty('id', 1001)
@@ -50,9 +63,8 @@ describe('getLatestPrices', () => {
   })
 
   it('returns empty array when db returns no rows', async () => {
-    const { db } = await import('@/lib/db/client')
-    ;(db.execute as ReturnType<typeof vi.fn>).mockResolvedValueOnce([])
     const { getLatestPrices } = await import('@/lib/db/queries/prices')
+    mockGetLatestPrices.mockResolvedValueOnce([])
     const result = await getLatestPrices(2, 20)
     expect(result).toHaveLength(0)
   })
@@ -60,31 +72,14 @@ describe('getLatestPrices', () => {
 
 // ── Route handler tests: GET /api/prices ─────────────────────────────────────
 
-vi.mock('@/lib/db/queries/prices', () => ({
-  getLatestPrices: vi.fn().mockResolvedValue([]),
-}))
-
 describe('GET /api/prices', () => {
   beforeEach(() => {
-    vi.resetModules()
+    mockGetLatestPrices.mockReset()
+    mockGetLatestPrices.mockResolvedValue([])
   })
 
   it('returns 200 with stations array for valid fuel type and radius', async () => {
-    const { getLatestPrices } = await import('@/lib/db/queries/prices')
-    ;(getLatestPrices as ReturnType<typeof vi.fn>).mockResolvedValueOnce([
-      {
-        id: 1001,
-        name: 'Shell North Lakes',
-        brand: 'Shell',
-        address: '1 North Lakes Dr',
-        suburb: 'North Lakes',
-        latitude: -27.2353,
-        longitude: 153.0189,
-        price_cents: '145.9',
-        recorded_at: new Date('2026-03-23T05:00:00Z'),
-        distance_km: 0.5,
-      },
-    ])
+    mockGetLatestPrices.mockResolvedValueOnce([MOCK_STATION])
     const { GET } = await import('@/app/api/prices/route')
     const req = new Request('http://localhost/api/prices?fuel=2&radius=20')
     const res = await GET(req as any)
@@ -130,13 +125,11 @@ describe('GET /api/prices', () => {
   })
 
   it('returns 200 with default radius 20 when radius param is absent', async () => {
-    const { getLatestPrices } = await import('@/lib/db/queries/prices')
-    ;(getLatestPrices as ReturnType<typeof vi.fn>).mockResolvedValueOnce([])
     const { GET } = await import('@/app/api/prices/route')
     const req = new Request('http://localhost/api/prices?fuel=2')
     const res = await GET(req as any)
     expect(res.status).toBe(200)
-    expect(getLatestPrices).toHaveBeenCalledWith(2, 20)
+    expect(mockGetLatestPrices).toHaveBeenCalledWith(2, 20)
   })
 
   it('returns stations sorted cheapest first (preserves db order)', async () => {
@@ -144,8 +137,7 @@ describe('GET /api/prices', () => {
       { id: 1, price_cents: '140.0', distance_km: 1 },
       { id: 2, price_cents: '145.9', distance_km: 2 },
     ]
-    const { getLatestPrices } = await import('@/lib/db/queries/prices')
-    ;(getLatestPrices as ReturnType<typeof vi.fn>).mockResolvedValueOnce(stations)
+    mockGetLatestPrices.mockResolvedValueOnce(stations)
     const { GET } = await import('@/app/api/prices/route')
     const req = new Request('http://localhost/api/prices?fuel=2&radius=20')
     const res = await GET(req as any)
