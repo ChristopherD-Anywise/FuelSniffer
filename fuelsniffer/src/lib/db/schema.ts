@@ -64,3 +64,35 @@ export type PriceReading = typeof priceReadings.$inferSelect
 export type NewPriceReading = typeof priceReadings.$inferInsert
 export type ScrapeHealth = typeof scrapeHealth.$inferSelect
 export type NewScrapeHealth = typeof scrapeHealth.$inferInsert
+
+/**
+ * Invite codes table — one row per friend.
+ * D-13: Invite code system — unique codes per friend, individually revocable.
+ * code: 8-char hex string (e.g. "a3f82b9c"), generated via crypto.randomBytes(4).toString('hex')
+ */
+export const inviteCodes = pgTable('invite_codes', {
+  id:         serial('id').primaryKey(),
+  code:       text('code').notNull().unique(),
+  label:      text('label'),                     // "Alice's phone" — human memo
+  isActive:   boolean('is_active').notNull().default(true),
+  createdAt:  timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastUsedAt: timestamp('last_used_at', { withTimezone: true }),
+})
+
+/**
+ * Sessions table — links an active session to an invite code.
+ * Enables server-side revocation: when a code is revoked, proxy.ts checks is_active
+ * on the linked code (via codeId) and redirects to /login.
+ * D-14: Sessions last 7 days.
+ */
+export const sessions = pgTable('sessions', {
+  id:        text('id').primaryKey(),   // random UUID stored in JWT payload
+  codeId:    integer('code_id').references(() => inviteCodes.id),
+  expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type InviteCode = typeof inviteCodes.$inferSelect
+export type NewInviteCode = typeof inviteCodes.$inferInsert
+export type Session = typeof sessions.$inferSelect
+export type NewSession = typeof sessions.$inferInsert
