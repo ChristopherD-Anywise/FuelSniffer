@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-23T03:59:09.787Z"
+last_updated: "2026-03-23T04:02:17.647Z"
 progress:
   total_phases: 5
   completed_phases: 1
   total_plans: 12
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State: FuelSniffer
@@ -28,7 +28,7 @@ progress:
 ## Current Position
 
 Phase: 02 (core-dashboard) — EXECUTING
-Plan: 4 of 8
+Plan: 5 of 8
 
 ## Phase Summary
 
@@ -59,6 +59,7 @@ Plan: 4 of 8
 | Phase 02-core-dashboard P01 | 6 | 3 tasks | 6 files |
 | Phase 02-core-dashboard P02 | 9 | 2 tasks | 4 files |
 | Phase 02-core-dashboard P03 | 642 | 2 tasks | 3 files |
+| Phase 02-core-dashboard P04 | 3 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -78,6 +79,8 @@ Plan: 4 of 8
 | Wave 0 test stubs use it.todo() pattern | vi.mock('@/lib/db/client') at file top, it.todo() for all stubs; follows health.test.ts convention; stubs exist as scaffolding for Nyquist validation | Phase 2 (02-01) |
 | importOriginal in vi.mock session for partial mocking | Allows real encrypt/decrypt tests via spread of actual module while overriding createSession/deleteSession to avoid Next.js cookie internals in unit tests | Phase 2 (02-02) |
 | randomUUID() as session userId | Invite code ID is a DB integer not a user identity; fresh UUID per login provides non-guessable session token payload | Phase 2 (02-02) |
+| Server Component wraps Client Component for login page | metadata export cannot be in 'use client' component; page.tsx (Server) exports metadata, LoginForm.tsx (Client) manages form state | Phase 2 (02-04) |
+| proxy.ts reads cookies via req.cookies.get() not await cookies() | next/headers cookies() is server-only and unavailable in proxy/edge context; NextRequest.cookies.get() is the correct API in proxy.ts | Phase 2 (02-04) |
 
 ### Critical Correctness Constraints (must be right in Phase 1)
 
@@ -110,7 +113,7 @@ None currently.
 
 ## Session Continuity
 
-**Last session:** 2026-03-23T03:59:09.784Z
+**Last session:** 2026-03-23T04:02:17.644Z
 **Next action:** Start Phase 1. Register with fuelpricesqld.com.au and confirm QLD API auth before writing any scraper code. Run `/gsd:plan-phase 1`.
 
 ---
