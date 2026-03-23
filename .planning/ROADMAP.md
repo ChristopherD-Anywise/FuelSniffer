@@ -52,7 +52,7 @@ Plans:
 Plans:
 - [x] 02-01-PLAN.md — Wave 0 test stubs + invite_codes/sessions DB schema + Drizzle migration
 - [ ] 02-02-PLAN.md — session.ts JWT library + POST /api/auth/login + POST /api/auth/logout
-- [ ] 02-03-PLAN.md — lib/db/queries/prices.ts + GET /api/prices route with Zod validation
+- [x] 02-03-PLAN.md — lib/db/queries/prices.ts + GET /api/prices route with Zod validation
 - [ ] 02-04-PLAN.md — proxy.ts route guard + login page UI + root redirect
 - [ ] 02-05-PLAN.md — Filter components (FuelTypePills, DistanceSlider, FilterBar) + StationCard + StationList
 - [ ] 02-06-PLAN.md — MapView with Leaflet DivIcon price pins + getPinColour utility

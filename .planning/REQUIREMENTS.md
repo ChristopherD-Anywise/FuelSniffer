@@ -18,8 +18,8 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Dashboard
 
 - [x] **DASH-01**: User can view current fuel prices in a sortable list
-- [ ] **DASH-02**: User can filter stations by distance from their location (default 20km, configurable)
-- [ ] **DASH-03**: User can filter by fuel type (ULP91, ULP95, ULP98, Diesel, E10, E85)
+- [x] **DASH-02**: User can filter stations by distance from their location (default 20km, configurable)
+- [x] **DASH-03**: User can filter by fuel type (ULP91, ULP95, ULP98, Diesel, E10, E85)
 - [ ] **DASH-04**: User can view stations on a map with price pins
 - [ ] **DASH-05**: Dashboard is responsive and works on mobile browsers
 
@@ -85,8 +85,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DATA-04 | Phase 1 | Complete |
 | DATA-05 | Phase 1 | Complete |
 | DASH-01 | Phase 2 | Complete |
-| DASH-02 | Phase 2 | Pending |
-| DASH-03 | Phase 2 | Pending |
+| DASH-02 | Phase 2 | Complete |
+| DASH-03 | Phase 2 | Complete |
 | DASH-04 | Phase 2 | Pending |
 | DASH-05 | Phase 2 | Pending |
 | ACCS-01 | Phase 2 | Complete |
