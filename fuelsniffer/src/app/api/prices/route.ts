@@ -15,8 +15,10 @@ const PricesQuerySchema = z.object({
       z.string()
        .regex(/^\d+$/, 'radius must be between 1 and 50')
        .transform(Number)
-       .pipe(z.number().min(1, 'radius must be between 1 and 50').max(50, 'radius must be between 1 and 50'))
+       .pipe(z.number().min(1).max(50))
     ),
+  lat: z.string().optional().transform(v => v ? parseFloat(v) : undefined),
+  lng: z.string().optional().transform(v => v ? parseFloat(v) : undefined),
 })
 
 export async function GET(req: Request) {
@@ -29,6 +31,8 @@ export async function GET(req: Request) {
   const parsed = PricesQuerySchema.safeParse({
     fuel: searchParams.get('fuel'),
     radius: searchParams.get('radius') ?? undefined,
+    lat: searchParams.get('lat') ?? undefined,
+    lng: searchParams.get('lng') ?? undefined,
   })
 
   if (!parsed.success) {
@@ -36,7 +40,11 @@ export async function GET(req: Request) {
     return NextResponse.json({ error: firstIssue.message }, { status: 400 })
   }
 
-  const stations = await getLatestPrices(parsed.data.fuel, parsed.data.radius)
+  const userLocation = parsed.data.lat && parsed.data.lng
+    ? { lat: parsed.data.lat, lng: parsed.data.lng }
+    : undefined
+
+  const stations = await getLatestPrices(parsed.data.fuel, parsed.data.radius, userLocation)
 
   return NextResponse.json(stations, { status: 200 })
 }

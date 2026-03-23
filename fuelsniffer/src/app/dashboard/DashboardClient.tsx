@@ -11,12 +11,10 @@ import { sortStations } from '@/lib/dashboard-utils'
 import type { PriceResult } from '@/lib/db/queries/prices'
 import type { SortMode } from '@/lib/dashboard-utils'
 
-// CRITICAL: MapView MUST use dynamic with ssr:false — Leaflet accesses window
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
 
-// Fuel type label map (matches FuelTypePills order)
 const FUEL_LABELS: Record<string, string> = {
-  '2': 'ULP91', '5': 'ULP95', '4': 'ULP98',
+  '2': 'ULP 91', '5': 'ULP 95', '4': 'ULP 98',
   '1': 'Diesel', '3': 'E10', '6': 'E85',
 }
 
@@ -24,27 +22,31 @@ export default function DashboardClient() {
   const params = useSearchParams()
   const router = useRouter()
 
-  // URL param state with defaults (D-12: filter state in URL params)
-  const activeFuel = params.get('fuel') ?? '2'        // default ULP91
+  const activeFuel = params.get('fuel') ?? '2'
   const radius = parseInt(params.get('radius') ?? '20', 10)
   const sortMode = (params.get('sort') ?? 'price') as SortMode
 
-  // Component state
   const [stations, setStations] = useState<PriceResult[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [isMobileMapVisible, setIsMobileMapVisible] = useState(false)
 
-  // Card refs for scrollIntoView on pin click
+  // User location state
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'active' | 'denied'>('idle')
+
   const cardRefsMap = useRef<Map<number, HTMLElement>>(new Map())
 
-  // Fetch prices from /api/prices — re-runs when fuel or radius URL params change
   const fetchPrices = useCallback(async () => {
     setLoading(true)
     setError(false)
     try {
-      const res = await fetch(`/api/prices?fuel=${activeFuel}&radius=${radius}`)
+      let url = `/api/prices?fuel=${activeFuel}&radius=${radius}`
+      if (userLocation) {
+        url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`
+      }
+      const res = await fetch(url)
       if (!res.ok) throw new Error('API error')
       const data: PriceResult[] = await res.json()
       setStations(data)
@@ -53,45 +55,65 @@ export default function DashboardClient() {
     } finally {
       setLoading(false)
     }
-  }, [activeFuel, radius])
+  }, [activeFuel, radius, userLocation])
 
   useEffect(() => {
     fetchPrices()
   }, [fetchPrices])
 
-  // URL update helpers
   function updateParam(key: string, value: string) {
     const next = new URLSearchParams(params.toString())
     next.set(key, value)
     router.replace(`/dashboard?${next.toString()}`)
   }
 
-  // Debounced radius slider (D-10: debounced 400ms per UI-SPEC.md)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   function handleRadiusChange(km: number) {
     if (debounceRef.current) clearTimeout(debounceRef.current)
     debounceRef.current = setTimeout(() => updateParam('radius', String(km)), 400)
   }
 
-  // Card↔map sync (D-08)
   function handleCardSelect(id: number) {
     setSelectedId(prev => prev === id ? null : id)
   }
 
   function handlePinClick(id: number) {
     setSelectedId(id)
-    // Scroll the corresponding card into view
     const card = cardRefsMap.current.get(id)
     if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    // On mobile, switch to list view so the card is visible
     setIsMobileMapVisible(false)
+  }
+
+  function handleLocateMe() {
+    if (locationStatus === 'loading') return
+    if (locationStatus === 'active') {
+      // Toggle off — return to North Lakes default
+      setUserLocation(null)
+      setLocationStatus('idle')
+      return
+    }
+    setLocationStatus('loading')
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
+        setLocationStatus('active')
+      },
+      () => {
+        setLocationStatus('denied')
+        setTimeout(() => setLocationStatus('idle'), 3000)
+      },
+      { enableHighAccuracy: false, timeout: 10000 }
+    )
   }
 
   const sortedStations = sortStations(stations, sortMode)
 
+  // Summary stats
+  const cheapest = sortedStations.length > 0 ? parseFloat(sortedStations[0].price_cents) : null
+  const stationCount = sortedStations.length
+
   return (
-    <div className="flex flex-col h-screen">
-      {/* Filter bar — sticky, always visible (D-11) */}
+    <div className="flex flex-col h-screen bg-slate-50">
       <FilterBar
         activeFuel={activeFuel}
         radius={radius}
@@ -101,13 +123,33 @@ export default function DashboardClient() {
         onSortChange={mode => updateParam('sort', mode)}
         isMobileMapVisible={isMobileMapVisible}
         onToggleMobileMap={() => setIsMobileMapVisible(v => !v)}
+        onLocateMe={handleLocateMe}
+        locationStatus={locationStatus}
       />
 
-      {/* Content area — split view on desktop, toggle on mobile (D-06) */}
-      <div className="flex-1 overflow-hidden md:grid md:grid-cols-2">
+      {/* Summary bar */}
+      {!loading && !error && stationCount > 0 && (
+        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-100 text-sm">
+          <span className="text-slate-500">
+            <span className="font-semibold text-slate-700">{stationCount}</span> stations
+          </span>
+          {cheapest && (
+            <>
+              <span className="text-slate-300">•</span>
+              <span className="text-slate-500">
+                From <span className="font-semibold text-emerald-600">{cheapest.toFixed(1)}¢/L</span>
+              </span>
+            </>
+          )}
+          <span className="text-slate-300">•</span>
+          <span className="text-slate-500">{FUEL_LABELS[activeFuel]}</span>
+        </div>
+      )}
 
-        {/* Station list column — hidden on mobile when map is active */}
-        <div className={`h-full overflow-y-auto ${isMobileMapVisible ? 'hidden md:block' : 'block'}`}>
+      {/* Content area */}
+      <div className="flex-1 overflow-hidden md:grid md:grid-cols-[minmax(360px,1fr)_1.5fr]">
+        {/* Station list */}
+        <div className={`h-full overflow-y-auto station-list bg-white ${isMobileMapVisible ? 'hidden md:block' : 'block'}`}>
           {loading && <LoadingSkeleton />}
           {!loading && error && <ErrorState onRetry={fetchPrices} />}
           {!loading && !error && sortedStations.length === 0 && (
@@ -123,15 +165,15 @@ export default function DashboardClient() {
           )}
         </div>
 
-        {/* Map column — always visible on desktop, toggle on mobile */}
+        {/* Map */}
         <div className={`h-full ${isMobileMapVisible ? 'block' : 'hidden md:block'}`}>
           <MapView
             stations={sortedStations}
             selectedId={selectedId}
             onPinClick={handlePinClick}
+            userLocation={userLocation}
           />
         </div>
-
       </div>
     </div>
   )
