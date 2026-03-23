@@ -31,14 +31,6 @@ vi.mock('@/lib/db/client', () => ({
   },
 }))
 
-// Mock @/lib/session for route handler tests (avoids server-only boundary in unit tests)
-vi.mock('@/lib/session', () => ({
-  createSession: vi.fn().mockResolvedValue(undefined),
-  deleteSession: vi.fn().mockResolvedValue(undefined),
-  encrypt: vi.fn(),
-  decrypt: vi.fn(),
-}))
-
 // Set SESSION_SECRET before any imports that read it at module load
 beforeAll(() => {
   process.env.SESSION_SECRET = 'test-secret-32-chars-minimum-xxxx'
@@ -46,27 +38,28 @@ beforeAll(() => {
 
 describe('encrypt / decrypt session', () => {
   it('round-trips a payload through encrypt then decrypt', async () => {
-    // Import the real module (not mocked) by using a dynamic import after env is set
-    const { encrypt, decrypt } = await import('../lib/session')
+    // Dynamically import the real session module — bypasses vi.mock for this module
+    // server-only and next/headers are already mocked above
+    const session = await import('@/lib/session')
     const payload = { userId: 'test-user-abc', expiresAt: new Date('2099-01-01') }
-    const token = await encrypt(payload)
+    const token = await session.encrypt(payload)
     expect(typeof token).toBe('string')
     expect(token.length).toBeGreaterThan(0)
 
-    const decoded = await decrypt(token)
+    const decoded = await session.decrypt(token)
     expect(decoded).not.toBeNull()
     expect(decoded?.userId).toBe('test-user-abc')
   })
 
   it('decrypt returns null for a tampered token', async () => {
-    const { decrypt } = await import('../lib/session')
-    const result = await decrypt('invalid-token-string-that-is-not-a-jwt')
+    const session = await import('@/lib/session')
+    const result = await session.decrypt('invalid-token-string-that-is-not-a-jwt')
     expect(result).toBeNull()
   })
 
   it('decrypt returns null for undefined input', async () => {
-    const { decrypt } = await import('../lib/session')
-    const result = await decrypt(undefined)
+    const session = await import('@/lib/session')
+    const result = await session.decrypt(undefined)
     expect(result).toBeNull()
   })
 })
