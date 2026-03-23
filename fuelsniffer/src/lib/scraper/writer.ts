@@ -3,18 +3,15 @@ import { db } from '@/lib/db/client'
 import { stations, priceReadings, scrapeHealth } from '@/lib/db/schema'
 import { createApiClient } from './client'
 import { normaliseStation, normalisePrice } from './normaliser'
+import { fetchCkanPrices, findLatestResourceId, deduplicateToLatest, type CkanRecord } from './ckan-client'
+import { rawToPrice, isWithinRadius } from './normaliser'
 import { sql } from 'drizzle-orm'
 
 // ── Healthchecks.io dead-man's-switch ────────────────────────────────────────
 
-/**
- * Ping healthchecks.io after a successful scrape cycle.
- * Non-fatal: if the ping fails, log and continue — the scraper is still alive.
- * D-03: Failure to ping = dead-man's-switch fires = alert email sent.
- */
 async function pingHealthchecks(): Promise<void> {
   const pingUrl = process.env.HEALTHCHECKS_PING_URL
-  if (!pingUrl) return  // gracefully skip in local dev (no external monitoring)
+  if (!pingUrl) return
   try {
     await axios.get(pingUrl, { timeout: 5000 })
   } catch {
@@ -24,13 +21,8 @@ async function pingHealthchecks(): Promise<void> {
 
 // ── D-09 helper ───────────────────────────────────────────────────────────────
 
-/**
- * D-09 (locked): Always insert a price row regardless of whether price changed.
- * This maintains a consistent time series with no gaps.
- * This function always returns true — it exists to make the decision explicit and testable.
- */
 export function shouldInsertRow(_newPrice: number, _lastPrice: number): boolean {
-  return true  // D-09: consistent time series — always insert
+  return true
 }
 
 // ── Main scrape orchestrator ──────────────────────────────────────────────────
@@ -38,95 +30,128 @@ export function shouldInsertRow(_newPrice: number, _lastPrice: number): boolean 
 export interface ScrapeResult {
   pricesUpserted: number
   error: string | null
+  source: 'direct-api' | 'ckan-open-data'
+}
+
+// Map CKAN fuel type names to integer IDs
+const CKAN_FUEL_TYPE_MAP: Record<string, number> = {
+  'Unleaded': 2,
+  'PULP 95/96 RON': 3,
+  'Premium Unleaded': 3,
+  'PULP 98 RON': 4,
+  'Premium Unleaded 98': 4,
+  'Diesel': 5,
+  'LPG': 6,
+  'e10': 7,
+  'E10': 7,
+  'E85': 10,
+  'Premium Diesel': 11,
 }
 
 /**
- * Run one complete scrape cycle:
- * 1. Fetch station metadata and prices from QLD API
- * 2. Normalise and filter by 50km radius (D-06)
- * 3. Upsert station records (soft-delete inactive stations via is_active flag, D-05)
- * 4. Insert price rows for all fuel types (D-07)
- * 5. Write scrape_health record
- * 6. Ping healthchecks.io on success (D-03)
- *
- * On failure: writes error row to scrape_health, does NOT ping healthchecks.io.
- * D-08: Retry logic is handled inside createApiClient() via fetchWithRetry.
- * D-10: Minimal logging — errors and summary stats only.
+ * Run scrape using the CKAN Open Data Portal (no auth needed).
+ * Used as fallback when QLD_API_TOKEN is not available.
  */
-export async function runScrapeJob(): Promise<ScrapeResult> {
+async function runCkanScrapeJob(): Promise<ScrapeResult> {
   const startTime = Date.now()
 
   try {
-    const client = createApiClient()
+    const { resourceId, month } = await findLatestResourceId()
+    console.log(`[scraper:ckan] Fetching from Open Data Portal (${month})...`)
+
+    const allRecords = await fetchCkanPrices(resourceId)
+    console.log(`[scraper:ckan] Fetched ${allRecords.length} total records`)
+
+    // Deduplicate to latest price per station+fuel
+    const latestRecords = deduplicateToLatest(allRecords)
+    console.log(`[scraper:ckan] ${latestRecords.length} unique station+fuel combinations`)
+
+    // Filter to North Brisbane (50km radius)
+    const nearbyRecords = latestRecords.filter(r => {
+      const lat = parseFloat(r.Site_Latitude)
+      const lng = parseFloat(r.Site_Longitude)
+      return !isNaN(lat) && !isNaN(lng) && isWithinRadius(lat, lng)
+    })
+    console.log(`[scraper:ckan] ${nearbyRecords.length} within 50km of North Lakes`)
+
     const recordedAt = new Date()
 
-    // 1. Fetch station metadata
-    const sitesResponse = await client.getFullSiteDetails()
-    const stationRows = sitesResponse.S
-      .map(normaliseStation)
-      .filter((s): s is NonNullable<typeof s> => s !== null)
+    // Upsert stations
+    const stationMap = new Map<string, CkanRecord>()
+    for (const r of nearbyRecords) {
+      if (!stationMap.has(r.SiteId)) stationMap.set(r.SiteId, r)
+    }
 
-    // 2. Upsert stations (D-05: is_active soft-delete managed by caller)
-    if (stationRows.length > 0) {
+    for (const [siteId, r] of stationMap) {
       await db
         .insert(stations)
-        .values(stationRows)
+        .values({
+          id: parseInt(siteId, 10),
+          name: r.Site_Name,
+          brand: r.Site_Brand || null,
+          address: r.Sites_Address_Line_1 || null,
+          suburb: r.Site_Suburb || null,
+          postcode: r.Site_Post_Code || null,
+          latitude: parseFloat(r.Site_Latitude),
+          longitude: parseFloat(r.Site_Longitude),
+          isActive: true,
+        })
         .onConflictDoUpdate({
           target: stations.id,
           set: {
-            name:       sql`excluded.name`,
-            brand:      sql`excluded.brand`,
-            address:    sql`excluded.address`,
-            suburb:     sql`excluded.suburb`,
-            postcode:   sql`excluded.postcode`,
-            latitude:   sql`excluded.latitude`,
-            longitude:  sql`excluded.longitude`,
-            lastSeenAt: sql`excluded.last_seen_at`,
-            // Note: is_active is NOT updated here — soft-delete is managed separately
+            name: sql`excluded.name`,
+            brand: sql`excluded.brand`,
+            address: sql`excluded.address`,
+            suburb: sql`excluded.suburb`,
+            latitude: sql`excluded.latitude`,
+            longitude: sql`excluded.longitude`,
+            isActive: sql`true`,
           },
         })
     }
 
-    // Build a Set of known in-radius station IDs for fast price filtering
-    const inRadiusIds = new Set(stationRows.map(s => s.id))
+    // Insert price readings
+    let priceCount = 0
+    for (const r of nearbyRecords) {
+      const stationId = parseInt(r.SiteId, 10)
+      const fuelTypeId = CKAN_FUEL_TYPE_MAP[r.Fuel_Type]
+      if (!fuelTypeId) continue
 
-    // 3. Fetch prices
-    const pricesResponse = await client.getSitesPrices()
-    const priceRows = pricesResponse.SitePrices
-      .filter(p => inRadiusIds.has(p.SiteId))  // D-06: only in-radius stations
-      .map(p => normalisePrice(p, recordedAt))
-      .filter((p): p is NonNullable<typeof p> => p !== null)
+      const rawPrice = parseInt(r.Price, 10)
+      const priceCents = rawPrice / 10 // 1940 → 194.0
 
-    // 4. Insert price rows — D-09: always insert regardless of price change
-    if (priceRows.length > 0) {
-      await db.insert(priceReadings).values(priceRows)
+      // Parse CKAN date format: "2026-02-28T13:52:00"
+      const sourceTs = new Date(r.TransactionDateutc + 'Z')
+
+      await db.insert(priceReadings).values({
+        stationId,
+        fuelTypeId,
+        priceCents: String(priceCents),
+        recordedAt,
+        sourceTs,
+      }).onConflictDoNothing()
+      priceCount++
     }
 
     const durationMs = Date.now() - startTime
-    const pricesUpserted = priceRows.length
 
-    // 5. Write success health record
     await db.insert(scrapeHealth).values({
-      pricesUpserted,
+      pricesUpserted: priceCount,
       durationMs,
       error: null,
     })
 
-    // 6. Ping healthchecks.io (only on success — dead-man's-switch fires on silence)
     await pingHealthchecks()
 
-    // D-10: Minimal logging — summary stats only
-    console.log(`[scraper] OK — ${pricesUpserted} prices in ${durationMs}ms`)
+    console.log(`[scraper:ckan] OK — ${stationMap.size} stations, ${priceCount} prices in ${durationMs}ms`)
 
-    return { pricesUpserted, error: null }
+    return { pricesUpserted: priceCount, error: null, source: 'ckan-open-data' }
 
   } catch (err) {
     const durationMs = Date.now() - startTime
     const errorMessage = err instanceof Error ? err.message : String(err)
+    console.error(`[scraper:ckan] FAILED after ${durationMs}ms: ${errorMessage}`)
 
-    console.error(`[scraper] FAILED after ${durationMs}ms: ${errorMessage}`)
-
-    // Write failure health record — does NOT ping healthchecks.io
     try {
       await db.insert(scrapeHealth).values({
         pricesUpserted: 0,
@@ -134,10 +159,97 @@ export async function runScrapeJob(): Promise<ScrapeResult> {
         error: errorMessage,
       })
     } catch (dbErr) {
-      // If we can't even write to the health table, log but don't rethrow
-      console.error('[scraper] Could not write failure record to scrape_health:', dbErr)
+      console.error('[scraper:ckan] Could not write failure record:', dbErr)
     }
 
-    return { pricesUpserted: 0, error: errorMessage }
+    return { pricesUpserted: 0, error: errorMessage, source: 'ckan-open-data' }
   }
+}
+
+/**
+ * Run one complete scrape cycle using the Direct API.
+ * Original implementation — used when QLD_API_TOKEN is set.
+ */
+async function runDirectApiScrapeJob(): Promise<ScrapeResult> {
+  const startTime = Date.now()
+
+  try {
+    const client = createApiClient()
+    const recordedAt = new Date()
+
+    const sitesResponse = await client.getFullSiteDetails()
+    const stationRows = sitesResponse.S
+      .map(normaliseStation)
+      .filter((s): s is NonNullable<typeof s> => s !== null)
+
+    if (stationRows.length > 0) {
+      await db
+        .insert(stations)
+        .values(stationRows)
+        .onConflictDoUpdate({
+          target: stations.id,
+          set: {
+            name: sql`excluded.name`,
+            brand: sql`excluded.brand`,
+            address: sql`excluded.address`,
+            suburb: sql`excluded.suburb`,
+            postcode: sql`excluded.postcode`,
+            latitude: sql`excluded.latitude`,
+            longitude: sql`excluded.longitude`,
+            lastSeenAt: sql`excluded.last_seen_at`,
+          },
+        })
+    }
+
+    const inRadiusIds = new Set(stationRows.map(s => s.id))
+
+    const pricesResponse = await client.getSitesPrices()
+    const priceRows = pricesResponse.SitePrices
+      .filter(p => inRadiusIds.has(p.SiteId))
+      .map(p => normalisePrice(p, recordedAt))
+      .filter((p): p is NonNullable<typeof p> => p !== null)
+
+    if (priceRows.length > 0) {
+      await db.insert(priceReadings).values(priceRows)
+    }
+
+    const durationMs = Date.now() - startTime
+    const pricesUpserted = priceRows.length
+
+    await db.insert(scrapeHealth).values({ pricesUpserted, durationMs, error: null })
+    await pingHealthchecks()
+
+    console.log(`[scraper] OK — ${pricesUpserted} prices in ${durationMs}ms`)
+
+    return { pricesUpserted, error: null, source: 'direct-api' }
+
+  } catch (err) {
+    const durationMs = Date.now() - startTime
+    const errorMessage = err instanceof Error ? err.message : String(err)
+    console.error(`[scraper] FAILED after ${durationMs}ms: ${errorMessage}`)
+
+    try {
+      await db.insert(scrapeHealth).values({ pricesUpserted: 0, durationMs, error: errorMessage })
+    } catch (dbErr) {
+      console.error('[scraper] Could not write failure record:', dbErr)
+    }
+
+    return { pricesUpserted: 0, error: errorMessage, source: 'direct-api' }
+  }
+}
+
+/**
+ * Main entry point — automatically selects the data source.
+ * Uses Direct API if QLD_API_TOKEN is set, falls back to CKAN Open Data.
+ */
+export async function runScrapeJob(): Promise<ScrapeResult> {
+  const hasDirectApiToken = process.env.QLD_API_TOKEN &&
+    process.env.QLD_API_TOKEN !== 'placeholder_register_at_fuelpricesqld'
+
+  if (hasDirectApiToken) {
+    return runDirectApiScrapeJob()
+  }
+
+  console.log('[scraper] No QLD_API_TOKEN — using CKAN Open Data Portal')
+  return runCkanScrapeJob()
 }
