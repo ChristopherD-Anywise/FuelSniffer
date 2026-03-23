@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-23T03:45:56.660Z"
+last_updated: "2026-03-23T03:57:34.884Z"
 progress:
   total_phases: 5
   completed_phases: 1
@@ -28,7 +28,7 @@ progress:
 ## Current Position
 
 Phase: 02 (core-dashboard) — EXECUTING
-Plan: 2 of 8
+Plan: 3 of 8
 
 ## Phase Summary
 
@@ -57,6 +57,7 @@ Plan: 2 of 8
 | Phase 01-data-pipeline P03 | 7 | 2 tasks | 4 files |
 | Phase 01-data-pipeline P04 | 7 | 2 tasks | 6 files |
 | Phase 02-core-dashboard P01 | 6 | 3 tasks | 6 files |
+| Phase 02-core-dashboard P02 | 9 | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -74,6 +75,8 @@ Plan: 2 of 8
 | normalisePrice returns null on encoding error | Scraper must never crash on single bad price record; invalid prices logged and skipped | Phase 1 |
 | SQL migrations maintained manually | drizzle-kit 0.31 / drizzle-orm 0.45 version mismatch (TypeError on pg-core view-base); all migrations in this project are already hand-written | Phase 2 (02-01) |
 | Wave 0 test stubs use it.todo() pattern | vi.mock('@/lib/db/client') at file top, it.todo() for all stubs; follows health.test.ts convention; stubs exist as scaffolding for Nyquist validation | Phase 2 (02-01) |
+| importOriginal in vi.mock session for partial mocking | Allows real encrypt/decrypt tests via spread of actual module while overriding createSession/deleteSession to avoid Next.js cookie internals in unit tests | Phase 2 (02-02) |
+| randomUUID() as session userId | Invite code ID is a DB integer not a user identity; fresh UUID per login provides non-guessable session token payload | Phase 2 (02-02) |
 
 ### Critical Correctness Constraints (must be right in Phase 1)
 
@@ -106,7 +109,7 @@ None currently.
 
 ## Session Continuity
 
-**Last session:** 2026-03-23T03:45:56.657Z
+**Last session:** 2026-03-23T03:57:34.882Z
 **Next action:** Start Phase 1. Register with fuelpricesqld.com.au and confirm QLD API auth before writing any scraper code. Run `/gsd:plan-phase 1`.
 
 ---
