@@ -8,6 +8,7 @@ interface StationCardProps {
   station: PriceResult
   isSelected: boolean
   onClick: () => void
+  cardRef?: (el: HTMLDivElement | null) => void
 }
 
 function FreshnessLabel({ recordedAt }: { recordedAt: Date }) {
@@ -26,12 +27,13 @@ function FreshnessLabel({ recordedAt }: { recordedAt: Date }) {
   )
 }
 
-export default function StationCard({ station, isSelected, onClick }: StationCardProps) {
+export default function StationCard({ station, isSelected, onClick, cardRef }: StationCardProps) {
   const stale = isStale(station.recorded_at)
   const priceDisplay = (parseFloat(station.price_cents) / 10).toFixed(1)
 
   return (
     <div
+      ref={cardRef}
       onClick={onClick}
       className={[
         'grid grid-cols-[80px_1fr_56px] p-4 min-h-[80px] cursor-pointer hover:bg-zinc-50 transition-colors',
