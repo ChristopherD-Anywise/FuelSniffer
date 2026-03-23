@@ -24,3 +24,14 @@ services:
     ports:
       - "3000:3000"
     restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    restart: unless-stopped
+    command: tunnel --no-autoupdate --url http://app:3000
+    # For a persistent named tunnel (recommended for production):
+    # 1. Create tunnel: cloudflared tunnel create fuelsniffer
+    # 2. Set CLOUDFLARE_TUNNEL_TOKEN in .env
+    # 3. Replace command with: tunnel run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    depends_on:
+      - app
