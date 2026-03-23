@@ -31,14 +31,19 @@ vi.mock('@/lib/db/client', () => ({
   },
 }))
 
-// Mock @/lib/session for route handler tests (avoids server-only boundary in unit tests)
+// Mock @/lib/session — expose real encrypt/decrypt for unit tests, but mock
+// createSession/deleteSession so route handler tests don't hit Next.js cookies() internals.
 const mockCreateSession = vi.fn().mockResolvedValue(undefined)
 const mockDeleteSession = vi.fn().mockResolvedValue(undefined)
 
-vi.mock('@/lib/session', () => ({
-  createSession: mockCreateSession,
-  deleteSession: mockDeleteSession,
-}))
+vi.mock('@/lib/session', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/lib/session')>()
+  return {
+    ...actual,
+    createSession: mockCreateSession,
+    deleteSession: mockDeleteSession,
+  }
+})
 
 // Set SESSION_SECRET before any imports that read it at module load
 beforeAll(() => {
