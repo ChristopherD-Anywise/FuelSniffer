@@ -55,7 +55,7 @@ Plans:
 - [x] 02-03-PLAN.md — lib/db/queries/prices.ts + GET /api/prices route with Zod validation
 - [x] 02-04-PLAN.md — proxy.ts route guard + login page UI + root redirect
 - [ ] 02-05-PLAN.md — Filter components (FuelTypePills, DistanceSlider, FilterBar) + StationCard + StationList
-- [ ] 02-06-PLAN.md — MapView with Leaflet DivIcon price pins + getPinColour utility
+- [x] 02-06-PLAN.md — MapView with Leaflet DivIcon price pins + getPinColour utility
 - [ ] 02-07-PLAN.md — DashboardClient + DashboardPage + LoadingSkeleton + EmptyState + ErrorState
 - [ ] 02-08-PLAN.md — Admin invite codes API + Cloudflare Tunnel + human verify checkpoint
 
@@ -97,7 +97,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Pipeline | 4/4 | Complete   | 2026-03-22 |
-| 2. Core Dashboard | 3/8 | In Progress|  |
+| 2. Core Dashboard | 4/8 | In Progress|  |
 | 3. Trend Features | 0/? | Not started | - |
 | 4. Alerts and Push | 0/? | Not started | - |
 | 5. Cycle Intelligence | 0/? | Not started | - |
