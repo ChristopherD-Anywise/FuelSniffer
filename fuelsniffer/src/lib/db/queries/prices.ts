@@ -54,13 +54,13 @@ export async function getLatestPrices(
     FROM latest l
     JOIN stations s ON s.id = l.station_id
     WHERE s.is_active = true
-    HAVING (
-      6371 * 2 * ASIN(SQRT(
-        POWER(SIN((RADIANS(s.latitude) - RADIANS(${NORTH_LAKES_LAT})) / 2), 2) +
-        COS(RADIANS(${NORTH_LAKES_LAT})) * COS(RADIANS(s.latitude)) *
-        POWER(SIN((RADIANS(s.longitude) - RADIANS(${NORTH_LAKES_LNG})) / 2), 2)
-      ))
-    ) <= ${radiusKm}
+      AND (
+        6371 * 2 * ASIN(SQRT(
+          POWER(SIN((RADIANS(s.latitude) - RADIANS(${NORTH_LAKES_LAT})) / 2), 2) +
+          COS(RADIANS(${NORTH_LAKES_LAT})) * COS(RADIANS(s.latitude)) *
+          POWER(SIN((RADIANS(s.longitude) - RADIANS(${NORTH_LAKES_LNG})) / 2), 2)
+        ))
+      ) <= ${radiusKm}
     ORDER BY l.price_cents ASC
   `)
   return rows as unknown as PriceResult[]

@@ -22,7 +22,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const migrationsDir = path.join(__dirname, 'migrations')
-const files = ['0000_schema.sql', '0001_hypertable.sql', '0002_cagg.sql']
+const files = ['0000_schema.sql', '0001_hypertable.sql', '0002_cagg.sql', '0003_invite_codes_sessions.sql']
 
 async function runMigrations(): Promise<void> {
   const sql = postgres(DATABASE_URL!, { max: 1 })
@@ -31,7 +31,16 @@ async function runMigrations(): Promise<void> {
       const filePath = path.join(migrationsDir, file)
       const content = fs.readFileSync(filePath, 'utf-8')
       console.log(`Applying migration: ${file}`)
-      await sql.unsafe(content)
+      // Split on semicolons and run each statement individually.
+      // TimescaleDB continuous aggregates cannot run inside a transaction,
+      // and postgres-js wraps multi-statement strings in a transaction.
+      const statements = content
+        .split(';')
+        .map(s => s.replace(/^(\s*--[^\n]*\n)*/g, '').trim())
+        .filter(s => s.length > 0)
+      for (const stmt of statements) {
+        await sql.unsafe(stmt)
+      }
       console.log(`  ✓ ${file} applied`)
     }
     console.log('All migrations applied successfully.')
