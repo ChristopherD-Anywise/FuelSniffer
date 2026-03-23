@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-03-22T22:55:24.601Z"
+last_updated: "2026-03-23T03:45:56.660Z"
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 12
+  completed_plans: 5
 ---
 
 # Project State: FuelSniffer
@@ -27,8 +27,8 @@ progress:
 
 ## Current Position
 
-Phase: 2
-Plan: Not started
+Phase: 02 (core-dashboard) — EXECUTING
+Plan: 2 of 8
 
 ## Phase Summary
 
@@ -56,6 +56,7 @@ Plan: Not started
 | Phase 01-data-pipeline P02 | 5 | 2 tasks | 8 files |
 | Phase 01-data-pipeline P03 | 7 | 2 tasks | 4 files |
 | Phase 01-data-pipeline P04 | 7 | 2 tasks | 6 files |
+| Phase 02-core-dashboard P01 | 6 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -71,6 +72,8 @@ Plan: Not started
 | setTimeout spy over vi.useFakeTimers for retry tests | vitest 4.x fake timers cause unhandled rejection race condition; spy makes delays resolve synchronously | Phase 1 |
 | geoRegionLevel=3 + geoRegionId=1 as QLD API defaults | Exact North Brisbane region ID unknown until live API access; state-level query is safe default | Phase 1 |
 | normalisePrice returns null on encoding error | Scraper must never crash on single bad price record; invalid prices logged and skipped | Phase 1 |
+| SQL migrations maintained manually | drizzle-kit 0.31 / drizzle-orm 0.45 version mismatch (TypeError on pg-core view-base); all migrations in this project are already hand-written | Phase 2 (02-01) |
+| Wave 0 test stubs use it.todo() pattern | vi.mock('@/lib/db/client') at file top, it.todo() for all stubs; follows health.test.ts convention; stubs exist as scaffolding for Nyquist validation | Phase 2 (02-01) |
 
 ### Critical Correctness Constraints (must be right in Phase 1)
 
@@ -103,7 +106,7 @@ None currently.
 
 ## Session Continuity
 
-**Last session:** 2026-03-22T22:47:44.327Z
+**Last session:** 2026-03-23T03:45:56.657Z
 **Next action:** Start Phase 1. Register with fuelpricesqld.com.au and confirm QLD API auth before writing any scraper code. Run `/gsd:plan-phase 1`.
 
 ---
