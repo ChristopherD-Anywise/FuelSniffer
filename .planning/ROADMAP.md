@@ -56,7 +56,7 @@ Plans:
 - [x] 02-04-PLAN.md — proxy.ts route guard + login page UI + root redirect
 - [x] 02-05-PLAN.md — Filter components (FuelTypePills, DistanceSlider, FilterBar) + StationCard + StationList
 - [x] 02-06-PLAN.md — MapView with Leaflet DivIcon price pins + getPinColour utility
-- [ ] 02-07-PLAN.md — DashboardClient + DashboardPage + LoadingSkeleton + EmptyState + ErrorState
+- [x] 02-07-PLAN.md — DashboardClient + DashboardPage + LoadingSkeleton + EmptyState + ErrorState
 - [ ] 02-08-PLAN.md — Admin invite codes API + Cloudflare Tunnel + human verify checkpoint
 
 ### Phase 3: Trend Features
