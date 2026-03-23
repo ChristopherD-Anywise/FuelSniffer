@@ -57,7 +57,7 @@ Plans:
 - [x] 02-05-PLAN.md — Filter components (FuelTypePills, DistanceSlider, FilterBar) + StationCard + StationList
 - [x] 02-06-PLAN.md — MapView with Leaflet DivIcon price pins + getPinColour utility
 - [x] 02-07-PLAN.md — DashboardClient + DashboardPage + LoadingSkeleton + EmptyState + ErrorState
-- [ ] 02-08-PLAN.md — Admin invite codes API + Cloudflare Tunnel + human verify checkpoint
+- [x] 02-08-PLAN.md — Admin invite codes API + Cloudflare Tunnel + human verify checkpoint
 
 ### Phase 3: Trend Features
 **Goal**: Users can see how prices have moved over time and identify the best stations to use
@@ -97,7 +97,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Pipeline | 4/4 | Complete   | 2026-03-22 |
-| 2. Core Dashboard | 5/8 | In Progress|  |
+| 2. Core Dashboard | 7/8 | In Progress|  |
 | 3. Trend Features | 0/? | Not started | - |
 | 4. Alerts and Push | 0/? | Not started | - |
 | 5. Cycle Intelligence | 0/? | Not started | - |
