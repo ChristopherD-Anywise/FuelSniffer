@@ -53,9 +53,11 @@ Exceptions:
 | Role | Size | Weight | Line Height | Usage |
 |------|------|--------|-------------|-------|
 | Display | 28px | 700 (bold) | 1.0 | Station price value (e.g. "145.9") — the dominant visual element in each card |
-| Heading | 18px | 600 (semibold) | 1.2 | Station name |
+| Heading | 18px | 700 (bold) | 1.2 | Station name |
 | Body | 15px | 400 (regular) | 1.5 | Street address, suburb, distance in km |
-| Label | 12px | 500 (medium) | 1.3 | Freshness indicator ("3 min ago"), fuel type pill text, unit label ("c/L") |
+| Label | 12px | 400 (regular) | 1.3 | Freshness indicator ("3 min ago"), fuel type pill text, unit label ("c/L") |
+
+Declared weights: 2 — `font-normal` (400) and `font-bold` (700) only.
 
 Notes:
 - Display (28px bold) must pass WCAG AA at 4.5:1 against the card background in both normal and stale states.
@@ -162,7 +164,7 @@ All components are hand-rolled Tailwind. No third-party component library.
 ### ErrorState
 - Shown when the `/api/prices` fetch fails (network error or non-200 response).
 - See Copywriting Contract for copy.
-- Includes a "Try again" button (accent colour, 44px height) that retries the request.
+- Includes a "Try loading again" button (accent colour, 44px height) that retries the request.
 
 ### LoginPage
 - Single input: invite code (text, `<input type="text" autocomplete="one-time-code">`).
@@ -190,10 +192,10 @@ All components are hand-rolled Tailwind. No third-party component library.
 | Empty state body | "No [fuel type] stations within [N] km. Try increasing the radius or switching fuel type." |
 | Error state heading | "Couldn't load prices" |
 | Error state body | "Something went wrong fetching the latest prices. Check your connection and try again." |
-| Error state CTA | "Try again" |
+| Error state CTA | "Try loading again" |
 | Stale card badge | "Outdated" |
 | Revoke invite code | "Revoke access" |
-| Revoke confirmation | Inline: "Are you sure? This person will need a new code to log in." + "Revoke" (destructive) / "Cancel" buttons |
+| Revoke confirmation | Inline: "Are you sure? This person will need a new code to log in." + "Revoke access" (destructive) / "Cancel" buttons |
 | Page title (browser tab) | "FuelSniffer — Cheapest fuel near North Lakes" |
 
 No toast notifications in this phase. All state communicated inline.
