@@ -164,7 +164,8 @@ export default function DashboardClient() {
           )}
         </div>
 
-        {/* Map */}
+        {/* Map — always block on desktop. On mobile, toggled but we pass isMobileMapVisible
+             so MapView can call invalidateSize when becoming visible. */}
         <div className={`absolute inset-0 md:relative md:inset-auto h-full ${isMobileMapVisible ? 'block' : 'hidden md:block'}`}>
           <MapView
             stations={sortedStations}
@@ -172,6 +173,7 @@ export default function DashboardClient() {
             activeFuel={activeFuel}
             onPinClick={handlePinClick}
             userLocation={userLocation}
+            isVisible={isMobileMapVisible}
           />
         </div>
       </div>

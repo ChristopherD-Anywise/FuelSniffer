@@ -28,9 +28,10 @@ interface MapViewProps {
   activeFuel: string
   onPinClick: (id: number) => void
   userLocation?: { lat: number; lng: number } | null
+  isVisible?: boolean  // triggers invalidateSize when map container becomes visible
 }
 
-function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocation }: MapViewProps) {
+function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocation, isVisible }: MapViewProps) {
   const map = useMap()
   const markersRef = useRef<Map<number, L.Marker>>(new Map())
   const rootsRef = useRef<Map<number, ReturnType<typeof createRoot>>>(new Map())
@@ -183,10 +184,17 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
     }
   }, [selectedId, map])
 
+  // When the map container becomes visible (mobile toggle), tell Leaflet to recalculate
+  useEffect(() => {
+    if (isVisible) {
+      setTimeout(() => map.invalidateSize(), 100)
+    }
+  }, [isVisible, map])
+
   return null
 }
 
-export default function MapView({ stations, selectedId, activeFuel, onPinClick, userLocation }: MapViewProps) {
+export default function MapView({ stations, selectedId, activeFuel, onPinClick, userLocation, isVisible }: MapViewProps) {
   const center = userLocation
     ? [userLocation.lat, userLocation.lng] as [number, number]
     : [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng] as [number, number]
@@ -200,7 +208,7 @@ export default function MapView({ stations, selectedId, activeFuel, onPinClick, 
       zoomControl={false}
     >
       <TileLayer url={OSM_TILE_URL} attribution={OSM_ATTRIBUTION} />
-      <PriceMarkers stations={stations} selectedId={selectedId} activeFuel={activeFuel} onPinClick={onPinClick} userLocation={userLocation} />
+      <PriceMarkers stations={stations} selectedId={selectedId} activeFuel={activeFuel} onPinClick={onPinClick} userLocation={userLocation} isVisible={isVisible} />
     </MapContainer>
   )
 }
