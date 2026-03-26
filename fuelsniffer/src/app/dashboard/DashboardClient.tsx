@@ -82,6 +82,11 @@ export default function DashboardClient() {
     setSelectedId(prev => prev === id ? null : id)
   }
 
+  function handleLocationSelect(location: { lat: number; lng: number; label: string }) {
+    setUserLocation({ lat: location.lat, lng: location.lng })
+    setLocationStatus('active')
+  }
+
   function handleLocateMe() {
     if (locationStatus === 'loading') return
     if (locationStatus === 'active') {
@@ -121,6 +126,7 @@ export default function DashboardClient() {
         onToggleMobileMap={() => setIsMobileMapVisible(v => !v)}
         onLocateMe={handleLocateMe}
         locationStatus={locationStatus}
+        onLocationSelect={handleLocationSelect}
       />
 
       {/* Summary bar */}

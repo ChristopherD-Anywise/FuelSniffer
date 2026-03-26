@@ -2,6 +2,7 @@
 
 import FuelSelect from '@/components/FuelSelect'
 import DistanceSlider from '@/components/DistanceSlider'
+import LocationSearch from '@/components/LocationSearch'
 
 interface FilterBarProps {
   activeFuel: string
@@ -14,6 +15,7 @@ interface FilterBarProps {
   onToggleMobileMap: () => void
   onLocateMe?: () => void
   locationStatus?: 'idle' | 'loading' | 'active' | 'denied'
+  onLocationSelect?: (location: { lat: number; lng: number; label: string }) => void
 }
 
 export default function FilterBar({
@@ -27,6 +29,7 @@ export default function FilterBar({
   onToggleMobileMap,
   onLocateMe,
   locationStatus = 'idle',
+  onLocationSelect,
 }: FilterBarProps) {
   return (
     <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 shadow-sm">
@@ -37,6 +40,10 @@ export default function FilterBar({
         </h1>
 
         <FuelSelect activeFuel={activeFuel} onSelect={onFuelChange} />
+
+        {onLocationSelect && (
+          <LocationSearch onSelect={onLocationSelect} />
+        )}
 
         <DistanceSlider value={radius} onChange={onRadiusChange} />
 
@@ -134,6 +141,9 @@ export default function FilterBar({
         {/* Row 2: Controls */}
         <div className="flex items-center gap-3 px-5 pb-3 overflow-x-auto">
           <FuelSelect activeFuel={activeFuel} onSelect={onFuelChange} />
+          {onLocationSelect && (
+            <LocationSearch onSelect={onLocationSelect} />
+          )}
           <DistanceSlider value={radius} onChange={onRadiusChange} />
           <div className="flex items-center bg-slate-100 rounded-lg p-0.5 shrink-0">
             <button
