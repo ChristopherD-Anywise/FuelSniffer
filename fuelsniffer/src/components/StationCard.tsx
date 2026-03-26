@@ -11,85 +11,74 @@ interface StationCardProps {
   cardRef?: (el: HTMLDivElement | null) => void
 }
 
-function getPriceColor(price: number): string {
-  if (price < 160) return 'text-emerald-600'
-  if (price < 180) return 'text-amber-600'
-  return 'text-red-600'
-}
+function PriceChange({ change }: { change: number | null }) {
+  if (change === null || change === undefined) return null
 
-function getPriceBg(price: number): string {
-  if (price < 160) return 'bg-emerald-50'
-  if (price < 180) return 'bg-amber-50'
-  return 'bg-red-50'
+  if (change > 0) {
+    return (
+      <span className="text-red-500 text-xs font-medium">
+        ▲ {Math.abs(change).toFixed(1)}¢
+      </span>
+    )
+  }
+  if (change < 0) {
+    return (
+      <span className="text-emerald-600 text-xs font-medium">
+        ▼ {Math.abs(change).toFixed(1)}¢
+      </span>
+    )
+  }
+  return (
+    <span className="text-slate-400 text-xs">
+      — 0¢
+    </span>
+  )
 }
 
 export default function StationCard({ station, isSelected, onClick, cardRef }: StationCardProps) {
   // Use source_ts (when station reported the price) if available, fall back to recorded_at
   const priceTime = station.source_ts ? new Date(station.source_ts) : new Date(station.recorded_at)
-  const stale = isStale(priceTime)
   const price = parseFloat(station.price_cents)
-  const priceWhole = Math.floor(price)
-  const priceDec = (price % 1).toFixed(1).slice(1) // ".5" etc
 
   const ago = formatDistanceToNowStrict(priceTime, { addSuffix: false }) + ' ago'
+
+  const metaParts = [
+    station.brand,
+    station.distance_km.toFixed(1) + ' km',
+    ago,
+  ].filter(Boolean)
 
   return (
     <div
       ref={cardRef}
       onClick={onClick}
       className={[
-        'group flex items-center gap-4 px-4 py-3 cursor-pointer transition-all duration-150',
-        'hover:bg-sky-50/60',
-        isSelected
-          ? 'bg-sky-50 border-l-[3px] border-sky-500'
-          : 'border-l-[3px] border-transparent',
-        stale ? 'opacity-50' : '',
+        'group flex items-center gap-3 px-4 py-3 cursor-pointer transition-colors duration-150',
+        'hover:bg-slate-50',
+        isSelected ? 'bg-sky-50/80' : '',
       ].join(' ')}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
     >
-      {/* Price badge */}
-      <div className={`flex-shrink-0 flex items-baseline justify-center rounded-xl px-3 py-2 ${getPriceBg(price)}`}>
-        <span className={`text-2xl font-extrabold tabular-nums leading-none ${getPriceColor(price)}`}>
-          {priceWhole}
+      {/* Price column */}
+      <div className="flex-shrink-0 flex flex-col items-start">
+        <span className="text-2xl font-extrabold tabular-nums text-slate-900 leading-none">
+          {price.toFixed(1)}
         </span>
-        <span className={`text-lg font-bold leading-none ${getPriceColor(price)}`}>
-          {priceDec}
-        </span>
+        <div className="mt-0.5">
+          <PriceChange change={station.price_change_24h} />
+        </div>
       </div>
 
       {/* Station details */}
       <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2">
-          <span className="text-[15px] font-semibold text-slate-900 truncate">
-            {station.name}
-          </span>
-          {station.brand && (
-            <span className="text-xs text-slate-400 font-medium shrink-0">
-              {station.brand}
-            </span>
-          )}
+        <div className="text-sm font-semibold text-slate-900 truncate">
+          {station.name}
         </div>
-        <div className="text-sm text-slate-500 truncate mt-0.5">
-          {[station.address, station.suburb].filter(Boolean).join(', ')}
+        <div className="text-xs text-slate-500 truncate mt-0.5">
+          {metaParts.join(' · ')}
         </div>
-        <div className="flex items-center gap-3 mt-1">
-          <span className="text-xs text-slate-400">
-            {station.distance_km.toFixed(1)} km away
-          </span>
-          <span className="text-xs text-slate-300">•</span>
-          <span className={`text-xs ${stale ? 'text-amber-500 font-medium' : 'text-slate-400'}`}>
-            {ago}
-          </span>
-        </div>
-      </div>
-
-      {/* Arrow indicator */}
-      <div className="flex-shrink-0 text-slate-300 group-hover:text-sky-400 transition-colors">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M7 5l5 5-5 5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-        </svg>
       </div>
     </div>
   )
