@@ -5,14 +5,14 @@ import { z } from 'zod'
 
 /**
  * Single price record from GET /Price/GetSitesPrices
- * Price field is an integer: divide by 10 for cents/L (see rawToPrice in normaliser.ts)
+ * Price field is a float: divide by 10 for cents/L (see rawToPrice in normaliser.ts)
  */
 export const SitePriceSchema = z.object({
-  SiteId:              z.number().int(),
-  FuelId:              z.number().int(),
+  SiteId:              z.number(),
+  FuelId:              z.number(),
   CollectionMethod:    z.string().optional(),
   TransactionDateUtc:  z.string(),  // ISO 8601 UTC string
-  Price:               z.number().int(),  // raw integer — rawToPrice() converts to c/L
+  Price:               z.number(),  // raw value — rawToPrice() converts to c/L
 })
 
 export const GetSitesPricesResponseSchema = z.object({
@@ -21,24 +21,47 @@ export const GetSitesPricesResponseSchema = z.object({
 
 /**
  * Single station record from GET /Subscriber/GetFullSiteDetails
+ * The real API uses abbreviated single-letter field names.
  */
-export const SiteDetailsSchema = z.object({
-  SiteId:    z.number().int(),
-  Name:      z.string(),
-  Brand:     z.string().optional(),
-  Address:   z.string().optional(),
-  Suburb:    z.string().optional(),
-  Postcode:  z.string().optional(),
-  Lat:       z.number(),
-  Lng:       z.number(),
+export const RawSiteDetailsSchema = z.object({
+  S:    z.number(),           // SiteId
+  N:    z.string(),           // Name
+  B:    z.number(),           // BrandId (integer — resolve via brands lookup)
+  A:    z.string().optional(), // Address
+  P:    z.string().optional(), // Postcode
+  Lat:  z.number(),
+  Lng:  z.number(),
+  GPI:  z.string().optional(), // Google Place ID
 })
 
 export const GetFullSiteDetailsResponseSchema = z.object({
-  S: z.array(SiteDetailsSchema),
+  S: z.array(RawSiteDetailsSchema),
 })
 
+/** Normalised site details after field mapping and brand resolution */
+export interface SiteDetails {
+  SiteId:   number
+  Name:     string
+  Brand:    string | null
+  Address:  string | null
+  Postcode: string | null
+  Lat:      number
+  Lng:      number
+}
+
 export type SitePrice = z.infer<typeof SitePriceSchema>
-export type SiteDetails = z.infer<typeof SiteDetailsSchema>
+export type RawSiteDetails = z.infer<typeof RawSiteDetailsSchema>
+
+// ── Brand lookup ─────────────────────────────────────────────────────────────
+
+const BrandSchema = z.object({
+  BrandId: z.number(),
+  Name:    z.string(),
+})
+
+const GetCountryBrandsResponseSchema = z.object({
+  Brands: z.array(BrandSchema),
+})
 
 // ── Auth header builder ───────────────────────────────────────────────────────
 
@@ -74,17 +97,14 @@ export async function fetchWithRetry<T>(fn: () => Promise<T>, retries = 3): Prom
 
 export interface ApiClient {
   getSitesPrices(): Promise<z.infer<typeof GetSitesPricesResponseSchema>>
-  getFullSiteDetails(): Promise<z.infer<typeof GetFullSiteDetailsResponseSchema>>
+  getFullSiteDetails(): Promise<{ sites: SiteDetails[] }>
 }
 
 /**
  * Creates a QLD Fuel Price API client.
  * Reads QLD_API_TOKEN from process.env — throws if not set.
  *
- * Geographic strategy (from RESEARCH.md Pitfall 6):
- * - Use geoRegionLevel=3 (state) and geoRegionId=1 as a safe default.
- * - Haversine filtering in normaliser.ts handles geographic precision.
- * - Update geoRegionId to a more specific value after live API access confirms IDs.
+ * Fetches brand names on first call to getFullSiteDetails and caches them.
  */
 export function createApiClient(): ApiClient {
   const token = process.env.QLD_API_TOKEN
@@ -100,14 +120,26 @@ export function createApiClient(): ApiClient {
     headers: {
       Authorization: buildAuthHeader(token),
     },
-    timeout: 10_000,  // 10 second timeout per request
+    timeout: 15_000,  // 15 second timeout per request
   })
 
-  // Geo params — state level (safest default before geoRegionId confirmed with live API)
+  // Geo params — state level to get all QLD stations; Haversine filter narrows to North Brisbane
   const GEO_PARAMS = {
     countryId:      21,
     geoRegionLevel: 3,
     geoRegionId:    1,
+  }
+
+  let brandCache: Map<number, string> | null = null
+
+  async function fetchBrands(): Promise<Map<number, string>> {
+    if (brandCache) return brandCache
+    const response = await fetchWithRetry(() =>
+      http.get('/Subscriber/GetCountryBrands', { params: { countryId: 21 } })
+    )
+    const parsed = GetCountryBrandsResponseSchema.parse(response.data)
+    brandCache = new Map(parsed.Brands.map(b => [b.BrandId, b.Name]))
+    return brandCache
   }
 
   return {
@@ -119,10 +151,26 @@ export function createApiClient(): ApiClient {
     },
 
     async getFullSiteDetails() {
-      const response = await fetchWithRetry(() =>
-        http.get('/Subscriber/GetFullSiteDetails', { params: GEO_PARAMS })
-      )
-      return GetFullSiteDetailsResponseSchema.parse(response.data)
+      const [siteResponse, brands] = await Promise.all([
+        fetchWithRetry(() =>
+          http.get('/Subscriber/GetFullSiteDetails', { params: GEO_PARAMS })
+        ),
+        fetchBrands(),
+      ])
+      const parsed = GetFullSiteDetailsResponseSchema.parse(siteResponse.data)
+
+      // Normalise abbreviated API fields to our domain model
+      const sites: SiteDetails[] = parsed.S.map(raw => ({
+        SiteId:   raw.S,
+        Name:     raw.N,
+        Brand:    brands.get(raw.B) ?? null,
+        Address:  raw.A ?? null,
+        Postcode: raw.P ?? null,
+        Lat:      raw.Lat,
+        Lng:      raw.Lng,
+      }))
+
+      return { sites }
     },
   }
 }

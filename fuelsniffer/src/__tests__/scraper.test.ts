@@ -19,7 +19,7 @@ vi.mock('@/lib/db/client', () => ({
 
 vi.mock('@/lib/scraper/client', () => ({
   createApiClient: vi.fn().mockReturnValue({
-    getFullSiteDetails: vi.fn().mockResolvedValue({ S: [] }),
+    getFullSiteDetails: vi.fn().mockResolvedValue({ sites: [] }),
     getSitesPrices: vi.fn().mockResolvedValue({ SitePrices: [] }),
   }),
 }))

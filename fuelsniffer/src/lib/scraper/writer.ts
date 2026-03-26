@@ -33,19 +33,21 @@ export interface ScrapeResult {
   source: 'direct-api' | 'ckan-open-data'
 }
 
-// Map CKAN fuel type names to integer IDs
+// Map CKAN fuel type names to Direct API FuelId integers
+// Direct API IDs: 2=Unleaded, 3=Diesel, 4=LPG, 5=Premium95, 8=Premium98,
+//                 12=E10, 14=PremiumDiesel, 19=E85, 21=Opal
 const CKAN_FUEL_TYPE_MAP: Record<string, number> = {
   'Unleaded': 2,
-  'PULP 95/96 RON': 3,
-  'Premium Unleaded': 3,
-  'PULP 98 RON': 4,
-  'Premium Unleaded 98': 4,
-  'Diesel': 5,
-  'LPG': 6,
-  'e10': 7,
-  'E10': 7,
-  'E85': 10,
-  'Premium Diesel': 11,
+  'Diesel': 3,
+  'LPG': 4,
+  'PULP 95/96 RON': 5,
+  'Premium Unleaded 95': 5,
+  'PULP 98 RON': 8,
+  'Premium Unleaded 98': 8,
+  'e10': 12,
+  'E10': 12,
+  'Premium Diesel': 14,
+  'E85': 19,
 }
 
 /**
@@ -178,7 +180,7 @@ async function runDirectApiScrapeJob(): Promise<ScrapeResult> {
     const recordedAt = new Date()
 
     const sitesResponse = await client.getFullSiteDetails()
-    const stationRows = sitesResponse.S
+    const stationRows = sitesResponse.sites
       .map(normaliseStation)
       .filter((s): s is NonNullable<typeof s> => s !== null)
 

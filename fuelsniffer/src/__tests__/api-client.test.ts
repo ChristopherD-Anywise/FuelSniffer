@@ -8,6 +8,7 @@ import {
   createApiClient,
   fetchWithRetry,
   GetSitesPricesResponseSchema,
+  GetFullSiteDetailsResponseSchema,
 } from '@/lib/scraper/client'
 
 describe('buildAuthHeader', () => {
@@ -38,7 +39,6 @@ describe('createApiClient', () => {
 
 describe('fetchWithRetry', () => {
   it('retries exactly 3 times before throwing on persistent failure', async () => {
-    // Use a zero-delay version by mocking setTimeout to resolve immediately
     vi.spyOn(globalThis, 'setTimeout').mockImplementation((fn) => {
       fn()
       return 0 as unknown as ReturnType<typeof setTimeout>
@@ -75,10 +75,11 @@ describe('GetSitesPricesResponseSchema (Zod validation)', () => {
     const validResponse = {
       SitePrices: [
         {
-          SiteId: 123,
-          FuelId: 52,
-          TransactionDateUtc: '2026-03-23T05:00:00Z',
-          Price: 1459,
+          SiteId: 61401008,
+          FuelId: 2,
+          CollectionMethod: 'Q',
+          TransactionDateUtc: '2026-03-25T14:00:00',
+          Price: 2499.0,
         },
       ],
     }
@@ -89,17 +90,53 @@ describe('GetSitesPricesResponseSchema (Zod validation)', () => {
     expect(() => GetSitesPricesResponseSchema.parse({ wrongField: [] })).toThrow()
   })
 
-  it('rejects a Price field that is not an integer', () => {
+  it('rejects a Price field that is a string', () => {
     const invalidResponse = {
       SitePrices: [
         {
           SiteId: 123,
-          FuelId: 52,
+          FuelId: 2,
           TransactionDateUtc: '2026-03-23T05:00:00Z',
-          Price: '1459',  // string instead of number — should fail
+          Price: '1459',
         },
       ],
     }
     expect(() => GetSitesPricesResponseSchema.parse(invalidResponse)).toThrow()
+  })
+})
+
+describe('GetFullSiteDetailsResponseSchema (Zod validation)', () => {
+  it('accepts the real API abbreviated field format', () => {
+    const validResponse = {
+      S: [
+        {
+          S: 61401106,
+          A: '20 Commercial Rd',
+          N: 'BP Newstead',
+          B: 5,
+          P: '4006',
+          Lat: -27.452584,
+          Lng: 153.041807,
+          GPI: 'ChIJnW80r5NZkWsRgV8e8H0VEto',
+        },
+      ],
+    }
+    expect(() => GetFullSiteDetailsResponseSchema.parse(validResponse)).not.toThrow()
+  })
+
+  it('rejects when B (brand) is a string instead of number', () => {
+    const invalidResponse = {
+      S: [
+        {
+          S: 123,
+          N: 'Test Station',
+          B: 'BP',  // should be integer brand ID
+          P: '4000',
+          Lat: -27.4,
+          Lng: 153.0,
+        },
+      ],
+    }
+    expect(() => GetFullSiteDetailsResponseSchema.parse(invalidResponse)).toThrow()
   })
 })

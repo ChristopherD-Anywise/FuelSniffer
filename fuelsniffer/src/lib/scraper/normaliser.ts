@@ -1,4 +1,4 @@
-import type { SitePrice, SiteDetails } from './client'
+import type { SiteDetails, SitePrice } from './client'
 import type { NewPriceReading, NewStation } from '@/lib/db/schema'
 
 // ── Price encoding ────────────────────────────────────────────────────────────
@@ -83,8 +83,9 @@ export function isWithinRadius(lat: number, lng: number): boolean {
 // ── API response normalisation ────────────────────────────────────────────────
 
 /**
- * Convert a raw QLD API SiteDetails record to a NewStation domain object.
+ * Convert a normalised SiteDetails record to a NewStation domain object.
  * Returns null if the station is outside the 50km radius (D-06).
+ * Note: The real API has no suburb field — we leave it null.
  */
 export function normaliseStation(site: SiteDetails): NewStation | null {
   if (!isWithinRadius(site.Lat, site.Lng)) return null
@@ -94,7 +95,7 @@ export function normaliseStation(site: SiteDetails): NewStation | null {
     name:       site.Name,
     brand:      site.Brand ?? null,
     address:    site.Address ?? null,
-    suburb:     site.Suburb ?? null,
+    suburb:     null,  // API does not provide suburb
     postcode:   site.Postcode ?? null,
     latitude:   site.Lat,
     longitude:  site.Lng,
