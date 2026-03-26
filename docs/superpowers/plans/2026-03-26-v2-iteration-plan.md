@@ -173,9 +173,7 @@ git commit -m "feat: add StationDetail panel with chart, fuel tabs, nearby alter
 
 - [ ] **Step 1: Update DashboardClient to render StationDetail**
 
-Remove `PriceChart` import (unused). Add `StationDetail` import.
-
-Remove `activeFuel` from MapView props (already removed from MapView in A1).
+Add `StationDetail` import. Remove `activeFuel={activeFuel}` from the `<MapView>` JSX props (the prop was removed from MapView's interface in A1 — passing it would cause a TypeScript error).
 
 When `selectedId` is set, render the StationDetail panel at the root of the component tree (outside the grid columns, so it overlays):
 
@@ -303,15 +301,15 @@ export function normaliseStation(site: SiteDetails): NewStation {
 }
 ```
 
-Note: return type changes from `NewStation | null` to `NewStation`.
+Note: return type changes from `NewStation | null` to `NewStation`. Callers in `writer.ts` that do `.filter((s): s is NonNullable<typeof s> => s !== null)` should have this filter removed — it becomes dead code.
 
 - [ ] **Step 2: Remove radius filter from CKAN scraper in writer.ts**
 
-In `runCkanScrapeJob()`, remove the `nearbyRecords` filter that calls `isWithinRadius`. Process ALL records.
+In `runCkanScrapeJob()`, remove the `nearbyRecords` filter that calls `isWithinRadius`. Process ALL records. Also update the CKAN station upsert to include `lastSeenAt: new Date()` — it's currently missing.
 
 - [ ] **Step 3: Remove radius filter from Direct API scraper**
 
-In `runDirectApiScrapeJob()`, the `inRadiusIds` filtering is no longer needed. Insert ALL normalised stations and filter prices only to stations we've inserted.
+In `runDirectApiScrapeJob()`, the `inRadiusIds` filtering is no longer needed. Insert ALL normalised stations and ALL prices. Remove the `.filter(null)` after `.map(normaliseStation)` since the function no longer returns null.
 
 - [ ] **Step 4: Update normaliser tests**
 
@@ -334,7 +332,53 @@ git commit -m "feat: store all QLD stations, remove ingest-time radius filter"
 
 ---
 
-### Task B2: Add location search API
+### Task B2: Add database indexes for query performance at scale
+
+**Files:**
+- Create: `src/lib/db/migrations/0004_performance_indexes.sql`
+- Modify: `src/lib/db/migrate.ts`
+
+With 1,800 QLD stations (up from ~100), the `DISTINCT ON (station_id)` query in `getLatestPrices` and the Haversine distance computation become expensive without proper indexes.
+
+- [ ] **Step 1: Create the migration**
+
+```sql
+-- Composite index for the DISTINCT ON (station_id) query pattern
+-- Used by getLatestPrices: DISTINCT ON (station_id) ... ORDER BY station_id, recorded_at DESC
+CREATE INDEX IF NOT EXISTS idx_price_readings_station_fuel_recorded
+ON price_readings (station_id, fuel_type_id, recorded_at DESC);
+
+-- Index for station location-based queries (lat/lng filtering)
+CREATE INDEX IF NOT EXISTS idx_stations_lat_lng
+ON stations (latitude, longitude);
+
+-- Index for search by name and postcode
+CREATE INDEX IF NOT EXISTS idx_stations_postcode
+ON stations (postcode);
+```
+
+Note: `ILIKE '%term%'` (leading wildcard) cannot use B-tree indexes. For 1,800 rows this is acceptable. If performance degrades at national scale, add a `pg_trgm` GIN index.
+
+- [ ] **Step 2: Add to migration runner**
+
+Add `'0004_performance_indexes.sql'` to the `files` array in `migrate.ts`.
+
+- [ ] **Step 3: Run migration**
+
+```bash
+DATABASE_URL=... npx tsx src/lib/db/migrate.ts
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/lib/db/migrations/0004_performance_indexes.sql src/lib/db/migrate.ts
+git commit -m "feat: add database indexes for query performance at 1800+ stations"
+```
+
+---
+
+### Task B3: Add location search API (was B2)
 
 **Files:**
 - Create: `src/app/api/search/route.ts`
@@ -373,7 +417,7 @@ git commit -m "feat: add location search API with station name and postcode/area
 
 ---
 
-### Task B3: Create LocationSearch component
+### Task B4: Create LocationSearch component
 
 **Files:**
 - Create: `src/components/LocationSearch.tsx`
@@ -393,7 +437,7 @@ git commit -m "feat: add LocationSearch autocomplete component"
 
 ---
 
-### Task B4: Wire LocationSearch into FilterBar and Dashboard
+### Task B5: Wire LocationSearch into FilterBar and Dashboard
 
 **Files:**
 - Modify: `src/components/FilterBar.tsx`
@@ -426,7 +470,7 @@ git commit -m "feat: wire location search into filter bar and dashboard"
 
 ---
 
-### Task B5: Add marker clustering for map performance
+### Task B6: Add marker clustering for map performance
 
 **Files:**
 - Modify: `package.json` (add leaflet.markercluster)
@@ -468,7 +512,7 @@ git commit -m "feat: add marker clustering for large station counts"
 | Action | File | Responsibility |
 |--------|------|---------------|
 | Modify | `src/lib/db/schema.ts` | Add `gpi`, `google_address`, `google_place_name`, `opening_hours`, `place_rating`, `last_enriched_at` to stations |
-| Create | `src/lib/db/migrations/0004_google_places_columns.sql` | Migration for new columns (including `gpi`) |
+| Create | `src/lib/db/migrations/0006_google_places_columns.sql` | Migration for new columns (including `gpi`) |
 | Modify | `src/lib/scraper/client.ts` | Add `GPI` to `SiteDetails` interface and normalization mapping |
 | Modify | `src/lib/scraper/normaliser.ts` | Pass `gpi` through to NewStation |
 | Create | `src/lib/enrichment/google-places.ts` | Google Places API client |
@@ -484,7 +528,7 @@ git commit -m "feat: add marker clustering for large station counts"
 
 **Files:**
 - Modify: `src/lib/db/schema.ts`
-- Create: `src/lib/db/migrations/0004_google_places_columns.sql`
+- Create: `src/lib/db/migrations/0006_google_places_columns.sql`
 - Modify: `src/lib/db/migrate.ts`
 - Modify: `src/lib/scraper/client.ts`
 - Modify: `src/lib/scraper/normaliser.ts`
@@ -530,9 +574,11 @@ GPI: raw.GPI ?? null,
 
 In `normaliser.ts`, add `gpi: site.GPI ?? null` to the returned NewStation object.
 
+**Also update the CKAN scraper path:** The CKAN scraper in `writer.ts` (`runCkanScrapeJob`) builds station insert values manually — it does NOT call `normaliseStation`. Add `gpi: null` to its values object so the column is populated (CKAN data doesn't have Google Place IDs). Also ensure `lastSeenAt` is set (currently missing from the CKAN path).
+
 - [ ] **Step 5: Add migration to runner and run**
 
-Add `'0004_google_places_columns.sql'` to the `files` array in `migrate.ts`.
+Add `'0006_google_places_columns.sql'` to the `files` array in `migrate.ts`.
 
 ```bash
 DATABASE_URL=... npx tsx src/lib/db/migrate.ts
@@ -541,7 +587,7 @@ DATABASE_URL=... npx tsx src/lib/db/migrate.ts
 - [ ] **Step 6: Commit**
 
 ```bash
-git add src/lib/db/schema.ts src/lib/db/migrations/0004_google_places_columns.sql src/lib/db/migrate.ts src/lib/scraper/client.ts src/lib/scraper/normaliser.ts
+git add src/lib/db/schema.ts src/lib/db/migrations/0006_google_places_columns.sql src/lib/db/migrate.ts src/lib/scraper/client.ts src/lib/scraper/normaliser.ts
 git commit -m "feat: store GPI during ingest, add Google Places columns to stations"
 ```
 
@@ -697,14 +743,21 @@ FROM hourly_prices
 GROUP BY station_id, fuel_type_id, day_bucket;
 
 -- Refresh daily_prices once per day
--- start_offset=3 days ensures data is materialized before hourly retention drops it
+-- start_offset=31 days: MUST cover the full hourly retention window (30 days)
+-- so all hourly data is materialized into daily before the hourly retention policy drops it.
+-- If start_offset < hourly retention, data between start_offset and 30 days would never
+-- be re-materialized if the daily cagg falls behind.
 SELECT add_continuous_aggregate_policy('daily_prices',
-  start_offset => INTERVAL '3 days',
+  start_offset => INTERVAL '31 days',
   end_offset   => INTERVAL '0 days',
   schedule_interval => INTERVAL '1 day'
 );
 
--- Retain hourly data for 30 days only
+-- IMPORTANT: Before enabling hourly retention, backfill the daily cagg with all existing data.
+-- Without this, any existing hourly data older than 30 days will be permanently lost.
+CALL refresh_continuous_aggregate('daily_prices', NULL, NULL);
+
+-- Retain hourly data for 30 days only (daily_prices preserves older data)
 SELECT add_retention_policy('hourly_prices', INTERVAL '30 days');
 ```
 
@@ -802,10 +855,17 @@ These items from PRD section 3.7 are intentionally deferred — they add polish 
 
 ## Estimated Scope
 
-| Sub-Project | Tasks | Estimated Steps |
-|-------------|-------|-----------------|
-| A: Detail Panel | 5 tasks | ~17 steps |
-| B: All of QLD | 5 tasks | ~20 steps |
-| C: Google Places | 4 tasks | ~14 steps |
-| D: Daily Aggregates | 2 tasks | ~8 steps |
-| **Total** | **16 tasks** | **~59 steps** |
+| Sub-Project | Tasks | Estimated Steps | Migrations |
+|-------------|-------|-----------------|------------|
+| A: Detail Panel | 5 tasks | ~17 steps | none |
+| B: All of QLD | 6 tasks | ~24 steps | 0004 (indexes) |
+| D: Daily Aggregates | 2 tasks | ~8 steps | 0005 (daily cagg) |
+| C: Google Places | 4 tasks | ~14 steps | 0006 (places columns) |
+| **Total** | **17 tasks** | **~63 steps** | **3 migrations** |
+
+## Cleanup Notes
+
+After Sub-Project B, update these stale comments:
+- `client.ts` line 126: "Haversine filter narrows to North Brisbane" → remove, no longer accurate
+- `MapView.tsx`: Rename `NORTH_LAKES` constant to `DEFAULT_CENTER` (still the default before geolocation)
+- `normaliser.ts`: Add comment that `isWithinRadius` is retained for potential future use but not called at ingest
