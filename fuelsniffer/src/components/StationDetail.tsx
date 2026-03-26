@@ -205,7 +205,7 @@ export default function StationDetail({
             <div className="flex items-center justify-between mb-3">
               <h3 className="text-sm font-semibold text-slate-700">Price History</h3>
               <div className="flex gap-1">
-                {([24, 72, 168] as const).map(h => (
+                {([24, 72, 168, 720, 2160] as const).map(h => (
                   <button
                     key={h}
                     onClick={() => setHours(h)}
@@ -216,7 +216,7 @@ export default function StationDetail({
                         : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
                     ].join(' ')}
                   >
-                    {h === 24 ? '24h' : h === 72 ? '3d' : '7d'}
+                    {h === 24 ? '24h' : h === 72 ? '3d' : h === 168 ? '7d' : h === 720 ? '30d' : '90d'}
                   </button>
                 ))}
               </div>

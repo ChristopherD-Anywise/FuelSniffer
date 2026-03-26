@@ -7,7 +7,7 @@ const HistoryQuerySchema = z.object({
   station: z.string().regex(/^\d+$/).transform(Number),
   fuel: z.string().regex(/^\d+$/).transform(Number),
   hours: z.string().optional().default('168').pipe(
-    z.string().regex(/^\d+$/).transform(Number).pipe(z.number().min(1).max(168))
+    z.string().regex(/^\d+$/).transform(Number).pipe(z.number().min(1).max(8760))
   ),
 })
 
@@ -32,6 +32,19 @@ export async function GET(req: Request) {
   }
 
   const { station, fuel, hours } = parsed.data
+
+  // For ranges > 30 days, use daily aggregates for performance
+  if (hours > 720) {
+    const rows = await db.execute(sql`
+      SELECT day_bucket AS bucket, avg_price_cents AS avg_price,
+             min_price_cents AS min_price, max_price_cents AS max_price
+      FROM daily_prices
+      WHERE station_id = ${station} AND fuel_type_id = ${fuel}
+        AND day_bucket >= NOW() - ${hours + ' hours'}::interval
+      ORDER BY day_bucket ASC
+    `)
+    return NextResponse.json(rows)
+  }
 
   // Try hourly_prices cagg first (fast, pre-aggregated).
   // Falls back to raw price_readings if cagg has no data yet (fresh install).
