@@ -22,7 +22,7 @@ const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
 const migrationsDir = path.join(__dirname, 'migrations')
-const files = ['0000_schema.sql', '0001_hypertable.sql', '0002_cagg.sql', '0003_invite_codes_sessions.sql']
+const files = ['0000_schema.sql', '0001_hypertable.sql', '0002_cagg.sql', '0003_invite_codes_sessions.sql', '0004_performance_indexes.sql']
 
 async function runMigrations(): Promise<void> {
   const sql = postgres(DATABASE_URL!, { max: 1 })
