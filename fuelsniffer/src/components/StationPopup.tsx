@@ -47,7 +47,7 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
     ? [Math.floor(Math.min(...data.map(d => d.avg)) - 2), Math.ceil(Math.max(...data.map(d => d.avg)) + 2)]
     : [0, 300]
 
-  const change = station.price_change_24h
+  const change = station.price_change != null ? Number(station.price_change) : null
   const changeText = change != null
     ? change > 0 ? `▲ ${change.toFixed(1)}¢` : change < 0 ? `▼ ${Math.abs(change).toFixed(1)}¢` : '— 0¢'
     : null

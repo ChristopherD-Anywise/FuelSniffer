@@ -8,7 +8,6 @@ import StationList from '@/components/StationList'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import EmptyState from '@/components/EmptyState'
 import ErrorState from '@/components/ErrorState'
-// StationDetail removed — popup content lives in MapView
 import { sortStations } from '@/lib/dashboard-utils'
 import type { PriceResult } from '@/lib/db/queries/prices'
 import type { SortMode } from '@/lib/dashboard-utils'
@@ -18,6 +17,12 @@ const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
 function fuelLabel(id: string): string {
   return FUEL_TYPES.find(f => f.id === id)?.label ?? id
 }
+
+const CHANGE_PERIODS = [
+  { hours: 24, label: '24h' },
+  { hours: 72, label: '3d' },
+  { hours: 168, label: '7d' },
+] as const
 
 export default function DashboardClient() {
   const params = useSearchParams()
@@ -32,6 +37,7 @@ export default function DashboardClient() {
   const [error, setError] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [isMobileMapVisible, setIsMobileMapVisible] = useState(false)
+  const [changeHours, setChangeHours] = useState(24)
 
   // User location state
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
@@ -43,7 +49,7 @@ export default function DashboardClient() {
     setLoading(true)
     setError(false)
     try {
-      let url = `/api/prices?fuel=${activeFuel}&radius=${radius}`
+      let url = `/api/prices?fuel=${activeFuel}&radius=${radius}&changeHours=${changeHours}`
       if (userLocation) {
         url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`
       }
@@ -56,7 +62,7 @@ export default function DashboardClient() {
     } finally {
       setLoading(false)
     }
-  }, [activeFuel, radius, userLocation])
+  }, [activeFuel, radius, userLocation, changeHours])
 
   useEffect(() => {
     fetchPrices()
@@ -109,9 +115,9 @@ export default function DashboardClient() {
   }
 
   const sortedStations = sortStations(stations, sortMode)
-
   const cheapest = sortedStations.length > 0 ? parseFloat(sortedStations[0].price_cents) : null
   const stationCount = sortedStations.length
+  const changePeriodLabel = CHANGE_PERIODS.find(p => p.hours === changeHours)?.label ?? '24h'
 
   return (
     <div className="flex flex-col h-screen bg-slate-50">
@@ -129,43 +135,61 @@ export default function DashboardClient() {
         onLocationSelect={handleLocationSelect}
       />
 
-      {/* Summary bar */}
+      {/* Summary bar with change period toggle */}
       {!loading && !error && stationCount > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-100">
+        <div className="flex items-center gap-3 px-4 py-1.5 bg-white border-b border-slate-100 text-sm">
           {cheapest && (
             <>
-              <span className="text-lg font-bold text-slate-900 tabular-nums">{cheapest.toFixed(1)}¢</span>
-              <span className="text-sm text-slate-400">cheapest</span>
+              <span className="text-base font-bold text-slate-900 tabular-nums">{cheapest.toFixed(1)}¢</span>
+              <span className="text-slate-400">cheapest</span>
               <span className="text-slate-300">·</span>
             </>
           )}
-          <span className="text-sm text-slate-500">{stationCount} stations within {radius}km</span>
+          <span className="text-slate-500">{stationCount} stations</span>
           <span className="text-slate-300">·</span>
-          <span className="text-sm text-slate-500">{fuelLabel(activeFuel)}</span>
+          <span className="text-slate-500">{fuelLabel(activeFuel)}</span>
+
+          {/* Change period toggle */}
+          <div className="ml-auto flex items-center bg-slate-100 rounded-md p-0.5">
+            {CHANGE_PERIODS.map(p => (
+              <button
+                key={p.hours}
+                onClick={() => setChangeHours(p.hours)}
+                className={[
+                  'px-2 py-0.5 rounded text-xs font-medium transition-all',
+                  changeHours === p.hours
+                    ? 'bg-white text-slate-900 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700',
+                ].join(' ')}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
-      {/* Content area — relative positioning so children can use absolute fill on mobile */}
-      <div className="flex-1 relative overflow-hidden md:grid md:grid-cols-[minmax(360px,1fr)_1.5fr]">
-        {/* Station list */}
-        <div className={`absolute inset-0 md:relative md:inset-auto h-full overflow-y-auto station-list bg-white ${isMobileMapVisible ? 'hidden md:block' : 'block'}`}>
+      {/* Content area */}
+      <div className="flex-1 relative overflow-hidden md:grid md:grid-cols-[280px_1fr]">
+        {/* Station list — narrower on desktop */}
+        <div className={`absolute inset-0 md:relative md:inset-auto h-full overflow-y-auto station-list bg-white border-r border-slate-100 ${isMobileMapVisible ? 'hidden md:block' : 'block'}`}>
           {loading && <LoadingSkeleton />}
           {!loading && error && <ErrorState onRetry={fetchPrices} />}
           {!loading && !error && sortedStations.length === 0 && (
-            <EmptyState fuelLabel={fuelLabel(activeFuel) ?? activeFuel} radius={radius} />
+            <EmptyState fuelLabel={fuelLabel(activeFuel)} radius={radius} />
           )}
           {!loading && !error && sortedStations.length > 0 && (
             <StationList
               stations={sortedStations}
               selectedId={selectedId}
+              changePeriodLabel={changePeriodLabel}
               onSelect={handleCardSelect}
               cardRefsMap={cardRefsMap.current}
             />
           )}
         </div>
 
-        {/* Map — always block on desktop. On mobile, toggled but we pass isMobileMapVisible
-             so MapView can call invalidateSize when becoming visible. */}
+        {/* Map */}
         <div className={`absolute inset-0 md:relative md:inset-auto h-full ${isMobileMapVisible ? 'block' : 'hidden md:block'}`}>
           <MapView
             stations={sortedStations}
@@ -177,7 +201,6 @@ export default function DashboardClient() {
           />
         </div>
       </div>
-
     </div>
   )
 }

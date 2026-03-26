@@ -6,11 +6,12 @@ import type { PriceResult } from '@/lib/db/queries/prices'
 interface StationListProps {
   stations: PriceResult[]
   selectedId: number | null
+  changePeriodLabel: string
   onSelect: (id: number) => void
   cardRefsMap?: Map<number, HTMLElement>
 }
 
-export default function StationList({ stations, selectedId, onSelect, cardRefsMap }: StationListProps) {
+export default function StationList({ stations, selectedId, changePeriodLabel, onSelect, cardRefsMap }: StationListProps) {
   return (
     <div className="overflow-y-auto divide-y divide-zinc-100">
       {stations.map((station) => (
@@ -18,6 +19,7 @@ export default function StationList({ stations, selectedId, onSelect, cardRefsMa
           key={station.id}
           station={station}
           isSelected={station.id === selectedId}
+          changePeriodLabel={changePeriodLabel}
           onClick={() => onSelect(station.id)}
           cardRef={cardRefsMap ? (el) => {
             if (el) cardRefsMap.set(station.id, el)

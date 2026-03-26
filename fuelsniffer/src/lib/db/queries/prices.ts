@@ -17,13 +17,14 @@ export interface PriceResult {
   recorded_at: Date
   source_ts: Date      // when the station actually reported this price
   distance_km: number
-  price_change_24h: number | null
+  price_change: number | null  // cents difference vs N hours ago
 }
 
 export async function getLatestPrices(
   fuelTypeId: number,
   radiusKm: number,
-  userLocation?: { lat: number; lng: number }
+  userLocation?: { lat: number; lng: number },
+  changeHours: number = 24
 ): Promise<PriceResult[]> {
   const lat = userLocation?.lat ?? DEFAULT_LAT
   const lng = userLocation?.lng ?? DEFAULT_LNG
@@ -57,7 +58,7 @@ export async function getLatestPrices(
           POWER(SIN((RADIANS(s.longitude) - RADIANS(${lng})) / 2), 2)
         ))
       ) AS distance_km,
-      (l.price_cents::numeric - prev.price_cents::numeric) AS price_change_24h
+      (l.price_cents::numeric - prev.price_cents::numeric) AS price_change
     FROM latest l
     JOIN stations s ON s.id = l.station_id
     LEFT JOIN LATERAL (
@@ -65,7 +66,7 @@ export async function getLatestPrices(
       FROM price_readings pr
       WHERE pr.station_id = l.station_id
         AND pr.fuel_type_id = ${fuelTypeId}
-        AND pr.recorded_at < NOW() - INTERVAL '24 hours'
+        AND pr.recorded_at < NOW() - (${changeHours} || ' hours')::interval
       ORDER BY pr.recorded_at DESC
       LIMIT 1
     ) prev ON true
