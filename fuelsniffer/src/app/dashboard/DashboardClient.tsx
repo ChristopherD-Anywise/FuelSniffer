@@ -8,7 +8,7 @@ import StationList from '@/components/StationList'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import EmptyState from '@/components/EmptyState'
 import ErrorState from '@/components/ErrorState'
-import StationDetail from '@/components/StationDetail'
+// StationDetail removed — popup content lives in MapView
 import { sortStations } from '@/lib/dashboard-utils'
 import type { PriceResult } from '@/lib/db/queries/prices'
 import type { SortMode } from '@/lib/dashboard-utils'
@@ -169,25 +169,13 @@ export default function DashboardClient() {
           <MapView
             stations={sortedStations}
             selectedId={selectedId}
+            activeFuel={activeFuel}
             onPinClick={handlePinClick}
             userLocation={userLocation}
           />
         </div>
       </div>
 
-      {selectedId && (() => {
-        const station = sortedStations.find(s => s.id === selectedId)
-        if (!station) return null
-        return (
-          <StationDetail
-            station={station}
-            fuelId={activeFuel}
-            allStations={sortedStations}
-            onClose={() => setSelectedId(null)}
-            onFuelChange={id => updateParam('fuel', id)}
-          />
-        )
-      })()}
     </div>
   )
 }

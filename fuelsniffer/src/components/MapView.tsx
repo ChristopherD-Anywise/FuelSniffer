@@ -1,5 +1,6 @@
 'use client'
 import { useEffect, useRef } from 'react'
+import { createRoot } from 'react-dom/client'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
@@ -8,6 +9,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.css'
 import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import type { PriceResult } from '@/lib/db/queries/prices'
 import { getPinColour } from '@/lib/map-utils'
+import StationPopup from '@/components/StationPopup'
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -16,33 +18,40 @@ L.Icon.Default.mergeOptions({
   shadowUrl: '/leaflet/marker-shadow.png',
 })
 
-const NORTH_LAKES = { lat: -27.2353, lng: 153.0189 }
+const DEFAULT_CENTER = { lat: -27.2353, lng: 153.0189 }
 const OSM_TILE_URL = 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png'
 const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
 
 interface MapViewProps {
   stations: PriceResult[]
   selectedId: number | null
+  activeFuel: string
   onPinClick: (id: number) => void
   userLocation?: { lat: number; lng: number } | null
 }
 
-function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapViewProps) {
+function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocation }: MapViewProps) {
   const map = useMap()
   const markersRef = useRef<Map<number, L.Marker>>(new Map())
+  const rootsRef = useRef<Map<number, ReturnType<typeof createRoot>>>(new Map())
   const clusterRef = useRef<L.MarkerClusterGroup | null>(null)
   const userMarkerRef = useRef<L.Marker | null>(null)
   const onPinClickRef = useRef(onPinClick)
   onPinClickRef.current = onPinClick
+  const activeFuelRef = useRef(activeFuel)
+  activeFuelRef.current = activeFuel
 
   // Create markers when stations change
   useEffect(() => {
-    // Clean up previous cluster group
+    // Clean up — defer unmounts to avoid React race condition
+    const oldRoots = new Map(rootsRef.current)
+    rootsRef.current.clear()
     if (clusterRef.current) {
       map.removeLayer(clusterRef.current)
       clusterRef.current = null
     }
     markersRef.current.clear()
+    setTimeout(() => oldRoots.forEach(root => root.unmount()), 0)
 
     if (stations.length === 0) return
 
@@ -86,7 +95,6 @@ function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapVie
           display:flex;align-items:center;justify-content:center;
           color:#fff;font-weight:700;font-size:12px;font-family:Inter,system-ui,sans-serif;
           box-shadow:0 2px 6px rgba(0,0,0,0.2);
-          transition:transform 0.15s ease;
           white-space:nowrap;
         ">${priceText}</div>`,
         iconSize: [48, 28],
@@ -95,18 +103,31 @@ function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapVie
 
       const marker = L.marker([station.latitude, station.longitude], { icon })
 
-      const popupHtml = `
-        <div style="font-family:Inter,system-ui,sans-serif;width:240px;">
-          <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;">
-            <span style="font-size:24px;font-weight:800;color:${colour};line-height:1;">${priceText}</span>
-            <span style="font-size:12px;color:#94a3b8;">c/L</span>
-          </div>
-          <div style="font-size:14px;font-weight:600;color:#0f172a;">${station.name}</div>
-          ${station.brand ? `<div style="font-size:11px;color:#94a3b8;">${station.brand}</div>` : ''}
-          <div style="font-size:12px;color:#64748b;margin-top:2px;">${station.address || ''}</div>
-        </div>
-      `
-      marker.bindPopup(popupHtml, { maxWidth: 260, closeButton: true })
+      // Create a DOM container for the React popup
+      const popupContainer = document.createElement('div')
+      const popup = L.popup({
+        maxWidth: 340,
+        minWidth: 310,
+        closeButton: true,
+        className: 'station-popup',
+        autoPan: true,
+        autoPanPaddingTopLeft: L.point(50, 50),
+        autoPanPaddingBottomRight: L.point(50, 50),
+      }).setContent(popupContainer)
+
+      marker.bindPopup(popup)
+
+      // Render React component into popup when it opens
+      marker.on('popupopen', () => {
+        let root = rootsRef.current.get(station.id)
+        if (!root) {
+          root = createRoot(popupContainer)
+          rootsRef.current.set(station.id, root)
+        }
+        root.render(
+          <StationPopup station={station} fuelId={activeFuelRef.current} />
+        )
+      })
 
       marker.on('click', () => {
         onPinClickRef.current(station.id)
@@ -120,11 +141,14 @@ function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapVie
     clusterRef.current = clusterGroup
 
     return () => {
+      const roots = new Map(rootsRef.current)
+      rootsRef.current.clear()
       if (clusterRef.current) {
         map.removeLayer(clusterRef.current)
         clusterRef.current = null
       }
       markersRef.current.clear()
+      setTimeout(() => roots.forEach(root => root.unmount()), 0)
     }
   }, [stations, map])
 
@@ -162,10 +186,10 @@ function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapVie
   return null
 }
 
-export default function MapView({ stations, selectedId, onPinClick, userLocation }: MapViewProps) {
+export default function MapView({ stations, selectedId, activeFuel, onPinClick, userLocation }: MapViewProps) {
   const center = userLocation
     ? [userLocation.lat, userLocation.lng] as [number, number]
-    : [NORTH_LAKES.lat, NORTH_LAKES.lng] as [number, number]
+    : [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng] as [number, number]
 
   return (
     <MapContainer
@@ -176,7 +200,7 @@ export default function MapView({ stations, selectedId, onPinClick, userLocation
       zoomControl={false}
     >
       <TileLayer url={OSM_TILE_URL} attribution={OSM_ATTRIBUTION} />
-      <PriceMarkers stations={stations} selectedId={selectedId} onPinClick={onPinClick} userLocation={userLocation} />
+      <PriceMarkers stations={stations} selectedId={selectedId} activeFuel={activeFuel} onPinClick={onPinClick} userLocation={userLocation} />
     </MapContainer>
   )
 }
