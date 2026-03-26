@@ -11,6 +11,12 @@ interface ChartPoint {
   avg: number
 }
 
+const TIME_RANGES = [
+  { hours: 24, label: '24h' },
+  { hours: 72, label: '3d' },
+  { hours: 168, label: '7d' },
+] as const
+
 interface StationPopupProps {
   station: PriceResult
   fuelId: string
@@ -47,13 +53,11 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
     ? [Math.floor(Math.min(...data.map(d => d.avg)) - 2), Math.ceil(Math.max(...data.map(d => d.avg)) + 2)]
     : [0, 300]
 
-  const change = station.price_change != null ? Number(station.price_change) : null
-  const changeText = change != null
-    ? change > 0 ? `▲ ${change.toFixed(1)}¢` : change < 0 ? `▼ ${Math.abs(change).toFixed(1)}¢` : '— 0¢'
+  // Compute change from chart data: current price minus earliest data point in the period
+  const periodChange = data.length >= 2
+    ? price - data[0].avg
     : null
-  const changeColor = change != null
-    ? change > 0 ? '#ef4444' : change < 0 ? '#10b981' : '#94a3b8'
-    : '#94a3b8'
+  const periodLabel = TIME_RANGES.find(t => t.hours === hours)?.label ?? '7d'
 
   return (
     <div style={{ fontFamily: 'Inter, system-ui, sans-serif', width: 300, padding: 4 }}>
@@ -64,9 +68,28 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
         <span style={{ fontSize: 12, color: '#94a3b8', marginLeft: 'auto' }}>{ago}</span>
       </div>
 
-      {/* 24h change */}
-      {changeText && (
-        <div style={{ fontSize: 12, fontWeight: 600, color: changeColor, marginBottom: 6 }}>{changeText} in 24h</div>
+      {/* Period change — computed from chart data */}
+      {periodChange !== null && (
+        <div style={{
+          display: 'flex', alignItems: 'center', gap: 4,
+          fontSize: 13, fontWeight: 600, marginBottom: 8,
+          color: periodChange > 0 ? '#ef4444' : periodChange < 0 ? '#10b981' : '#94a3b8',
+        }}>
+          {periodChange !== 0 && (
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
+              {periodChange > 0
+                ? <path d="M6 2L10 8H2L6 2Z" />
+                : <path d="M6 10L2 4H10L6 10Z" />
+              }
+            </svg>
+          )}
+          <span>
+            {periodChange === 0
+              ? `No change / ${periodLabel}`
+              : `${Math.abs(periodChange).toFixed(1)}¢ / ${periodLabel}`
+            }
+          </span>
+        </div>
       )}
 
       {/* Station info */}
@@ -76,23 +99,23 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
 
       {/* Time range pills */}
       <div style={{ display: 'flex', gap: 4, marginBottom: 6 }}>
-        {([24, 72, 168] as const).map(h => (
+        {TIME_RANGES.map(t => (
           <button
-            key={h}
-            onClick={() => setHours(h)}
+            key={t.hours}
+            onClick={() => setHours(t.hours)}
             style={{
               padding: '3px 10px', borderRadius: 12, border: 'none', fontSize: 11,
-              fontWeight: hours === h ? 700 : 500, cursor: 'pointer',
-              background: hours === h ? '#0ea5e9' : '#f1f5f9',
-              color: hours === h ? 'white' : '#64748b',
+              fontWeight: hours === t.hours ? 700 : 500, cursor: 'pointer',
+              background: hours === t.hours ? '#0ea5e9' : '#f1f5f9',
+              color: hours === t.hours ? 'white' : '#64748b',
             }}
           >
-            {h === 24 ? '24h' : h === 72 ? '3d' : '7d'}
+            {t.label}
           </button>
         ))}
       </div>
 
-      {/* Chart — fixed size, no ResponsiveContainer */}
+      {/* Chart */}
       <div style={{ marginBottom: 10 }}>
         {loading ? (
           <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#94a3b8' }}>

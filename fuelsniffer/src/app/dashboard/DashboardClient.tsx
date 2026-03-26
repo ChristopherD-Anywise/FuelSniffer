@@ -18,12 +18,6 @@ function fuelLabel(id: string): string {
   return FUEL_TYPES.find(f => f.id === id)?.label ?? id
 }
 
-const CHANGE_PERIODS = [
-  { hours: 24, label: '24h' },
-  { hours: 72, label: '3d' },
-  { hours: 168, label: '7d' },
-] as const
-
 export default function DashboardClient() {
   const params = useSearchParams()
   const router = useRouter()
@@ -37,8 +31,6 @@ export default function DashboardClient() {
   const [error, setError] = useState(false)
   const [selectedId, setSelectedId] = useState<number | null>(null)
   const [isMobileMapVisible, setIsMobileMapVisible] = useState(false)
-  const [changeHours, setChangeHours] = useState(24)
-
   // User location state
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'active' | 'denied'>('idle')
@@ -49,7 +41,7 @@ export default function DashboardClient() {
     setLoading(true)
     setError(false)
     try {
-      let url = `/api/prices?fuel=${activeFuel}&radius=${radius}&changeHours=${changeHours}`
+      let url = `/api/prices?fuel=${activeFuel}&radius=${radius}`
       if (userLocation) {
         url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`
       }
@@ -62,7 +54,7 @@ export default function DashboardClient() {
     } finally {
       setLoading(false)
     }
-  }, [activeFuel, radius, userLocation, changeHours])
+  }, [activeFuel, radius, userLocation])
 
   useEffect(() => {
     fetchPrices()
@@ -117,8 +109,6 @@ export default function DashboardClient() {
   const sortedStations = sortStations(stations, sortMode)
   const cheapest = sortedStations.length > 0 ? parseFloat(sortedStations[0].price_cents) : null
   const stationCount = sortedStations.length
-  const changePeriodLabel = CHANGE_PERIODS.find(p => p.hours === changeHours)?.label ?? '24h'
-
   return (
     <div className="flex flex-col h-screen bg-slate-50">
       <FilterBar
@@ -135,7 +125,7 @@ export default function DashboardClient() {
         onLocationSelect={handleLocationSelect}
       />
 
-      {/* Summary bar with change period toggle */}
+      {/* Summary bar */}
       {!loading && !error && stationCount > 0 && (
         <div className="flex items-center gap-3 px-4 py-1.5 bg-white border-b border-slate-100 text-sm">
           {cheapest && (
@@ -145,27 +135,9 @@ export default function DashboardClient() {
               <span className="text-slate-300">·</span>
             </>
           )}
-          <span className="text-slate-500">{stationCount} stations</span>
+          <span className="text-slate-500">{stationCount} stations within {radius}km</span>
           <span className="text-slate-300">·</span>
           <span className="text-slate-500">{fuelLabel(activeFuel)}</span>
-
-          {/* Change period toggle */}
-          <div className="ml-auto flex items-center bg-slate-100 rounded-md p-0.5">
-            {CHANGE_PERIODS.map(p => (
-              <button
-                key={p.hours}
-                onClick={() => setChangeHours(p.hours)}
-                className={[
-                  'px-2 py-0.5 rounded text-xs font-medium transition-all',
-                  changeHours === p.hours
-                    ? 'bg-white text-slate-900 shadow-sm'
-                    : 'text-slate-500 hover:text-slate-700',
-                ].join(' ')}
-              >
-                {p.label}
-              </button>
-            ))}
-          </div>
         </div>
       )}
 
@@ -182,7 +154,6 @@ export default function DashboardClient() {
             <StationList
               stations={sortedStations}
               selectedId={selectedId}
-              changePeriodLabel={changePeriodLabel}
               onSelect={handleCardSelect}
               cardRefsMap={cardRefsMap.current}
             />

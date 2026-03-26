@@ -6,12 +6,11 @@ import type { PriceResult } from '@/lib/db/queries/prices'
 interface StationCardProps {
   station: PriceResult
   isSelected: boolean
-  changePeriodLabel: string  // "24h", "3d", "7d"
   onClick: () => void
   cardRef?: (el: HTMLDivElement | null) => void
 }
 
-export default function StationCard({ station, isSelected, changePeriodLabel, onClick, cardRef }: StationCardProps) {
+export default function StationCard({ station, isSelected, onClick, cardRef }: StationCardProps) {
   const priceTime = station.source_ts ? new Date(station.source_ts) : new Date(station.recorded_at)
   const price = parseFloat(station.price_cents)
   const ago = formatDistanceToNowStrict(priceTime, { addSuffix: false }) + ' ago'
@@ -41,17 +40,11 @@ export default function StationCard({ station, isSelected, changePeriodLabel, on
           }`}>
             <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
               {change > 0
-                ? <path d="M5 2L8.5 7H1.5L5 2Z" />   /* up arrow */
-                : <path d="M5 8L1.5 3H8.5L5 8Z" />    /* down arrow */
+                ? <path d="M5 2L8.5 7H1.5L5 2Z" />
+                : <path d="M5 8L1.5 3H8.5L5 8Z" />
               }
             </svg>
             {Math.abs(change).toFixed(1)}¢
-            <span className="text-slate-400 font-normal ml-0.5">/ {changePeriodLabel}</span>
-          </div>
-        )}
-        {change !== null && change === 0 && (
-          <div className="text-[11px] text-slate-400 leading-tight">
-            — 0¢ / {changePeriodLabel}
           </div>
         )}
       </div>
