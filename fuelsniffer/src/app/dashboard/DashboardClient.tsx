@@ -15,8 +15,9 @@ import type { SortMode } from '@/lib/dashboard-utils'
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
 
 const FUEL_LABELS: Record<string, string> = {
-  '2': 'ULP 91', '5': 'ULP 95', '4': 'ULP 98',
-  '1': 'Diesel', '3': 'E10', '6': 'E85',
+  '2': 'ULP 91', '5': 'P95', '8': 'P98',
+  '12': 'E10', '3': 'Diesel', '14': 'Prem Diesel',
+  '4': 'LPG', '19': 'E85',
 }
 
 export default function DashboardClient() {

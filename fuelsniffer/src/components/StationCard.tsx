@@ -24,14 +24,16 @@ function getPriceBg(price: number): string {
 }
 
 export default function StationCard({ station, isSelected, onClick, cardRef }: StationCardProps) {
-  const stale = isStale(station.recorded_at)
+  // Use source_ts (when station reported the price) if available, fall back to recorded_at
+  const priceTime = station.source_ts ? new Date(station.source_ts) : new Date(station.recorded_at)
+  const stale = isStale(priceTime)
   const price = parseFloat(station.price_cents)
   const priceWhole = Math.floor(price)
   const priceDec = (price % 1).toFixed(1).slice(1) // ".5" etc
 
   const ago = stale
     ? 'Outdated'
-    : formatDistanceToNowStrict(new Date(station.recorded_at), { addSuffix: false }) + ' ago'
+    : formatDistanceToNowStrict(priceTime, { addSuffix: false }) + ' ago'
 
   return (
     <div

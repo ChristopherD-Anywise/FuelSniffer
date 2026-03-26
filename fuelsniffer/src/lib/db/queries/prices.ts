@@ -15,6 +15,7 @@ export interface PriceResult {
   longitude: number
   price_cents: string
   recorded_at: Date
+  source_ts: Date      // when the station actually reported this price
   distance_km: number
 }
 
@@ -47,6 +48,7 @@ export async function getLatestPrices(
       s.longitude,
       l.price_cents,
       l.recorded_at,
+      l.source_ts,
       (
         6371 * 2 * ASIN(SQRT(
           POWER(SIN((RADIANS(s.latitude) - RADIANS(${lat})) / 2), 2) +

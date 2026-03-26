@@ -2,11 +2,12 @@
 
 const FUEL_TYPES = [
   { id: '2', label: 'ULP 91' },
-  { id: '5', label: 'ULP 95' },
-  { id: '4', label: 'ULP 98' },
-  { id: '1', label: 'Diesel' },
-  { id: '3', label: 'E10' },
-  { id: '6', label: 'E85' },
+  { id: '5', label: 'P95' },
+  { id: '8', label: 'P98' },
+  { id: '12', label: 'E10' },
+  { id: '3', label: 'Diesel' },
+  { id: '14', label: 'Prem Diesel' },
+  { id: '4', label: 'LPG' },
 ]
 
 interface FuelTypePillsProps {

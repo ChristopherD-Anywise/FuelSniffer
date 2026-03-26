@@ -2,8 +2,8 @@ import type { PriceResult } from '@/lib/db/queries/prices'
 
 const STALE_THRESHOLD_MS = 60 * 60 * 1000  // 60 minutes
 
-export function isStale(recordedAt: Date): boolean {
-  return Date.now() - new Date(recordedAt).getTime() > STALE_THRESHOLD_MS
+export function isStale(timestamp: Date | string): boolean {
+  return Date.now() - new Date(timestamp).getTime() > STALE_THRESHOLD_MS
 }
 
 export type SortMode = 'price' | 'distance'

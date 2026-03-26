@@ -14,6 +14,7 @@ vi.mock('@/lib/db/client', () => ({
         onConflictDoUpdate: vi.fn().mockResolvedValue(undefined),
       }),
     }),
+    execute: vi.fn().mockResolvedValue([]),
   },
 }))
 

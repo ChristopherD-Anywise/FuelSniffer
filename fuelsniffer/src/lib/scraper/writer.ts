@@ -205,23 +205,42 @@ async function runDirectApiScrapeJob(): Promise<ScrapeResult> {
 
     const inRadiusIds = new Set(stationRows.map(s => s.id))
 
+    // Fetch the latest source_ts we have per station+fuel so we only insert genuine price changes
+    const latestSourceTs = await db.execute(sql`
+      SELECT DISTINCT ON (station_id, fuel_type_id)
+        station_id, fuel_type_id, source_ts
+      FROM price_readings
+      ORDER BY station_id, fuel_type_id, recorded_at DESC
+    `)
+    const seenKey = new Set(
+      (latestSourceTs as Array<{ station_id: number; fuel_type_id: number; source_ts: Date }>)
+        .map(r => `${r.station_id}-${r.fuel_type_id}-${new Date(r.source_ts).getTime()}`)
+    )
+
     const pricesResponse = await client.getSitesPrices()
     const priceRows = pricesResponse.SitePrices
       .filter(p => inRadiusIds.has(p.SiteId))
       .map(p => normalisePrice(p, recordedAt))
       .filter((p): p is NonNullable<typeof p> => p !== null)
 
-    if (priceRows.length > 0) {
-      await db.insert(priceReadings).values(priceRows)
+    // Only insert rows where source_ts is new (actual price change from the station)
+    const newPriceRows = priceRows.filter(p => {
+      const key = `${p.stationId}-${p.fuelTypeId}-${new Date(p.sourceTs).getTime()}`
+      return !seenKey.has(key)
+    })
+
+    if (newPriceRows.length > 0) {
+      await db.insert(priceReadings).values(newPriceRows)
     }
 
     const durationMs = Date.now() - startTime
-    const pricesUpserted = priceRows.length
+    const pricesUpserted = newPriceRows.length
+    const skipped = priceRows.length - newPriceRows.length
 
     await db.insert(scrapeHealth).values({ pricesUpserted, durationMs, error: null })
     await pingHealthchecks()
 
-    console.log(`[scraper] OK — ${pricesUpserted} prices in ${durationMs}ms`)
+    console.log(`[scraper] OK — ${pricesUpserted} new prices, ${skipped} unchanged in ${durationMs}ms`)
 
     return { pricesUpserted, error: null, source: 'direct-api' }
 
