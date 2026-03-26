@@ -145,10 +145,10 @@ export default function DashboardClient() {
         </div>
       )}
 
-      {/* Content area */}
-      <div className="flex-1 overflow-hidden md:grid md:grid-cols-[minmax(360px,1fr)_1.5fr]">
+      {/* Content area — relative positioning so children can use absolute fill on mobile */}
+      <div className="flex-1 relative overflow-hidden md:grid md:grid-cols-[minmax(360px,1fr)_1.5fr]">
         {/* Station list */}
-        <div className={`h-full overflow-y-auto station-list bg-white ${isMobileMapVisible ? 'hidden md:block' : 'block'}`}>
+        <div className={`absolute inset-0 md:relative md:inset-auto h-full overflow-y-auto station-list bg-white ${isMobileMapVisible ? 'hidden md:block' : 'block'}`}>
           {loading && <LoadingSkeleton />}
           {!loading && error && <ErrorState onRetry={fetchPrices} />}
           {!loading && !error && sortedStations.length === 0 && (
@@ -165,7 +165,7 @@ export default function DashboardClient() {
         </div>
 
         {/* Map */}
-        <div className={`h-full ${isMobileMapVisible ? 'block' : 'hidden md:block'}`}>
+        <div className={`absolute inset-0 md:relative md:inset-auto h-full ${isMobileMapVisible ? 'block' : 'hidden md:block'}`}>
           <MapView
             stations={sortedStations}
             selectedId={selectedId}
