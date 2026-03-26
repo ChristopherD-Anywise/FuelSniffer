@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import {
-  ResponsiveContainer,
   AreaChart,
   Area,
   XAxis,
@@ -100,63 +99,61 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
         ))}
       </div>
 
-      {/* Chart */}
-      <div style={{ height: 140, marginBottom: 8 }}>
+      {/* Chart — fixed size since Leaflet popup dimensions are known */}
+      <div style={{ marginBottom: 8 }}>
         {loading ? (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#94a3b8' }}>
+          <div style={{ height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#94a3b8' }}>
             Loading...
           </div>
         ) : data.length === 0 ? (
-          <div style={{ height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#94a3b8' }}>
+          <div style={{ height: 130, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#94a3b8' }}>
             Not enough history yet
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data} margin={{ top: 4, right: 8, bottom: 0, left: -12 }}>
-              <defs>
-                <linearGradient id={`pg-${station.id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.2}/>
-                  <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-              <XAxis
-                dataKey="label"
-                tick={{ fontSize: 10, fill: '#94a3b8' }}
-                tickLine={false}
-                axisLine={false}
-                interval="preserveStartEnd"
-              />
-              <YAxis
-                domain={domain}
-                tick={{ fontSize: 10, fill: '#94a3b8' }}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={v => `${v}¢`}
-              />
-              <Tooltip
-                content={({ active, payload }) => {
-                  if (!active || !payload?.length) return null
-                  const d = payload[0].payload as ChartPoint
-                  return (
-                    <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', fontSize: 11, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
-                      <div style={{ fontWeight: 600, color: '#334155' }}>{format(new Date(d.time), 'EEE d MMM, HH:mm')}</div>
-                      <div style={{ color: '#0ea5e9', marginTop: 2 }}>{d.avg.toFixed(1)}¢/L</div>
-                    </div>
-                  )
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="avg"
-                stroke="#0ea5e9"
-                strokeWidth={2}
-                fill={`url(#pg-${station.id})`}
-                dot={false}
-                activeDot={{ r: 3, strokeWidth: 2, fill: '#fff', stroke: '#0ea5e9' }}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+          <AreaChart width={310} height={130} data={data} margin={{ top: 4, right: 8, bottom: 0, left: -12 }}>
+            <defs>
+              <linearGradient id={`pg-${station.id}`} x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.2}/>
+                <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+            <XAxis
+              dataKey="label"
+              tick={{ fontSize: 10, fill: '#94a3b8' }}
+              tickLine={false}
+              axisLine={false}
+              interval="preserveStartEnd"
+            />
+            <YAxis
+              domain={domain}
+              tick={{ fontSize: 10, fill: '#94a3b8' }}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={v => `${v}¢`}
+            />
+            <Tooltip
+              content={({ active, payload }) => {
+                if (!active || !payload?.length) return null
+                const d = payload[0].payload as ChartPoint
+                return (
+                  <div style={{ background: 'white', border: '1px solid #e2e8f0', borderRadius: 8, padding: '6px 10px', fontSize: 11, boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                    <div style={{ fontWeight: 600, color: '#334155' }}>{format(new Date(d.time), 'EEE d MMM, HH:mm')}</div>
+                    <div style={{ color: '#0ea5e9', marginTop: 2 }}>{d.avg.toFixed(1)}¢/L</div>
+                  </div>
+                )
+              }}
+            />
+            <Area
+              type="monotone"
+              dataKey="avg"
+              stroke="#0ea5e9"
+              strokeWidth={2}
+              fill={`url(#pg-${station.id})`}
+              dot={false}
+              activeDot={{ r: 3, strokeWidth: 2, fill: '#fff', stroke: '#0ea5e9' }}
+            />
+          </AreaChart>
         )}
       </div>
 

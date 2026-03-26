@@ -39,11 +39,12 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
 
   // Create markers when stations change
   useEffect(() => {
-    // Clean up old React roots
-    rootsRef.current.forEach(root => root.unmount())
+    // Clean up old markers and defer React root unmounts to avoid race condition
+    const oldRoots = new Map(rootsRef.current)
     rootsRef.current.clear()
     markersRef.current.forEach(m => m.remove())
     markersRef.current.clear()
+    setTimeout(() => oldRoots.forEach(root => root.unmount()), 0)
 
     if (stations.length === 0) return
 
@@ -110,10 +111,11 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
     })
 
     return () => {
-      rootsRef.current.forEach(root => root.unmount())
+      const roots = new Map(rootsRef.current)
       rootsRef.current.clear()
       markersRef.current.forEach(m => m.remove())
       markersRef.current.clear()
+      setTimeout(() => roots.forEach(root => root.unmount()), 0)
     }
   }, [stations, map])
 
