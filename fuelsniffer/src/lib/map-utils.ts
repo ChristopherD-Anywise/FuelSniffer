@@ -4,7 +4,9 @@
  * Most expensive (t=1): hsl(0, 75%, 45%) — red
  * Median (t=0.5): hsl(60, ~82%, ~40%) — amber-ish
  *
- * Source: UI-SPEC.md Color section — Claude's Discretion resolved.
+ * Colouring is relative within the currently displayed fuel type because
+ * the caller (MapView) computes min/max from the filtered station list.
+ * Diesel stations (~300¢) get the full green→red range just like ULP (~245¢).
  */
 export function getPinColour(price: number, min: number, max: number): string {
   const t = max === min ? 0 : (price - min) / (max - min)  // 0 = cheapest, 1 = most expensive
