@@ -4,6 +4,7 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import FilterBar from '@/components/FilterBar'
 import StationList from '@/components/StationList'
+import PriceChart from '@/components/PriceChart'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import EmptyState from '@/components/EmptyState'
 import ErrorState from '@/components/ErrorState'
@@ -148,19 +149,29 @@ export default function DashboardClient() {
 
       {/* Content area */}
       <div className="flex-1 overflow-hidden md:grid md:grid-cols-[minmax(360px,1fr)_1.5fr]">
-        {/* Station list */}
-        <div className={`h-full overflow-y-auto station-list bg-white ${isMobileMapVisible ? 'hidden md:block' : 'block'}`}>
-          {loading && <LoadingSkeleton />}
-          {!loading && error && <ErrorState onRetry={fetchPrices} />}
-          {!loading && !error && sortedStations.length === 0 && (
-            <EmptyState fuelLabel={FUEL_LABELS[activeFuel] ?? activeFuel} radius={radius} />
-          )}
-          {!loading && !error && sortedStations.length > 0 && (
-            <StationList
-              stations={sortedStations}
-              selectedId={selectedId}
-              onSelect={handleCardSelect}
-              cardRefsMap={cardRefsMap.current}
+        {/* Station list + chart */}
+        <div className={`h-full flex flex-col bg-white ${isMobileMapVisible ? 'hidden md:flex' : 'flex'}`}>
+          <div className="flex-1 overflow-y-auto station-list">
+            {loading && <LoadingSkeleton />}
+            {!loading && error && <ErrorState onRetry={fetchPrices} />}
+            {!loading && !error && sortedStations.length === 0 && (
+              <EmptyState fuelLabel={FUEL_LABELS[activeFuel] ?? activeFuel} radius={radius} />
+            )}
+            {!loading && !error && sortedStations.length > 0 && (
+              <StationList
+                stations={sortedStations}
+                selectedId={selectedId}
+                onSelect={handleCardSelect}
+                cardRefsMap={cardRefsMap.current}
+              />
+            )}
+          </div>
+          {selectedId && (
+            <PriceChart
+              stationId={selectedId}
+              fuelId={activeFuel}
+              stationName={sortedStations.find(s => s.id === selectedId)?.name ?? ''}
+              onClose={() => setSelectedId(null)}
             />
           )}
         </div>

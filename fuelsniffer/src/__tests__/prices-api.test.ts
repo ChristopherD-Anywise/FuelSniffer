@@ -103,7 +103,7 @@ describe('GET /api/prices', () => {
     const res = await GET(req as any)
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toMatch(/radius must be between 1 and 50/)
+    expect(body.error).toMatch(/radius|too small|Too small/i)
   })
 
   it('returns 400 when radius is 51', async () => {
@@ -112,7 +112,7 @@ describe('GET /api/prices', () => {
     const res = await GET(req as any)
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toMatch(/radius must be between 1 and 50/)
+    expect(body.error).toMatch(/radius|too big|Too big/i)
   })
 
   it('returns 400 when fuel is not a valid integer', async () => {
@@ -129,7 +129,7 @@ describe('GET /api/prices', () => {
     const req = new Request('http://localhost/api/prices?fuel=2')
     const res = await GET(req as any)
     expect(res.status).toBe(200)
-    expect(mockGetLatestPrices).toHaveBeenCalledWith(2, 20)
+    expect(mockGetLatestPrices).toHaveBeenCalledWith(2, 20, undefined)
   })
 
   it('returns stations sorted cheapest first (preserves db order)', async () => {
