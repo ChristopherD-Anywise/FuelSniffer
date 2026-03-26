@@ -17,6 +17,7 @@ export interface PriceResult {
   recorded_at: Date
   source_ts: Date      // when the station actually reported this price
   distance_km: number
+  price_change_24h: number | null
 }
 
 export async function getLatestPrices(
@@ -55,9 +56,19 @@ export async function getLatestPrices(
           COS(RADIANS(${lat})) * COS(RADIANS(s.latitude)) *
           POWER(SIN((RADIANS(s.longitude) - RADIANS(${lng})) / 2), 2)
         ))
-      ) AS distance_km
+      ) AS distance_km,
+      (l.price_cents::numeric - prev.price_cents::numeric) AS price_change_24h
     FROM latest l
     JOIN stations s ON s.id = l.station_id
+    LEFT JOIN LATERAL (
+      SELECT price_cents
+      FROM price_readings pr
+      WHERE pr.station_id = l.station_id
+        AND pr.fuel_type_id = ${fuelTypeId}
+        AND pr.recorded_at < NOW() - INTERVAL '24 hours'
+      ORDER BY pr.recorded_at DESC
+      LIMIT 1
+    ) prev ON true
     WHERE s.is_active = true
       AND (
         6371 * 2 * ASIN(SQRT(
