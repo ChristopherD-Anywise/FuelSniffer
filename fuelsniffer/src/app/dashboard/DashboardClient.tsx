@@ -4,7 +4,6 @@ import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import FilterBar from '@/components/FilterBar'
 import StationList from '@/components/StationList'
-import PriceChart from '@/components/PriceChart'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import EmptyState from '@/components/EmptyState'
 import ErrorState from '@/components/ErrorState'
@@ -86,7 +85,6 @@ export default function DashboardClient() {
   function handleLocateMe() {
     if (locationStatus === 'loading') return
     if (locationStatus === 'active') {
-      // Toggle off — return to North Lakes default
       setUserLocation(null)
       setLocationStatus('idle')
       return
@@ -107,7 +105,6 @@ export default function DashboardClient() {
 
   const sortedStations = sortStations(stations, sortMode)
 
-  // Summary stats
   const cheapest = sortedStations.length > 0 ? parseFloat(sortedStations[0].price_cents) : null
   const stationCount = sortedStations.length
 
@@ -169,26 +166,12 @@ export default function DashboardClient() {
           <MapView
             stations={sortedStations}
             selectedId={selectedId}
+            activeFuel={activeFuel}
             onPinClick={handlePinClick}
             userLocation={userLocation}
           />
         </div>
       </div>
-
-      {/* Price chart overlay — full width, slides up from bottom */}
-      {selectedId && (() => {
-        const station = sortedStations.find(s => s.id === selectedId)
-        return (
-          <PriceChart
-            stationId={selectedId}
-            fuelId={activeFuel}
-            stationName={station?.name ?? ''}
-            stationBrand={station?.brand}
-            currentPrice={station?.price_cents}
-            onClose={() => setSelectedId(null)}
-          />
-        )
-      })()}
     </div>
   )
 }

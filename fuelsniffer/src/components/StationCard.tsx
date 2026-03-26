@@ -31,9 +31,7 @@ export default function StationCard({ station, isSelected, onClick, cardRef }: S
   const priceWhole = Math.floor(price)
   const priceDec = (price % 1).toFixed(1).slice(1) // ".5" etc
 
-  const ago = stale
-    ? 'Outdated'
-    : formatDistanceToNowStrict(priceTime, { addSuffix: false }) + ' ago'
+  const ago = formatDistanceToNowStrict(priceTime, { addSuffix: false }) + ' ago'
 
   return (
     <div
