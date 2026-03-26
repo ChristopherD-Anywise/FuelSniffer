@@ -84,12 +84,9 @@ export function isWithinRadius(lat: number, lng: number): boolean {
 
 /**
  * Convert a normalised SiteDetails record to a NewStation domain object.
- * Returns null if the station is outside the 50km radius (D-06).
  * Note: The real API has no suburb field — we leave it null.
  */
-export function normaliseStation(site: SiteDetails): NewStation | null {
-  if (!isWithinRadius(site.Lat, site.Lng)) return null
-
+export function normaliseStation(site: SiteDetails): NewStation {
   return {
     id:         site.SiteId,
     name:       site.Name,

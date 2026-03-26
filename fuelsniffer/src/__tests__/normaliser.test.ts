@@ -78,14 +78,7 @@ describe('isWithinRadius — 50km from North Lakes (-27.2353, 153.0189)', () => 
 })
 
 describe('normaliseStation', () => {
-  it('returns null for stations outside 50km radius', () => {
-    const goldCoastStation = {
-      SiteId: 999, Name: 'Gold Coast BP', Lat: -28.0167, Lng: 153.4000,
-    }
-    expect(normaliseStation(goldCoastStation)).toBeNull()
-  })
-
-  it('returns a NewStation for stations within radius', () => {
+  it('returns a NewStation for any station regardless of location', () => {
     const northLakesStation = {
       SiteId: 123, Name: 'North Lakes 7-Eleven', Brand: '7-Eleven',
       Address: '1 North Lakes Dr', Suburb: 'North Lakes', Postcode: '4509',
@@ -93,8 +86,18 @@ describe('normaliseStation', () => {
     }
     const result = normaliseStation(northLakesStation)
     expect(result).not.toBeNull()
-    expect(result!.id).toBe(123)
-    expect(result!.isActive).toBe(true)
+    expect(result.id).toBe(123)
+    expect(result.isActive).toBe(true)
+  })
+
+  it('returns a NewStation for stations far from North Lakes', () => {
+    const goldCoastStation = {
+      SiteId: 999, Name: 'Gold Coast BP', Lat: -28.0167, Lng: 153.4000,
+    }
+    const result = normaliseStation(goldCoastStation)
+    expect(result).not.toBeNull()
+    expect(result.id).toBe(999)
+    expect(result.isActive).toBe(true)
   })
 })
 

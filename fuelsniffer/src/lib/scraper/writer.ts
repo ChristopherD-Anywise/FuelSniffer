@@ -4,7 +4,7 @@ import { stations, priceReadings, scrapeHealth } from '@/lib/db/schema'
 import { createApiClient } from './client'
 import { normaliseStation, normalisePrice } from './normaliser'
 import { fetchCkanPrices, findLatestResourceId, deduplicateToLatest, type CkanRecord } from './ckan-client'
-import { rawToPrice, isWithinRadius } from './normaliser'
+import { rawToPrice } from './normaliser'
 import { sql } from 'drizzle-orm'
 
 // ── Healthchecks.io dead-man's-switch ────────────────────────────────────────
@@ -68,19 +68,19 @@ async function runCkanScrapeJob(): Promise<ScrapeResult> {
     const latestRecords = deduplicateToLatest(allRecords)
     console.log(`[scraper:ckan] ${latestRecords.length} unique station+fuel combinations`)
 
-    // Filter to North Brisbane (50km radius)
-    const nearbyRecords = latestRecords.filter(r => {
+    // Filter out records with invalid coordinates
+    const validRecords = latestRecords.filter(r => {
       const lat = parseFloat(r.Site_Latitude)
       const lng = parseFloat(r.Site_Longitude)
-      return !isNaN(lat) && !isNaN(lng) && isWithinRadius(lat, lng)
+      return !isNaN(lat) && !isNaN(lng)
     })
-    console.log(`[scraper:ckan] ${nearbyRecords.length} within 50km of North Lakes`)
+    console.log(`[scraper:ckan] ${validRecords.length} records with valid coordinates`)
 
     const recordedAt = new Date()
 
     // Upsert stations
     const stationMap = new Map<string, CkanRecord>()
-    for (const r of nearbyRecords) {
+    for (const r of validRecords) {
       if (!stationMap.has(r.SiteId)) stationMap.set(r.SiteId, r)
     }
 
@@ -97,6 +97,7 @@ async function runCkanScrapeJob(): Promise<ScrapeResult> {
           latitude: parseFloat(r.Site_Latitude),
           longitude: parseFloat(r.Site_Longitude),
           isActive: true,
+          lastSeenAt: new Date(),
         })
         .onConflictDoUpdate({
           target: stations.id,
@@ -108,13 +109,14 @@ async function runCkanScrapeJob(): Promise<ScrapeResult> {
             latitude: sql`excluded.latitude`,
             longitude: sql`excluded.longitude`,
             isActive: sql`true`,
+            lastSeenAt: sql`excluded.last_seen_at`,
           },
         })
     }
 
     // Insert price readings
     let priceCount = 0
-    for (const r of nearbyRecords) {
+    for (const r of validRecords) {
       const stationId = parseInt(r.SiteId, 10)
       const fuelTypeId = CKAN_FUEL_TYPE_MAP[r.Fuel_Type]
       if (!fuelTypeId) continue
@@ -182,7 +184,6 @@ async function runDirectApiScrapeJob(): Promise<ScrapeResult> {
     const sitesResponse = await client.getFullSiteDetails()
     const stationRows = sitesResponse.sites
       .map(normaliseStation)
-      .filter((s): s is NonNullable<typeof s> => s !== null)
 
     if (stationRows.length > 0) {
       await db
@@ -203,8 +204,6 @@ async function runDirectApiScrapeJob(): Promise<ScrapeResult> {
         })
     }
 
-    const inRadiusIds = new Set(stationRows.map(s => s.id))
-
     // Fetch the latest source_ts we have per station+fuel so we only insert genuine price changes
     const latestSourceTs = await db.execute(sql`
       SELECT DISTINCT ON (station_id, fuel_type_id)
@@ -219,7 +218,6 @@ async function runDirectApiScrapeJob(): Promise<ScrapeResult> {
 
     const pricesResponse = await client.getSitesPrices()
     const priceRows = pricesResponse.SitePrices
-      .filter(p => inRadiusIds.has(p.SiteId))
       .map(p => normalisePrice(p, recordedAt))
       .filter((p): p is NonNullable<typeof p> => p !== null)
 
