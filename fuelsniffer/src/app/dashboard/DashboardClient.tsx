@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
 import FilterBar from '@/components/FilterBar'
+import { FUEL_TYPES } from '@/components/FuelSelect'
 import StationList from '@/components/StationList'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 import EmptyState from '@/components/EmptyState'
@@ -13,10 +14,8 @@ import type { SortMode } from '@/lib/dashboard-utils'
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
 
-const FUEL_LABELS: Record<string, string> = {
-  '2': 'ULP 91', '5': 'P95', '8': 'P98',
-  '12': 'E10', '3': 'Diesel', '14': 'Prem Diesel',
-  '4': 'LPG', '19': 'E85',
+function fuelLabel(id: string): string {
+  return FUEL_TYPES.find(f => f.id === id)?.label ?? id
 }
 
 export default function DashboardClient() {
@@ -138,7 +137,7 @@ export default function DashboardClient() {
             </>
           )}
           <span className="text-slate-300">•</span>
-          <span className="text-slate-500">{FUEL_LABELS[activeFuel]}</span>
+          <span className="text-slate-500">{fuelLabel(activeFuel)}</span>
         </div>
       )}
 
@@ -149,7 +148,7 @@ export default function DashboardClient() {
           {loading && <LoadingSkeleton />}
           {!loading && error && <ErrorState onRetry={fetchPrices} />}
           {!loading && !error && sortedStations.length === 0 && (
-            <EmptyState fuelLabel={FUEL_LABELS[activeFuel] ?? activeFuel} radius={radius} />
+            <EmptyState fuelLabel={fuelLabel(activeFuel) ?? activeFuel} radius={radius} />
           )}
           {!loading && !error && sortedStations.length > 0 && (
             <StationList

@@ -1,6 +1,6 @@
 'use client'
 
-import FuelTypePills from '@/components/FuelTypePills'
+import FuelSelect from '@/components/FuelSelect'
 import DistanceSlider from '@/components/DistanceSlider'
 
 interface FilterBarProps {
@@ -80,7 +80,7 @@ export default function FilterBar({
 
       {/* Controls row */}
       <div className="flex items-center gap-3 px-4 pb-3 overflow-x-auto">
-        <FuelTypePills activeFuel={activeFuel} onSelect={onFuelChange} />
+        <FuelSelect activeFuel={activeFuel} onSelect={onFuelChange} />
         <div className="h-5 w-px bg-slate-200 shrink-0" />
         <div className="w-[140px] shrink-0">
           <DistanceSlider value={radius} onChange={onRadiusChange} />
