@@ -4,9 +4,297 @@
 
 **Goal:** Transform FuelSniffer from a private MVP into a public-ready fuel price intelligence app covering all of Queensland with accurate data and a polished station detail experience.
 
-**Architecture:** Four independent sub-projects executed in order. Each produces working, testable software. Sub-project A replaces the clunky Leaflet popup with a native React detail panel. Sub-project B removes the hardcoded 50km radius to serve all of QLD. Sub-project C enriches station data via Google Places. Sub-project D adds daily aggregate retention policy for long-term trend storage.
+**Architecture:** Five sub-projects executed in order. Each produces working, testable software. Sub-project A0 overhauls the dashboard UI (filter bar, station cards, layout). Sub-project A builds the new StationDetail panel using A0's design language. Sub-project B opens up all of QLD. Sub-project D adds daily aggregates. Sub-project C enriches station data via Google Places.
 
 **Tech Stack:** Next.js 16 (App Router), React 19, TypeScript, TimescaleDB 2.24, Drizzle ORM, Leaflet, Recharts, Zod, Tailwind CSS 4
+
+**Design reference:** Airbnb map+list layout — clean, spacious, content-focused. No garish colours. Neutral palette with subtle accent colour for interactive elements.
+
+---
+
+## Sub-Project A0: Dashboard UI Overhaul
+
+**Problem:** The current dashboard looks generic and bland. Filter bar is cramped, station cards are utilitarian, and the overall feel doesn't match the quality expected for a public-facing product. Fuel type pills take up too much horizontal space. No price trend indicator on cards.
+
+**Solution:** Redesign the filter bar, fuel type selector (replace pills with a dropdown), station cards (add 24h price change indicator), and overall layout to feel polished and spacious — inspired by Airbnb's map+list pattern. This establishes the design language that Sub-Project A's StationDetail panel will inherit.
+
+### Design Principles (carried through all sub-projects)
+
+- **Spacious:** Generous padding, breathing room between elements. Not cramped.
+- **Neutral base:** `slate-50` background, `slate-900` text, `slate-200` borders. Colour only for data (prices, change indicators).
+- **One accent colour:** `sky-500` for interactive elements only (selected states, links, active controls).
+- **Typography:** Price is the hero — large, bold, tabular-nums. Everything else is secondary.
+- **Cards:** Rounded-xl, subtle shadow, hover lift effect. No left-border highlight — use background tint for selected state.
+- **Fuel selector:** Compact dropdown instead of horizontal pills — saves space, works better on mobile, scales to more fuel types.
+
+### File Structure
+
+| Action | File | Responsibility |
+|--------|------|---------------|
+| Modify | `src/app/globals.css` | Update theme tokens, add card styles, dropdown styles |
+| Rewrite | `src/components/FuelTypePills.tsx` → `src/components/FuelSelect.tsx` | Replace pills with styled dropdown |
+| Rewrite | `src/components/FilterBar.tsx` | Cleaner layout — logo left, fuel dropdown + radius + sort + locate in a single row |
+| Rewrite | `src/components/StationCard.tsx` | Redesigned card with 24h price change indicator |
+| Modify | `src/components/DistanceSlider.tsx` | Compact inline style |
+| Modify | `src/app/dashboard/DashboardClient.tsx` | Update imports (FuelTypePills → FuelSelect), add 24h change data to API call |
+| Modify | `src/lib/db/queries/prices.ts` | Add `price_change_24h` field to query (compare current price with 24h ago) |
+| Modify | `src/components/MapView.tsx` | Update map pin style to match new design language |
+
+---
+
+### Task A0-1: Add 24h price change to the prices API
+
+**Files:**
+- Modify: `src/lib/db/queries/prices.ts`
+
+The station card needs to show whether the price went up or down in the last 24 hours. This requires a subquery joining the current price with the most recent price from 24+ hours ago for the same station+fuel.
+
+- [ ] **Step 1: Update PriceResult interface**
+
+Add `price_change_24h` to the interface:
+```typescript
+export interface PriceResult {
+  id: number
+  name: string
+  brand: string | null
+  address: string | null
+  suburb: string | null
+  latitude: number
+  longitude: number
+  price_cents: string
+  recorded_at: Date
+  source_ts: Date
+  distance_km: number
+  price_change_24h: number | null  // cents difference vs 24h ago (positive = price went up)
+}
+```
+
+- [ ] **Step 2: Update the SQL query to compute 24h change**
+
+Add a lateral subquery to find the previous price:
+```sql
+WITH latest AS (
+  SELECT DISTINCT ON (station_id)
+    station_id, price_cents, recorded_at, source_ts
+  FROM price_readings
+  WHERE fuel_type_id = ${fuelTypeId}
+  ORDER BY station_id, recorded_at DESC
+)
+SELECT
+  s.id, s.name, s.brand, s.address, s.suburb,
+  s.latitude, s.longitude,
+  l.price_cents, l.recorded_at, l.source_ts,
+  -- 24h price change: current price minus the most recent price from 24h+ ago
+  (l.price_cents::numeric - prev.price_cents::numeric) AS price_change_24h,
+  -- Haversine distance
+  (...) AS distance_km
+FROM latest l
+JOIN stations s ON s.id = l.station_id
+LEFT JOIN LATERAL (
+  SELECT price_cents
+  FROM price_readings pr
+  WHERE pr.station_id = l.station_id
+    AND pr.fuel_type_id = ${fuelTypeId}
+    AND pr.recorded_at < NOW() - INTERVAL '24 hours'
+  ORDER BY pr.recorded_at DESC
+  LIMIT 1
+) prev ON true
+WHERE s.is_active = true
+  AND (...) <= ${radiusKm}
+ORDER BY l.price_cents ASC
+```
+
+- [ ] **Step 3: Run tests**
+
+Run: `npx vitest run src/__tests__/prices-api.test.ts`
+Expected: Some tests may need updating if they check the exact call signature or response shape.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/lib/db/queries/prices.ts
+git commit -m "feat: add 24h price change to prices API response"
+```
+
+---
+
+### Task A0-2: Replace FuelTypePills with FuelSelect dropdown
+
+**Files:**
+- Create: `src/components/FuelSelect.tsx` (replaces `src/components/FuelTypePills.tsx`)
+- Modify: `src/components/FilterBar.tsx`
+- Modify: `src/app/dashboard/DashboardClient.tsx`
+
+- [ ] **Step 1: Create FuelSelect component**
+
+A styled `<select>` dropdown (or custom dropdown) replacing the horizontal pills. More compact, scales to any number of fuel types.
+
+```typescript
+'use client'
+
+const FUEL_TYPES = [
+  { id: '2', label: 'Unleaded 91' },
+  { id: '5', label: 'Premium 95' },
+  { id: '8', label: 'Premium 98' },
+  { id: '12', label: 'E10' },
+  { id: '3', label: 'Diesel' },
+  { id: '14', label: 'Premium Diesel' },
+  { id: '4', label: 'LPG' },
+]
+
+interface FuelSelectProps {
+  activeFuel: string
+  onSelect: (fuelTypeId: string) => void
+}
+```
+
+Style: white background, subtle border, rounded-lg, small dropdown arrow icon. Shows the selected fuel type name. Opens a native select on mobile, custom dropdown on desktop.
+
+For simplicity and mobile friendliness, use a styled native `<select>` element — it gets the OS-native picker on mobile which is a better UX than a custom dropdown.
+
+- [ ] **Step 2: Update FilterBar to use FuelSelect instead of FuelTypePills**
+
+Replace `<FuelTypePills>` with `<FuelSelect>`. Adjust layout spacing.
+
+- [ ] **Step 3: Update DashboardClient imports**
+
+Replace `FUEL_LABELS` record — the label lookup should now come from the `FuelSelect` component's `FUEL_TYPES` array (export it). Or keep a shared constant.
+
+- [ ] **Step 4: Delete old FuelTypePills**
+
+```bash
+rm src/components/FuelTypePills.tsx
+```
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add src/components/FuelSelect.tsx src/components/FilterBar.tsx src/app/dashboard/DashboardClient.tsx
+git rm src/components/FuelTypePills.tsx
+git commit -m "feat: replace fuel type pills with compact dropdown selector"
+```
+
+---
+
+### Task A0-3: Redesign FilterBar layout
+
+**Files:**
+- Modify: `src/components/FilterBar.tsx`
+- Modify: `src/components/DistanceSlider.tsx`
+
+- [ ] **Step 1: Redesign the filter bar**
+
+New layout — single row, evenly spaced:
+
+```
+[FuelSniffer logo]  [Fuel: Unleaded 91 ▾]  [20 km ←——●——→]  [Cheapest | Nearest]  [📍 Near me]  [🗺 Map (mobile)]
+```
+
+Design:
+- Remove the two-row layout (header + controls). Everything in one row.
+- Logo: clean wordmark, no emoji. `text-lg font-bold tracking-tight`.
+- All controls at the same visual weight — small, contained, consistent height (h-9).
+- Backdrop blur stays (`bg-white/80 backdrop-blur-lg`).
+- On mobile: fuel dropdown and radius collapse into a second row, or fuel dropdown is full-width above the other controls.
+
+- [ ] **Step 2: Make DistanceSlider more compact**
+
+Show just the slider with the km value integrated:
+```
+[●———— 20km]
+```
+
+Remove the separate label — put the value inline at the end of the track.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/components/FilterBar.tsx src/components/DistanceSlider.tsx
+git commit -m "feat: redesign filter bar — single-row layout, compact controls"
+```
+
+---
+
+### Task A0-4: Redesign StationCard with 24h price change
+
+**Files:**
+- Modify: `src/components/StationCard.tsx`
+
+- [ ] **Step 1: Redesign the card**
+
+New card design inspired by Airbnb listing cards:
+
+```
+┌─────────────────────────────────────────────────┐
+│  248.9         7-Eleven Griffin                  │
+│  ▼ 2.5¢       7 Eleven · 2.9 km · 3 hours ago  │
+└─────────────────────────────────────────────────┘
+```
+
+Changes from current design:
+- **Remove** the coloured price badge background (emerald/amber/red bg). Price is just large bold text, colour comes from the 24h change indicator.
+- **Add 24h change indicator:** Small text below price showing `▲ 2.5¢` (red, price went up) or `▼ 2.5¢` (green, price went down) or `—` (no change/no data).
+- **Remove** the right-arrow chevron. Selection is indicated by background tint.
+- **Compact metadata line:** `{brand} · {distance} · {time ago}` — single line, dot-separated.
+- **Selected state:** `bg-sky-50/80` background, no left border trick.
+- **Hover:** subtle `bg-slate-50` tint, slight scale transform (`scale-[1.005]`).
+- **Remove** stale opacity — all cards same opacity, staleness shown via the time-ago text.
+
+The `price_change_24h` field comes from the API (added in A0-1). If null, show nothing.
+
+- [ ] **Step 2: Update getPriceColor to use change-relative colouring**
+
+Since we're removing the absolute price thresholds (160/180 which were wrong for current prices), the price text colour should be based on relative position within the displayed set — same as the map pins. Or just use a neutral `text-slate-900` for the price and let the change indicator carry the colour signal.
+
+Decision: **Price text is always `text-slate-900`**. Change indicator is `text-emerald-600` (down) or `text-red-500` (up).
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add src/components/StationCard.tsx
+git commit -m "feat: redesign station cards with 24h price change indicator"
+```
+
+---
+
+### Task A0-5: Update summary bar and overall layout polish
+
+**Files:**
+- Modify: `src/app/dashboard/DashboardClient.tsx`
+- Modify: `src/app/globals.css`
+
+- [ ] **Step 1: Update the summary bar**
+
+Current: `85 stations · From 245.9¢/L · ULP 91`
+
+New: More prominent, with the cheapest price being the hero number:
+```
+245.9¢  cheapest Unleaded 91 · 85 stations within 20km
+```
+
+Or keep it minimal — the summary bar should inform, not distract.
+
+- [ ] **Step 2: Update globals.css theme tokens**
+
+Ensure theme tokens reflect the design:
+```css
+--color-background: #f8fafc;  /* slate-50 — keep */
+--color-foreground: #0f172a;  /* slate-900 — keep */
+--color-brand: #0ea5e9;       /* sky-500 — keep as primary accent */
+```
+
+Add any new tokens for card shadows, transition durations, etc.
+
+- [ ] **Step 3: Update map pin styles to match**
+
+In `MapView.tsx`, update the pin's font-family and shadow to match the card redesign. Keep the HSL gradient colouring but ensure the pin style (rounded, clean) feels cohesive with the cards.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add src/app/dashboard/DashboardClient.tsx src/app/globals.css src/components/MapView.tsx
+git commit -m "feat: polish summary bar, theme tokens, and map pin styles"
+```
 
 ---
 
@@ -841,15 +1129,17 @@ These items from PRD section 3.7 are intentionally deferred — they add polish 
 
 ## Execution Order
 
-1. **Sub-Project A** (Station Detail Panel) — highest user-facing impact, fixes the biggest UX pain point
-2. **Sub-Project B** (All of Queensland) — enables the app to serve all QLD users
-3. **Sub-Project D** (Daily Aggregates) — quick DB migration, needed before long-term history in detail panel works
-4. **Sub-Project C** (Google Places) — data accuracy enrichment, runs in background once API key is configured
+1. **Sub-Project A0** (UI Overhaul) — establishes design language for everything that follows
+2. **Sub-Project A** (Station Detail Panel) — inherits A0's design, fixes the biggest UX pain point
+3. **Sub-Project B** (All of Queensland) — enables the app to serve all QLD users
+4. **Sub-Project D** (Daily Aggregates) — quick DB migration, needed before long-term history in detail panel works
+5. **Sub-Project C** (Google Places) — data accuracy enrichment, runs in background once API key is configured
 
 ## Dependencies
 
-- A is independent — start immediately
-- B is independent — can run in parallel with A
+- A0 is independent — start immediately
+- A depends on A0 (uses its design language and component changes)
+- B is independent of A/A0 — but best done after so the UI is settled
 - D is independent — quick migration, but D2 requires StationDetail from A3 to exist (for adding time range buttons)
 - C is independent — only requires a Google Places API key. No dependency on D.
 
@@ -857,11 +1147,12 @@ These items from PRD section 3.7 are intentionally deferred — they add polish 
 
 | Sub-Project | Tasks | Estimated Steps | Migrations |
 |-------------|-------|-----------------|------------|
+| A0: UI Overhaul | 5 tasks | ~18 steps | none |
 | A: Detail Panel | 5 tasks | ~17 steps | none |
 | B: All of QLD | 6 tasks | ~24 steps | 0004 (indexes) |
 | D: Daily Aggregates | 2 tasks | ~8 steps | 0005 (daily cagg) |
 | C: Google Places | 4 tasks | ~14 steps | 0006 (places columns) |
-| **Total** | **17 tasks** | **~63 steps** | **3 migrations** |
+| **Total** | **22 tasks** | **~81 steps** | **3 migrations** |
 
 ## Cleanup Notes
 
