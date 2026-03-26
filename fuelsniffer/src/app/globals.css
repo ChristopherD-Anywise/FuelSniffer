@@ -8,6 +8,8 @@
   --color-cheap: #10b981;
   --color-mid: #f59e0b;
   --color-expensive: #ef4444;
+  --color-change-up: #ef4444;
+  --color-change-down: #10b981;
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }

@@ -124,20 +124,17 @@ export default function DashboardClient() {
 
       {/* Summary bar */}
       {!loading && !error && stationCount > 0 && (
-        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-100 text-sm">
-          <span className="text-slate-500">
-            <span className="font-semibold text-slate-700">{stationCount}</span> stations
-          </span>
+        <div className="flex items-center gap-3 px-4 py-2 bg-white border-b border-slate-100">
           {cheapest && (
             <>
-              <span className="text-slate-300">•</span>
-              <span className="text-slate-500">
-                From <span className="font-semibold text-emerald-600">{cheapest.toFixed(1)}¢/L</span>
-              </span>
+              <span className="text-lg font-bold text-slate-900 tabular-nums">{cheapest.toFixed(1)}¢</span>
+              <span className="text-sm text-slate-400">cheapest</span>
+              <span className="text-slate-300">·</span>
             </>
           )}
-          <span className="text-slate-300">•</span>
-          <span className="text-slate-500">{fuelLabel(activeFuel)}</span>
+          <span className="text-sm text-slate-500">{stationCount} stations within {radius}km</span>
+          <span className="text-slate-300">·</span>
+          <span className="text-sm text-slate-500">{fuelLabel(activeFuel)}</span>
         </div>
       )}
 

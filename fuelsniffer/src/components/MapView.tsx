@@ -60,21 +60,16 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
       const icon = L.divIcon({
         className: '',
         html: `<div style="
-          position:relative;
           min-width:48px;height:28px;padding:0 8px;border-radius:14px;
           background:${colour};
           display:flex;align-items:center;justify-content:center;
           color:#fff;font-weight:700;font-size:12px;font-family:Inter,system-ui,sans-serif;
-          box-shadow:0 2px 8px rgba(0,0,0,0.25);
+          box-shadow:0 2px 6px rgba(0,0,0,0.2);
           transition:transform 0.15s ease;
           white-space:nowrap;
-        ">${priceText}
-          <div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
-            width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;
-            border-top:5px solid ${colour};"></div>
-        </div>`,
-        iconSize: [48, 33],
-        iconAnchor: [24, 33],
+        ">${priceText}</div>`,
+        iconSize: [48, 28],
+        iconAnchor: [24, 14],
       })
 
       const marker = L.marker([station.latitude, station.longitude], { icon })
