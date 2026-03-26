@@ -3,6 +3,9 @@ import { useEffect, useRef } from 'react'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
+import 'leaflet.markercluster'
+import 'leaflet.markercluster/dist/MarkerCluster.css'
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import type { PriceResult } from '@/lib/db/queries/prices'
 import { getPinColour } from '@/lib/map-utils'
 
@@ -27,16 +30,44 @@ interface MapViewProps {
 function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapViewProps) {
   const map = useMap()
   const markersRef = useRef<Map<number, L.Marker>>(new Map())
+  const clusterRef = useRef<L.MarkerClusterGroup | null>(null)
   const userMarkerRef = useRef<L.Marker | null>(null)
   const onPinClickRef = useRef(onPinClick)
   onPinClickRef.current = onPinClick
 
   // Create markers when stations change
   useEffect(() => {
-    markersRef.current.forEach(m => m.remove())
+    // Clean up previous cluster group
+    if (clusterRef.current) {
+      map.removeLayer(clusterRef.current)
+      clusterRef.current = null
+    }
     markersRef.current.clear()
 
     if (stations.length === 0) return
+
+    const clusterGroup = L.markerClusterGroup({
+      maxClusterRadius: 50,
+      spiderfyOnMaxZoom: true,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      iconCreateFunction: (cluster) => {
+        const count = cluster.getChildCount()
+        return L.divIcon({
+          className: '',
+          html: `<div style="
+            width:36px;height:36px;border-radius:50%;
+            background:#0ea5e9;color:white;
+            display:flex;align-items:center;justify-content:center;
+            font-weight:700;font-size:13px;font-family:Inter,system-ui,sans-serif;
+            box-shadow:0 2px 6px rgba(0,0,0,0.2);
+            border:2px solid white;
+          ">${count}</div>`,
+          iconSize: [36, 36],
+          iconAnchor: [18, 18],
+        })
+      },
+    })
 
     const prices = stations.map(s => parseFloat(s.price_cents))
     const minPrice = Math.min(...prices)
@@ -81,12 +112,18 @@ function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapVie
         onPinClickRef.current(station.id)
       })
 
-      marker.addTo(map)
+      marker.addTo(clusterGroup)
       markersRef.current.set(station.id, marker)
     })
 
+    clusterGroup.addTo(map)
+    clusterRef.current = clusterGroup
+
     return () => {
-      markersRef.current.forEach(m => m.remove())
+      if (clusterRef.current) {
+        map.removeLayer(clusterRef.current)
+        clusterRef.current = null
+      }
       markersRef.current.clear()
     }
   }, [stations, map])
