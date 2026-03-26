@@ -80,10 +80,7 @@ export default function DashboardClient() {
   }
 
   function handlePinClick(id: number) {
-    setSelectedId(id)
-    const card = cardRefsMap.current.get(id)
-    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-    setIsMobileMapVisible(false)
+    setSelectedId(prev => prev === id ? null : id)
   }
 
   function handleLocateMe() {
@@ -152,7 +149,7 @@ export default function DashboardClient() {
       <div className="flex-1 overflow-hidden md:grid md:grid-cols-[minmax(360px,1fr)_1.5fr]">
         {/* Station list + chart */}
         <div className={`h-full flex flex-col bg-white ${isMobileMapVisible ? 'hidden md:flex' : 'flex'}`}>
-          <div className="flex-1 overflow-y-auto station-list">
+          <div className={`overflow-y-auto station-list ${selectedId ? 'flex-1 min-h-0' : 'flex-1'}`}>
             {loading && <LoadingSkeleton />}
             {!loading && error && <ErrorState onRetry={fetchPrices} />}
             {!loading && !error && sortedStations.length === 0 && (
@@ -168,12 +165,14 @@ export default function DashboardClient() {
             )}
           </div>
           {selectedId && (
-            <PriceChart
-              stationId={selectedId}
-              fuelId={activeFuel}
-              stationName={sortedStations.find(s => s.id === selectedId)?.name ?? ''}
-              onClose={() => setSelectedId(null)}
-            />
+            <div className="flex-shrink-0">
+              <PriceChart
+                stationId={selectedId}
+                fuelId={activeFuel}
+                stationName={sortedStations.find(s => s.id === selectedId)?.name ?? ''}
+                onClose={() => setSelectedId(null)}
+              />
+            </div>
           )}
         </div>
 

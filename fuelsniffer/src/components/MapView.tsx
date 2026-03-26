@@ -64,6 +64,10 @@ function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapVie
   const markersRef = useRef<Map<number, L.Marker>>(new Map())
   const userMarkerRef = useRef<L.Marker | null>(null)
 
+  // Create markers when stations change (not on selection change)
+  const onPinClickRef = useRef(onPinClick)
+  onPinClickRef.current = onPinClick
+
   useEffect(() => {
     markersRef.current.forEach(m => m.remove())
     markersRef.current.clear()
@@ -77,7 +81,6 @@ function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapVie
     stations.forEach(station => {
       const price = parseFloat(station.price_cents)
       const colour = getPinColour(price, minPrice, maxPrice)
-      const isSelected = station.id === selectedId
       const priceText = price.toFixed(1)
 
       const icon = L.divIcon({
@@ -89,9 +92,7 @@ function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapVie
           display:flex;align-items:center;justify-content:center;
           color:#fff;font-weight:700;font-size:12px;font-family:Inter,system-ui,sans-serif;
           box-shadow:0 2px 8px rgba(0,0,0,0.25);
-          transform:${isSelected ? 'scale(1.25)' : 'scale(1)'};
           transition:transform 0.15s ease;
-          ${isSelected ? 'outline:2px solid white;outline-offset:1px;z-index:1000;' : ''}
           white-space:nowrap;
         ">${priceText}
           <div style="position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
@@ -109,8 +110,7 @@ function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapVie
         className: 'station-popup',
       })
       marker.on('click', () => {
-        onPinClick(station.id)
-        marker.openPopup()
+        onPinClickRef.current(station.id)
       })
       marker.addTo(map)
       markersRef.current.set(station.id, marker)
@@ -120,7 +120,7 @@ function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapVie
       markersRef.current.forEach(m => m.remove())
       markersRef.current.clear()
     }
-  }, [stations, selectedId, onPinClick, map])
+  }, [stations, map])
 
   // User location marker
   useEffect(() => {
@@ -140,13 +140,15 @@ function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapVie
     }
   }, [userLocation, map])
 
-  // Open popup for selected station
+  // Open/close popup for selected station
   useEffect(() => {
     if (selectedId) {
       const marker = markersRef.current.get(selectedId)
       if (marker) marker.openPopup()
+    } else {
+      map.closePopup()
     }
-  }, [selectedId])
+  }, [selectedId, map])
 
   return null
 }
