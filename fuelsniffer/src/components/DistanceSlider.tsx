@@ -7,7 +7,7 @@ interface DistanceSliderProps {
 
 export default function DistanceSlider({ value, onChange }: DistanceSliderProps) {
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1.5">
       <input
         type="range"
         min={1}
@@ -15,10 +15,10 @@ export default function DistanceSlider({ value, onChange }: DistanceSliderProps)
         step={1}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="w-full"
+        className="w-[100px]"
       />
-      <span className="text-xs font-medium text-slate-500 tabular-nums whitespace-nowrap w-[40px] text-right">
-        {value} km
+      <span className="text-xs font-medium text-slate-500 tabular-nums whitespace-nowrap">
+        {value}km
       </span>
     </div>
   )
