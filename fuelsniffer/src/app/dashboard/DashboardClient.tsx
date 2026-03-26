@@ -147,32 +147,20 @@ export default function DashboardClient() {
 
       {/* Content area */}
       <div className="flex-1 overflow-hidden md:grid md:grid-cols-[minmax(360px,1fr)_1.5fr]">
-        {/* Station list + chart */}
-        <div className={`h-full flex flex-col bg-white ${isMobileMapVisible ? 'hidden md:flex' : 'flex'}`}>
-          <div className={`overflow-y-auto station-list ${selectedId ? 'flex-1 min-h-0' : 'flex-1'}`}>
-            {loading && <LoadingSkeleton />}
-            {!loading && error && <ErrorState onRetry={fetchPrices} />}
-            {!loading && !error && sortedStations.length === 0 && (
-              <EmptyState fuelLabel={FUEL_LABELS[activeFuel] ?? activeFuel} radius={radius} />
-            )}
-            {!loading && !error && sortedStations.length > 0 && (
-              <StationList
-                stations={sortedStations}
-                selectedId={selectedId}
-                onSelect={handleCardSelect}
-                cardRefsMap={cardRefsMap.current}
-              />
-            )}
-          </div>
-          {selectedId && (
-            <div className="flex-shrink-0">
-              <PriceChart
-                stationId={selectedId}
-                fuelId={activeFuel}
-                stationName={sortedStations.find(s => s.id === selectedId)?.name ?? ''}
-                onClose={() => setSelectedId(null)}
-              />
-            </div>
+        {/* Station list */}
+        <div className={`h-full overflow-y-auto station-list bg-white ${isMobileMapVisible ? 'hidden md:block' : 'block'}`}>
+          {loading && <LoadingSkeleton />}
+          {!loading && error && <ErrorState onRetry={fetchPrices} />}
+          {!loading && !error && sortedStations.length === 0 && (
+            <EmptyState fuelLabel={FUEL_LABELS[activeFuel] ?? activeFuel} radius={radius} />
+          )}
+          {!loading && !error && sortedStations.length > 0 && (
+            <StationList
+              stations={sortedStations}
+              selectedId={selectedId}
+              onSelect={handleCardSelect}
+              cardRefsMap={cardRefsMap.current}
+            />
           )}
         </div>
 
@@ -186,6 +174,21 @@ export default function DashboardClient() {
           />
         </div>
       </div>
+
+      {/* Price chart overlay — full width, slides up from bottom */}
+      {selectedId && (() => {
+        const station = sortedStations.find(s => s.id === selectedId)
+        return (
+          <PriceChart
+            stationId={selectedId}
+            fuelId={activeFuel}
+            stationName={station?.name ?? ''}
+            stationBrand={station?.brand}
+            currentPrice={station?.price_cents}
+            onClose={() => setSelectedId(null)}
+          />
+        )
+      })()}
     </div>
   )
 }
