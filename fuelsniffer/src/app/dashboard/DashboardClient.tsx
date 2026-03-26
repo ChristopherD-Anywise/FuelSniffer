@@ -162,7 +162,6 @@ export default function DashboardClient() {
           <MapView
             stations={sortedStations}
             selectedId={selectedId}
-            activeFuel={activeFuel}
             onPinClick={handlePinClick}
             userLocation={userLocation}
           />

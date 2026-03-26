@@ -1,12 +1,10 @@
 'use client'
 import { useEffect, useRef } from 'react'
-import { createRoot } from 'react-dom/client'
 import { MapContainer, TileLayer, useMap } from 'react-leaflet'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { PriceResult } from '@/lib/db/queries/prices'
 import { getPinColour } from '@/lib/map-utils'
-import StationPopup from '@/components/StationPopup'
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -22,29 +20,21 @@ const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright
 interface MapViewProps {
   stations: PriceResult[]
   selectedId: number | null
-  activeFuel: string
   onPinClick: (id: number) => void
   userLocation?: { lat: number; lng: number } | null
 }
 
-function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocation }: MapViewProps) {
+function PriceMarkers({ stations, selectedId, onPinClick, userLocation }: MapViewProps) {
   const map = useMap()
   const markersRef = useRef<Map<number, L.Marker>>(new Map())
-  const rootsRef = useRef<Map<number, ReturnType<typeof createRoot>>>(new Map())
   const userMarkerRef = useRef<L.Marker | null>(null)
   const onPinClickRef = useRef(onPinClick)
   onPinClickRef.current = onPinClick
-  const activeFuelRef = useRef(activeFuel)
-  activeFuelRef.current = activeFuel
 
   // Create markers when stations change
   useEffect(() => {
-    // Clean up old markers and defer React root unmounts to avoid race condition
-    const oldRoots = new Map(rootsRef.current)
-    rootsRef.current.clear()
     markersRef.current.forEach(m => m.remove())
     markersRef.current.clear()
-    setTimeout(() => oldRoots.forEach(root => root.unmount()), 0)
 
     if (stations.length === 0) return
 
@@ -74,28 +64,18 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
 
       const marker = L.marker([station.latitude, station.longitude], { icon })
 
-      // Create a DOM container for the React popup
-      const popupContainer = document.createElement('div')
-      const popup = L.popup({
-        maxWidth: 380,
-        minWidth: 320,
-        closeButton: true,
-        className: 'station-popup',
-      }).setContent(popupContainer)
-
-      marker.bindPopup(popup)
-
-      // Render React component into popup when it opens
-      marker.on('popupopen', () => {
-        let root = rootsRef.current.get(station.id)
-        if (!root) {
-          root = createRoot(popupContainer)
-          rootsRef.current.set(station.id, root)
-        }
-        root.render(
-          <StationPopup station={station} fuelId={activeFuelRef.current} />
-        )
-      })
+      const popupHtml = `
+        <div style="font-family:Inter,system-ui,sans-serif;width:240px;">
+          <div style="display:flex;align-items:baseline;gap:4px;margin-bottom:4px;">
+            <span style="font-size:24px;font-weight:800;color:${colour};line-height:1;">${priceText}</span>
+            <span style="font-size:12px;color:#94a3b8;">c/L</span>
+          </div>
+          <div style="font-size:14px;font-weight:600;color:#0f172a;">${station.name}</div>
+          ${station.brand ? `<div style="font-size:11px;color:#94a3b8;">${station.brand}</div>` : ''}
+          <div style="font-size:12px;color:#64748b;margin-top:2px;">${station.address || ''}</div>
+        </div>
+      `
+      marker.bindPopup(popupHtml, { maxWidth: 260, closeButton: true })
 
       marker.on('click', () => {
         onPinClickRef.current(station.id)
@@ -106,11 +86,8 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
     })
 
     return () => {
-      const roots = new Map(rootsRef.current)
-      rootsRef.current.clear()
       markersRef.current.forEach(m => m.remove())
       markersRef.current.clear()
-      setTimeout(() => roots.forEach(root => root.unmount()), 0)
     }
   }, [stations, map])
 
@@ -132,11 +109,14 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
     }
   }, [userLocation, map])
 
-  // Open popup for selected station
+  // Open popup for selected station and pan to it
   useEffect(() => {
     if (selectedId) {
       const marker = markersRef.current.get(selectedId)
-      if (marker) marker.openPopup()
+      if (marker) {
+        marker.openPopup()
+        map.panTo(marker.getLatLng(), { animate: true, duration: 0.3 })
+      }
     } else {
       map.closePopup()
     }
@@ -145,7 +125,7 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
   return null
 }
 
-export default function MapView({ stations, selectedId, activeFuel, onPinClick, userLocation }: MapViewProps) {
+export default function MapView({ stations, selectedId, onPinClick, userLocation }: MapViewProps) {
   const center = userLocation
     ? [userLocation.lat, userLocation.lng] as [number, number]
     : [NORTH_LAKES.lat, NORTH_LAKES.lng] as [number, number]
@@ -159,7 +139,7 @@ export default function MapView({ stations, selectedId, activeFuel, onPinClick, 
       zoomControl={false}
     >
       <TileLayer url={OSM_TILE_URL} attribution={OSM_ATTRIBUTION} />
-      <PriceMarkers stations={stations} selectedId={selectedId} activeFuel={activeFuel} onPinClick={onPinClick} userLocation={userLocation} />
+      <PriceMarkers stations={stations} selectedId={selectedId} onPinClick={onPinClick} userLocation={userLocation} />
     </MapContainer>
   )
 }
