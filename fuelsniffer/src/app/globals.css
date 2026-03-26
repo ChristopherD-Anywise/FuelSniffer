@@ -54,6 +54,22 @@ input[type="range"]::-webkit-slider-thumb {
   box-shadow: 0 1px 3px rgba(0,0,0,0.2);
 }
 
+/* Station detail panel animations */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes slide-in-right {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+.detail-panel-mobile {
+  animation: slide-up 0.2s ease-out;
+}
+.detail-panel-desktop {
+  animation: slide-in-right 0.2s ease-out;
+}
+
 /* Leaflet overrides */
 .leaflet-popup-content-wrapper {
   border-radius: 12px !important;
