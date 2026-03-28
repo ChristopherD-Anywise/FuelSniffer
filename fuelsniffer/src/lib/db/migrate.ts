@@ -5,6 +5,16 @@
  * IMPORTANT: Drizzle Kit is NOT used for TimescaleDB-specific DDL.
  * See src/lib/db/README.md for the reason.
  *
+ * WARNING: Do NOT run this after restoring from a backup.
+ * After a backup restore, the database is fully populated — all tables,
+ * hypertables, continuous aggregates, and data exist. Running migrations
+ * will fail because hypertables and continuous aggregates cannot be
+ * recreated with IF NOT EXISTS.
+ *
+ * Migrations are ONLY needed for:
+ * - Fresh databases with no backup to restore from
+ * - Adding new migrations after schema changes
+ *
  * Usage: npx tsx src/lib/db/migrate.ts
  */
 import postgres from 'postgres'

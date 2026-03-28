@@ -40,6 +40,9 @@ yarn-error.log*
 # data volumes
 data/
 
+# backup volumes
+backups/
+
 # vercel
 .vercel
 
