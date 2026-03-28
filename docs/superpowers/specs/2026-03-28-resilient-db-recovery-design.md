@@ -153,8 +153,10 @@ INITDB_DIR="/docker-entrypoint-initdb.d"
 if [ -f "$PGDATA/PG_VERSION" ]; then
   echo "[recovery] Existing data directory found — testing PostgreSQL startup..."
 
-  # Try starting PostgreSQL as the postgres user to test if it works
-  if gosu postgres pg_ctl -D "$PGDATA" -l /tmp/pg_startup_test.log start -w -t 10 2>/dev/null; then
+  # Try starting PostgreSQL as the postgres user to test if it works.
+  # MUST pass shared_preload_libraries=timescaledb — without it, PostgreSQL will
+  # fail when it encounters TimescaleDB catalogs, producing a false "corruption" detection.
+  if gosu postgres pg_ctl -D "$PGDATA" -o "-c shared_preload_libraries=timescaledb" -l /tmp/pg_startup_test.log start -w -t 10 2>/dev/null; then
     echo "[recovery] PostgreSQL started normally — no recovery needed"
     gosu postgres pg_ctl -D "$PGDATA" stop -m fast 2>/dev/null || true
   else
@@ -256,20 +258,34 @@ timescaledb:
 | `backups/` | Host-mounted backup directory (gitignored) |
 | `.gitignore` | Add `backups/` and `data/` entries |
 
+### IMPORTANT: Do NOT Run Migrations After a Backup Restore
+
+After a backup restore, the database is fully populated — all tables, hypertables, continuous aggregates, indexes, and data exist. Running the migration runner (`npx tsx src/lib/db/migrate.ts`) after a restore will **fail** because:
+
+- `0001_hypertable.sql`: `create_hypertable` fails — table is already a hypertable
+- `0002_cagg.sql`: `CREATE MATERIALIZED VIEW hourly_prices` fails — already exists (no `IF NOT EXISTS` for continuous aggregates)
+- `0005_daily_aggregate.sql`: Same issue for `daily_prices`
+
+**Migrations are only needed for fresh databases with no backup to restore from.** Document this in the migration runner's file header and in any operational runbook.
+
 ### Testing the Recovery
 
 To verify the recovery works:
 
 1. Start the stack: `docker compose up -d`
 2. Wait for first backup: `ls backups/` (up to 1 hour, or trigger manually)
-3. Verify backup content: `gunzip -c backups/latest.sql.gz | head -20` (should show SQL)
-4. Simulate corruption: `docker compose stop timescaledb && rm data/timescaledb/pg_wal/*`
-5. Restart: `docker compose up -d timescaledb`
-6. Check logs: `docker compose logs timescaledb` — should show `[recovery]` messages
-7. Verify data restored: `docker exec fuelsniffer-timescaledb-1 psql -U fuelsniffer -d fuelsniffer -c "SELECT COUNT(*) FROM stations;"`
-8. **Verify continuous aggregates:** `docker exec fuelsniffer-timescaledb-1 psql -U fuelsniffer -d fuelsniffer -c "SELECT COUNT(*) FROM hourly_prices;"` — this must return data, not error
+3. **Verify backup contains TimescaleDB extension:** `gunzip -c backups/latest.sql.gz | grep -i "create extension"` — must show `CREATE EXTENSION IF NOT EXISTS timescaledb`
+4. **Verify backup content is non-empty:** `gunzip -c backups/latest.sql.gz | wc -l` — should be thousands of lines
+5. Simulate corruption: `docker compose stop timescaledb && rm data/timescaledb/pg_wal/*`
+6. Restart: `docker compose up -d timescaledb`
+7. Check logs: `docker compose logs timescaledb` — should show `[recovery]` messages
+8. Verify data restored: `docker exec fuelsniffer-timescaledb-1 psql -U fuelsniffer -d fuelsniffer -c "SELECT COUNT(*) FROM stations;"`
+9. **Verify TimescaleDB extension:** `docker exec fuelsniffer-timescaledb-1 psql -U fuelsniffer -d fuelsniffer -c "\dx"` — must show `timescaledb`
+10. **Verify hypertables:** `docker exec fuelsniffer-timescaledb-1 psql -U fuelsniffer -d fuelsniffer -c "SELECT * FROM timescaledb_information.hypertables;"` — must show `price_readings`
+11. **Verify continuous aggregates:** `docker exec fuelsniffer-timescaledb-1 psql -U fuelsniffer -d fuelsniffer -c "SELECT view_name FROM timescaledb_information.continuous_aggregates;"` — must show `hourly_prices` and `daily_prices`
+12. **Verify continuous aggregate data:** `docker exec fuelsniffer-timescaledb-1 psql -U fuelsniffer -d fuelsniffer -c "SELECT COUNT(*) FROM hourly_prices;"` — must return data, not error
 
-**Note on continuous aggregates:** `pg_dump` from the TimescaleDB image includes TimescaleDB-aware hooks that handle hypertable and continuous aggregate serialization. However, this should be explicitly tested during implementation to confirm that `hourly_prices` and `daily_prices` continuous aggregates are correctly restored. If they aren't, consider using `timescaledb-backup` utilities (`ts-dump`/`ts-restore`) as an alternative.
+**Critical fallback:** If testing reveals that `pg_dump` does not correctly serialize/restore TimescaleDB continuous aggregates, switch from `pg_dump` to TimescaleDB's dedicated backup utilities (`ts-dump` / `ts-restore`). This is the primary risk in the design and must be verified before relying on the backup system in production.
 
 ### Constraints
 
