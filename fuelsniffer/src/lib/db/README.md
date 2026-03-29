@@ -1,28 +1,24 @@
 # Database Migrations
 
-## Why two migration systems?
-
-Drizzle Kit generates standard PostgreSQL DDL from `schema.ts`. However, **Drizzle Kit cannot generate TimescaleDB-specific DDL** such as:
-- `SELECT create_hypertable(...)` — converts a table to a time-series hypertable
-- `CREATE MATERIALIZED VIEW WITH (timescaledb.continuous)` — continuous aggregates
-- `SELECT add_continuous_aggregate_policy(...)` — auto-refresh policies
-- `SELECT add_retention_policy(...)` — automatic data expiry
-
-These are maintained manually in the `migrations/` directory.
-
 ## Migration files
+
+Migrations are plain SQL files applied in order by `src/lib/db/migrate.ts`.
 
 | File | Purpose | Run order |
 |------|---------|-----------|
-| `0000_schema.sql` | CREATE TABLE for stations, price_readings, scrape_health | First |
-| `0001_hypertable.sql` | Convert price_readings to hypertable; add composite index | Second |
-| `0002_cagg.sql` | Hourly continuous aggregate + refresh policy + 7-day retention policy | Third |
+| `0000_schema.sql` | CREATE TABLE for stations, price_readings, scrape_health | 1st |
+| `0002_cagg.sql` | Composite index + hourly_prices + daily_prices materialized views | 2nd |
+| `0003_invite_codes_sessions.sql` | invite_codes and sessions tables | 3rd |
+| `0004_performance_indexes.sql` | Performance indexes (station_fuel_recorded, lat_lng, postcode) | 4th |
+| `0005_daily_aggregate.sql` | No-op placeholder (kept for file-list continuity) | 5th |
+
+Note: `0001_hypertable.sql` was removed — it contained TimescaleDB-specific DDL that is no longer applicable.
 
 ## Applying migrations
 
 ```bash
-# Ensure TimescaleDB is running first
-docker compose up -d timescaledb
+# Ensure postgres is running first
+docker compose up -d postgres
 
 # Apply all migrations in order
 DATABASE_URL=postgresql://fuelsniffer:PASSWORD@localhost:5432/fuelsniffer npx tsx src/lib/db/migrate.ts
@@ -31,17 +27,22 @@ DATABASE_URL=postgresql://fuelsniffer:PASSWORD@localhost:5432/fuelsniffer npx ts
 ## Verifying migrations
 
 ```bash
-# Check price_readings is a hypertable
-docker exec fuelsniffer-timescaledb-1 psql -U fuelsniffer -c "SELECT * FROM timescaledb_information.hypertables WHERE hypertable_name = 'price_readings';"
+# Check all tables exist
+docker compose exec postgres psql -U fuelsniffer -c "\dt"
 
-# Check hourly_prices continuous aggregate exists
-docker exec fuelsniffer-timescaledb-1 psql -U fuelsniffer -c "SELECT * FROM timescaledb_information.continuous_aggregates;"
+# Check materialized views exist
+docker compose exec postgres psql -U fuelsniffer -c "\dv"
 
-# Check retention policy is set to 7 days
-docker exec fuelsniffer-timescaledb-1 psql -U fuelsniffer -c "SELECT * FROM timescaledb_information.jobs WHERE proc_name = 'policy_retention';"
+# Check indexes exist (should include hourly_prices_pk, daily_prices_pk)
+docker compose exec postgres psql -U fuelsniffer -c "\di"
 ```
 
-## CRITICAL: Do not run migrations on a populated database without backup
+## Data retention
 
-`0001_hypertable.sql` runs `create_hypertable()` which requires the table to be empty.
-If data already exists, this will fail. Always run migrations before inserting any data.
+- `price_readings`: raw 15-minute rows, kept for 7 days. Deleted nightly at 2am by the scheduler.
+- `hourly_prices`: materialized view, refreshed hourly. Reflects the last 7 days (derived from price_readings).
+- `daily_prices`: materialized view, refreshed nightly BEFORE the delete. Keeps historical daily min/max forever.
+
+## IMPORTANT: Do not run migrations on a populated database without backup
+
+Migrations create tables and materialized views. On a database that already has these objects, the `IF NOT EXISTS` guards will skip them safely. However, always take a backup before running migrations in production.
