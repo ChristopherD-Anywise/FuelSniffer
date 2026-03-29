@@ -1,6 +1,6 @@
 #!/bin/bash
 # Hourly pg_dump with rotation. Keeps last 48 backups (2 days).
-# Runs as the entrypoint of the db-backup sidecar container.
+# Runs as the entrypoint of the db-backup sidecar (postgres:17-alpine image).
 #
 # Expects these env vars (set by docker-compose):
 #   PGHOST, PGUSER, PGPASSWORD, PGDATABASE
