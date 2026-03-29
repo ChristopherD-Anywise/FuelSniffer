@@ -31,9 +31,9 @@ export function startScheduler(): void {
     noOverlap: true,
   })
 
-  // Job 2: Refresh hourly_prices materialized view every hour at :05
+  // Job 2: Refresh hourly_prices materialized view every hour at :30
   // CONCURRENT refresh allows read queries to continue during refresh.
-  cron.schedule('5 * * * *', () => {
+  cron.schedule('30 * * * *', () => {
     db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY hourly_prices`)
       .catch((err) => console.error('[scheduler] hourly_prices refresh failed:', err))
   }, {
