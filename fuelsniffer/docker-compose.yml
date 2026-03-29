@@ -23,7 +23,7 @@ services:
     image: postgres:17-alpine
     depends_on:
       postgres:
-        condition: service_healthy
+        condition: service_started
     environment:
       PGHOST: postgres
       PGUSER: fuelsniffer
