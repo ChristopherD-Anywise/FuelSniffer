@@ -47,7 +47,7 @@ async function runMigrations(): Promise<void> {
       // and postgres-js wraps multi-statement strings in a transaction.
       const statements = content
         .split(';')
-        .map(s => s.replace(/^(\s*--[^\n]*\n)*/g, '').trim())
+        .map(s => s.replace(/--[^\n]*/g, '').trim())
         .filter(s => s.length > 0)
       for (const stmt of statements) {
         await sql.unsafe(stmt)
