@@ -7,7 +7,10 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm ci
+# Force fresh install inside Linux container — ensures correct platform-native
+# binaries (e.g. @tailwindcss/oxide-linux-arm64-musl) are downloaded, not
+# copied from a Mac host where the darwin variant would have been installed.
+RUN npm ci --prefer-offline=false
 
 COPY . .
 
