@@ -62,6 +62,7 @@ services:
     build: .
     environment:
       DATABASE_URL: postgresql://fuelsniffer:${DB_PASSWORD}@postgres:5432/fuelsniffer
+      SESSION_SECRET: ${SESSION_SECRET}
       QLD_API_TOKEN: ${QLD_API_TOKEN}
       HEALTHCHECKS_PING_URL: ${HEALTHCHECKS_PING_URL}
       TZ: Australia/Brisbane

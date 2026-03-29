@@ -212,7 +212,7 @@ async function runDirectApiScrapeJob(): Promise<ScrapeResult> {
       ORDER BY station_id, fuel_type_id, recorded_at DESC
     `)
     const seenKey = new Set(
-      (latestSourceTs as Array<{ station_id: number; fuel_type_id: number; source_ts: Date }>)
+      (latestSourceTs as unknown as Array<{ station_id: number; fuel_type_id: number; source_ts: Date }>)
         .map(r => `${r.station_id}-${r.fuel_type_id}-${new Date(r.source_ts).getTime()}`)
     )
 

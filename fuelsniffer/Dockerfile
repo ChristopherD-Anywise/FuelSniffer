@@ -7,14 +7,18 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-# Force fresh install inside Linux container — ensures correct platform-native
-# binaries (e.g. @tailwindcss/oxide-linux-arm64-musl) are downloaded, not
-# copied from a Mac host where the darwin variant would have been installed.
-RUN npm ci --prefer-offline=false
+# The package-lock.json was generated on macOS so it only records
+# @tailwindcss/oxide-darwin-arm64. Force-install the Linux musl variant
+# explicitly so the Tailwind build step can find its native binding.
+RUN npm ci && npm install @tailwindcss/oxide-linux-arm64-musl --no-save
 
 COPY . .
 
 ENV NEXT_TELEMETRY_DISABLED=1
+# Provide placeholder env vars so Next.js static analysis doesn't throw
+# when importing server modules at build time. Not used at runtime.
+ENV DATABASE_URL=postgresql://placeholder:placeholder@localhost:5432/placeholder
+ENV SESSION_SECRET=placeholder_build_time_secret_not_used_at_runtime
 
 RUN npm run build
 
@@ -35,11 +39,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 
 # Copy migration runner and migration files for the startup entrypoint
-COPY --from=builder /app/src/lib/db/migrate.ts ./src/lib/db/migrate.ts
-COPY --from=builder /app/src/lib/db/migrations ./src/lib/db/migrations
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/tsconfig.json ./tsconfig.json
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder --chown=nextjs:nodejs /app/src/lib/db/migrate.ts ./src/lib/db/migrate.ts
+COPY --from=builder --chown=nextjs:nodejs /app/src/lib/db/migrations ./src/lib/db/migrations
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
+COPY --from=builder --chown=nextjs:nodejs /app/tsconfig.json ./tsconfig.json
+COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
 
 USER nextjs
 

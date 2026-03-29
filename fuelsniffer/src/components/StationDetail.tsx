@@ -161,7 +161,7 @@ export default function StationDetail({
 
             {/* 24h change */}
             <div className="mb-3">
-              <PriceChangeIndicator change={station.price_change_24h} />
+              <PriceChangeIndicator change={station.price_change} />
               <span className="text-xs text-slate-400 ml-2">{ago}</span>
             </div>
 
