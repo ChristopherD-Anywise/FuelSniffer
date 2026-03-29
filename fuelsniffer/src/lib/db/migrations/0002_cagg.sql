@@ -1,30 +1,43 @@
--- Migration 0002: Hourly continuous aggregate + refresh policy + retention policy
--- Run AFTER 0001_hypertable.sql — price_readings must be a hypertable first.
--- D-04 (locked): raw rows retained for 7 days.
--- D-05 (locked): hourly rollup via TimescaleDB cagg.
+-- Migration 0002: Composite index + hourly materialized view + daily materialized view
+-- Replaces TimescaleDB hypertable, continuous aggregates, and retention policies.
+-- D-04 (locked): raw rows retained for 7 days — enforced by nightly cleanup in scheduler.
+-- D-05 (locked): hourly rollup via standard materialized view, refreshed hourly.
 
-CREATE MATERIALIZED VIEW hourly_prices
-WITH (timescaledb.continuous) AS
+-- Composite index: station + fuel type + time (DESC) — optimises dashboard queries.
+-- Previously created in 0001_hypertable.sql; moved here after removing hypertable.
+CREATE INDEX IF NOT EXISTS price_readings_station_fuel_time
+  ON price_readings (station_id, fuel_type_id, recorded_at DESC);
+
+-- Hourly rollup: pre-aggregated averages per station+fuel+hour.
+-- Refreshed hourly by the scheduler (src/lib/scraper/scheduler.ts).
+-- CONCURRENT refresh requires a unique index and allows queries during refresh.
+CREATE MATERIALIZED VIEW IF NOT EXISTS hourly_prices AS
 SELECT
   station_id,
   fuel_type_id,
-  time_bucket('1 hour', recorded_at) AS bucket,
-  AVG(price_cents)::NUMERIC(6,1)     AS avg_price_cents,
-  MIN(price_cents)                   AS min_price_cents,
-  MAX(price_cents)                   AS max_price_cents
+  DATE_TRUNC('hour', recorded_at) AS bucket,
+  AVG(price_cents)::NUMERIC(6,1)  AS avg_price_cents,
+  MIN(price_cents)                AS min_price_cents,
+  MAX(price_cents)                AS max_price_cents
 FROM price_readings
-GROUP BY station_id, fuel_type_id, bucket;
+GROUP BY station_id, fuel_type_id, DATE_TRUNC('hour', recorded_at);
 
--- Refresh hourly_prices every hour.
--- start_offset=2h: ensures the cagg materialises before the retention policy
--- deletes raw rows (retention policy = 7 days, so this is safe with a 2h start_offset).
-SELECT add_continuous_aggregate_policy('hourly_prices',
-  start_offset      => INTERVAL '2 hours',
-  end_offset        => INTERVAL '0 hours',
-  schedule_interval => INTERVAL '1 hour'
-);
+CREATE UNIQUE INDEX IF NOT EXISTS hourly_prices_pk
+  ON hourly_prices (station_id, fuel_type_id, bucket);
 
--- D-04 (LOCKED DECISION): Retain raw 15-minute rows for exactly 7 days.
--- Retrofitting this policy after data accumulates requires dropping and recreating
--- the hypertable — this MUST be set before any data is written.
-SELECT add_retention_policy('price_readings', INTERVAL '7 days');
+-- Daily rollup: pre-aggregated min/max per station+fuel+day, kept forever.
+-- Refreshed nightly by the scheduler BEFORE raw rows are deleted (src/lib/scraper/scheduler.ts).
+-- Built from price_readings directly so it captures each day before raw data expires.
+CREATE MATERIALIZED VIEW IF NOT EXISTS daily_prices AS
+SELECT
+  station_id,
+  fuel_type_id,
+  DATE_TRUNC('day', recorded_at)  AS day_bucket,
+  AVG(price_cents)::NUMERIC(6,1)  AS avg_price_cents,
+  MIN(price_cents)                AS min_price_cents,
+  MAX(price_cents)                AS max_price_cents
+FROM price_readings
+GROUP BY station_id, fuel_type_id, DATE_TRUNC('day', recorded_at);
+
+CREATE UNIQUE INDEX IF NOT EXISTS daily_prices_pk
+  ON daily_prices (station_id, fuel_type_id, day_bucket);
