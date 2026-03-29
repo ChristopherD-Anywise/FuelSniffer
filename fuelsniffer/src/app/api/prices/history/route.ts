@@ -33,8 +33,8 @@ export async function GET(req: Request) {
 
   const { station, fuel, hours } = parsed.data
 
-  // For ranges > 30 days, use daily aggregates for performance
-  if (hours > 720) {
+  // For ranges > 7 days, use daily aggregates for performance
+  if (hours > 168) {
     const rows = await db.execute(sql`
       SELECT day_bucket AS bucket, avg_price_cents AS avg_price,
              min_price_cents AS min_price, max_price_cents AS max_price
@@ -65,7 +65,7 @@ export async function GET(req: Request) {
     // Cagg might not have materialized yet — query raw readings
     const rawRows = await db.execute(sql`
       SELECT
-        time_bucket('1 hour', recorded_at) AS bucket,
+        DATE_TRUNC('hour', recorded_at) AS bucket,
         AVG(price_cents)::NUMERIC(6,1) AS avg_price,
         MIN(price_cents) AS min_price,
         MAX(price_cents) AS max_price
@@ -73,7 +73,7 @@ export async function GET(req: Request) {
       WHERE station_id = ${station}
         AND fuel_type_id = ${fuel}
         AND recorded_at >= NOW() - ${hours + ' hours'}::interval
-      GROUP BY bucket
+      GROUP BY DATE_TRUNC('hour', recorded_at)
       ORDER BY bucket ASC
     `)
     return NextResponse.json(rawRows)
