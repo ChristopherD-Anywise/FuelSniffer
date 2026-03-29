@@ -46,8 +46,9 @@ async function runMigrations(): Promise<void> {
       // TimescaleDB continuous aggregates cannot run inside a transaction,
       // and postgres-js wraps multi-statement strings in a transaction.
       const statements = content
+        .replace(/--[^\n]*/g, '')
         .split(';')
-        .map(s => s.replace(/--[^\n]*/g, '').trim())
+        .map(s => s.trim())
         .filter(s => s.length > 0)
       for (const stmt of statements) {
         await sql.unsafe(stmt)
