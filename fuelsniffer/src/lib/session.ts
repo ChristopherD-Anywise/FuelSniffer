@@ -32,7 +32,7 @@ export async function createSession(userId: string): Promise<void> {
   const cookieStore = await cookies()  // ASYNC in Next.js 16
   cookieStore.set('session', token, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === 'production',
     expires: expiresAt,
     sameSite: 'lax',
     path: '/',
