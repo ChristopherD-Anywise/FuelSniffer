@@ -7,10 +7,8 @@ interface LocationSearchProps {
 }
 
 interface SearchResult {
-  type: 'area' | 'station'
-  label?: string
-  name?: string
-  id?: number
+  type: 'area'
+  label: string
   lat: number
   lng: number
   stationCount?: number
@@ -48,7 +46,7 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
   }
 
   const handleSelect = (result: SearchResult) => {
-    const label = result.type === 'area' ? result.label! : result.name!
+    const label = result.label
     onSelect({ lat: result.lat, lng: result.lng, label })
     setQuery('')
     setResults([])
@@ -80,9 +78,6 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
     }
   }, [])
 
-  const areas = results.filter((r) => r.type === 'area')
-  const stations = results.filter((r) => r.type === 'station')
-
   return (
     <div ref={containerRef} className="relative shrink-0">
       {/* Search icon */}
@@ -110,46 +105,24 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
         className="h-9 rounded-lg border border-slate-200 bg-white px-3 pl-9 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/30 focus:border-sky-400 transition-colors w-56"
       />
 
-      {isOpen && (areas.length > 0 || stations.length > 0) && (
+      {isOpen && results.length > 0 && (
         <div className="absolute bg-white border border-slate-200 rounded-lg shadow-lg mt-1 py-1 max-h-64 overflow-y-auto z-50 w-full min-w-56">
-          {areas.length > 0 && (
-            <>
-              {areas.map((area, i) => (
-                <button
-                  key={`area-${i}`}
-                  onClick={() => handleSelect(area)}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-50 cursor-pointer transition-colors"
-                >
-                  <span className="text-sm font-medium text-slate-900">
-                    {area.label}
-                  </span>
-                  {area.stationCount != null && (
-                    <span className="text-xs text-slate-400 ml-1.5">
-                      ({area.stationCount} station{area.stationCount !== 1 ? 's' : ''})
-                    </span>
-                  )}
-                </button>
-              ))}
-            </>
-          )}
-
-          {areas.length > 0 && stations.length > 0 && (
-            <div className="border-t border-slate-100 my-1" />
-          )}
-
-          {stations.length > 0 && (
-            <>
-              {stations.map((station, i) => (
-                <button
-                  key={`station-${station.id ?? i}`}
-                  onClick={() => handleSelect(station)}
-                  className="w-full text-left px-3 py-2 hover:bg-slate-50 cursor-pointer transition-colors"
-                >
-                  <span className="text-sm text-slate-700">{station.name}</span>
-                </button>
-              ))}
-            </>
-          )}
+          {results.map((result, i) => (
+            <button
+              key={`area-${i}`}
+              onClick={() => handleSelect(result)}
+              className="w-full text-left px-3 py-2 hover:bg-slate-50 cursor-pointer transition-colors"
+            >
+              <span className="text-sm font-medium text-slate-900">
+                {result.label}
+              </span>
+              {result.stationCount != null && (
+                <span className="text-xs text-slate-400 ml-1.5">
+                  ({result.stationCount} station{result.stationCount !== 1 ? 's' : ''})
+                </span>
+              )}
+            </button>
+          ))}
         </div>
       )}
     </div>
