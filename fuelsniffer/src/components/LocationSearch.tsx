@@ -11,7 +11,7 @@ interface SearchResult {
   label: string
   lat: number
   lng: number
-  stationCount?: number
+  stationCount: number
 }
 
 export default function LocationSearch({ onSelect }: LocationSearchProps) {

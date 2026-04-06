@@ -26,6 +26,7 @@ export default function DistanceSlider({ value, onChange }: DistanceSliderProps)
         onChange={(e) => setDragValue(Number(e.target.value))}
         onMouseUp={(e) => onChange(Number((e.target as HTMLInputElement).value))}
         onTouchEnd={(e) => onChange(Number((e.target as HTMLInputElement).value))}
+        onKeyUp={(e) => onChange(Number((e.target as HTMLInputElement).value))}
         className="w-[100px]"
       />
       <span className="text-xs font-medium text-slate-500 tabular-nums whitespace-nowrap">
