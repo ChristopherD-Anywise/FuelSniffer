@@ -179,14 +179,34 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
                 cursor: 'pointer',
                 border: 'none',
                 transition: 'background-color 150ms',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
               }}
             >
-              <span style={{ fontSize: '14px', fontWeight: 500, color: '#ffffff' }}>
-                {area.label}
+              <span style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>
+                  {area.suburb ?? area.label}
+                </span>
+                {area.stationCount != null && (
+                  <span style={{ fontSize: '11px', color: '#555555' }}>
+                    {area.stationCount} station{area.stationCount !== 1 ? 's' : ''}
+                  </span>
+                )}
               </span>
-              {area.stationCount != null && (
-                <span style={{ fontSize: '12px', color: '#555555', marginLeft: '6px' }}>
-                  ({area.stationCount} station{area.stationCount !== 1 ? 's' : ''})
+              {area.postcode && (
+                <span style={{
+                  fontSize: '11px',
+                  fontWeight: 700,
+                  background: '#1e1e1e',
+                  border: '1px solid #333',
+                  borderRadius: '4px',
+                  padding: '2px 6px',
+                  color: '#888',
+                  flexShrink: 0,
+                  marginLeft: '8px',
+                }}>
+                  {area.postcode}
                 </span>
               )}
             </button>
