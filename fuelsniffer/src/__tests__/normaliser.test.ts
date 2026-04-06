@@ -3,7 +3,7 @@
  * Run: npx vitest run src/__tests__/normaliser.test.ts
  */
 import { describe, it, expect } from 'vitest'
-import { rawToPrice, isWithinRadius, toBrisbaneHour, normalisePrice, normaliseStation } from '@/lib/scraper/normaliser'
+import { rawToPrice, isWithinRadius, toBrisbaneHour, normalisePrice, normaliseStation, extractSuburb } from '@/lib/scraper/normaliser'
 
 describe('rawToPrice', () => {
   it('converts QLD API integer 1459 to 145.9 cents per litre', () => {
@@ -120,5 +120,27 @@ describe('normalisePrice', () => {
       Price: 10,  // rawToPrice(10) = 1.0 c/L → throws → normalisePrice returns null
     }
     expect(normalisePrice(sitePrice, new Date())).toBeNull()
+  })
+})
+
+describe('extractSuburb — parse suburb from QLD API address string', () => {
+  it('extracts suburb from "123 Main St, NORTH LAKES, QLD 4509"', () => {
+    expect(extractSuburb('123 Main St, NORTH LAKES, QLD 4509')).toBe('NORTH LAKES')
+  })
+
+  it('extracts suburb from "45 Anzac Ave, REDCLIFFE QLD 4020"', () => {
+    expect(extractSuburb('45 Anzac Ave, REDCLIFFE QLD 4020')).toBe('REDCLIFFE')
+  })
+
+  it('extracts suburb from "Shop 1, NARANGBA, QLD 4504"', () => {
+    expect(extractSuburb('Shop 1, NARANGBA, QLD 4504')).toBe('NARANGBA')
+  })
+
+  it('returns null for null input', () => {
+    expect(extractSuburb(null)).toBeNull()
+  })
+
+  it('returns null for an address with no recognisable suburb pattern', () => {
+    expect(extractSuburb('No suburb here')).toBeNull()
   })
 })
