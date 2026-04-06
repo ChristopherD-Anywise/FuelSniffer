@@ -15,7 +15,7 @@ const PricesQuerySchema = z.object({
       z.string()
        .regex(/^\d+$/)
        .transform(Number)
-       .pipe(z.number().min(1).max(500))
+       .pipe(z.number().min(1).max(50))
     ),
   lat: z.string().optional().transform(v => v ? parseFloat(v) : undefined),
   lng: z.string().optional().transform(v => v ? parseFloat(v) : undefined),

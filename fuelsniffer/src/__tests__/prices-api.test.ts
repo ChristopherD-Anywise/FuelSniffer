@@ -106,9 +106,9 @@ describe('GET /api/prices', () => {
     expect(body.error).toMatch(/radius|too small|Too small|greater than or equal/i)
   })
 
-  it('returns 400 when radius is 501', async () => {
+  it('returns 400 when radius is 51', async () => {
     const { GET } = await import('@/app/api/prices/route')
-    const req = new Request('http://localhost/api/prices?fuel=2&radius=501')
+    const req = new Request('http://localhost/api/prices?fuel=2&radius=51')
     const res = await GET(req as any)
     expect(res.status).toBe(400)
     const body = await res.json()

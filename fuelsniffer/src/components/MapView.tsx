@@ -170,6 +170,7 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
         iconAnchor: [7, 7],
       })
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon, interactive: false }).addTo(map)
+      map.panTo([userLocation.lat, userLocation.lng], { animate: true, duration: 0.5 })
     }
   }, [userLocation, map])
 
