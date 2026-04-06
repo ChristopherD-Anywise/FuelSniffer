@@ -103,7 +103,7 @@ describe('GET /api/prices', () => {
     const res = await GET(req as any)
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toMatch(/radius|too small|Too small/i)
+    expect(body.error).toMatch(/radius|too small|Too small|greater than or equal/i)
   })
 
   it('returns 400 when radius is 51', async () => {
@@ -112,7 +112,7 @@ describe('GET /api/prices', () => {
     const res = await GET(req as any)
     expect(res.status).toBe(400)
     const body = await res.json()
-    expect(body.error).toMatch(/radius|too big|Too big/i)
+    expect(body.error).toMatch(/radius|too big|Too big|less than or equal/i)
   })
 
   it('returns 400 when fuel is not a valid integer', async () => {
