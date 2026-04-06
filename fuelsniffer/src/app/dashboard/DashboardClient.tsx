@@ -56,7 +56,7 @@ export default function DashboardClient() {
   const router = useRouter()
 
   const activeFuel  = params.get('fuel')   ?? '2'
-  const radius      = parseInt(params.get('radius') ?? '20', 10)
+  const radiusParam = parseInt(params.get('radius') ?? '20', 10)
   const sortMode    = (params.get('sort') ?? 'price') as SortMode
 
   const [stations,       setStations]       = useState<PriceResult[]>([])
@@ -66,6 +66,12 @@ export default function DashboardClient() {
   const [mobileTab,      setMobileTab]      = useState<MobileTab>('map')
   const [userLocation,   setUserLocation]   = useState<{ lat: number; lng: number } | null>(null)
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'active' | 'denied'>('idle')
+  // Local radius drives the slider display immediately; URL is updated after dragging stops
+  const [localRadius,    setLocalRadius]    = useState(radiusParam)
+  const radiusDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  // Keep localRadius in sync when URL param changes externally (e.g. back/forward nav)
+  useEffect(() => { setLocalRadius(radiusParam) }, [radiusParam])
 
   const cardRefsMap = useRef<Map<number, HTMLElement>>(new Map())
 
@@ -73,7 +79,7 @@ export default function DashboardClient() {
     setLoading(true)
     setError(false)
     try {
-      let url = `/api/prices?fuel=${activeFuel}&radius=${radius}`
+      let url = `/api/prices?fuel=${activeFuel}&radius=${radiusParam}`
       if (userLocation) url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`
       const res = await fetch(url)
       if (!res.ok) throw new Error('API error')
@@ -84,7 +90,7 @@ export default function DashboardClient() {
     } finally {
       setLoading(false)
     }
-  }, [activeFuel, radius, userLocation])
+  }, [activeFuel, radiusParam, userLocation])
 
   useEffect(() => { fetchPrices() }, [fetchPrices])
 
@@ -95,7 +101,11 @@ export default function DashboardClient() {
   }
 
   function handleRadiusChange(km: number) {
-    updateParam('radius', String(km))
+    setLocalRadius(km)
+    if (radiusDebounceRef.current) clearTimeout(radiusDebounceRef.current)
+    radiusDebounceRef.current = setTimeout(() => {
+      updateParam('radius', String(km))
+    }, 600)
   }
 
   function handleCardSelect(id: number) {
@@ -147,7 +157,7 @@ export default function DashboardClient() {
     <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#111111' }}>
       <FilterBar
         activeFuel={activeFuel}
-        radius={radius}
+        radius={localRadius}
         onFuelChange={id => updateParam('fuel', id)}
         onRadiusChange={handleRadiusChange}
         sortMode={sortMode}
@@ -203,7 +213,7 @@ export default function DashboardClient() {
           {loading && <LoadingSkeleton />}
           {!loading && error && <ErrorState onRetry={fetchPrices} />}
           {!loading && !error && sortedStations.length === 0 && (
-            <EmptyState fuelLabel={fuelLabel(activeFuel)} radius={radius} />
+            <EmptyState fuelLabel={fuelLabel(activeFuel)} radius={localRadius} />
           )}
           {!loading && !error && sortedStations.length > 0 && (
             <StationList
