@@ -18,21 +18,53 @@ function fuelLabel(id: string): string {
   return FUEL_TYPES.find(f => f.id === id)?.label ?? id
 }
 
+function IconMap({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#f59e0b' : '#555555'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+      <line x1="8" y1="2" x2="8" y2="18"/>
+      <line x1="16" y1="6" x2="16" y2="22"/>
+    </svg>
+  )
+}
+
+function IconList({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#f59e0b' : '#555555'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6"/>
+      <line x1="8" y1="12" x2="21" y2="12"/>
+      <line x1="8" y1="18" x2="21" y2="18"/>
+      <circle cx="3" cy="6" r="1" fill={active ? '#f59e0b' : '#555555'} stroke="none"/>
+      <circle cx="3" cy="12" r="1" fill={active ? '#f59e0b' : '#555555'} stroke="none"/>
+      <circle cx="3" cy="18" r="1" fill={active ? '#f59e0b' : '#555555'} stroke="none"/>
+    </svg>
+  )
+}
+
+function IconTrends({ active }: { active: boolean }) {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#f59e0b' : '#555555'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+    </svg>
+  )
+}
+
+type MobileTab = 'map' | 'list' | 'trends'
+
 export default function DashboardClient() {
   const params = useSearchParams()
   const router = useRouter()
 
-  const activeFuel = params.get('fuel') ?? '2'
-  const radius = parseInt(params.get('radius') ?? '20', 10)
-  const sortMode = (params.get('sort') ?? 'price') as SortMode
+  const activeFuel  = params.get('fuel')   ?? '2'
+  const radius      = parseInt(params.get('radius') ?? '20', 10)
+  const sortMode    = (params.get('sort') ?? 'price') as SortMode
 
-  const [stations, setStations] = useState<PriceResult[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(false)
-  const [selectedId, setSelectedId] = useState<number | null>(null)
-  const [isMobileMapVisible, setIsMobileMapVisible] = useState(false)
-  // User location state
-  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null)
+  const [stations,       setStations]       = useState<PriceResult[]>([])
+  const [loading,        setLoading]        = useState(true)
+  const [error,          setError]          = useState(false)
+  const [selectedId,     setSelectedId]     = useState<number | null>(null)
+  const [mobileTab,      setMobileTab]      = useState<MobileTab>('map')
+  const [userLocation,   setUserLocation]   = useState<{ lat: number; lng: number } | null>(null)
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'active' | 'denied'>('idle')
 
   const cardRefsMap = useRef<Map<number, HTMLElement>>(new Map())
@@ -42,9 +74,7 @@ export default function DashboardClient() {
     setError(false)
     try {
       let url = `/api/prices?fuel=${activeFuel}&radius=${radius}`
-      if (userLocation) {
-        url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`
-      }
+      if (userLocation) url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`
       const res = await fetch(url)
       if (!res.ok) throw new Error('API error')
       const data: PriceResult[] = await res.json()
@@ -56,9 +86,7 @@ export default function DashboardClient() {
     }
   }, [activeFuel, radius, userLocation])
 
-  useEffect(() => {
-    fetchPrices()
-  }, [fetchPrices])
+  useEffect(() => { fetchPrices() }, [fetchPrices])
 
   function updateParam(key: string, value: string) {
     const next = new URLSearchParams(params.toString())
@@ -66,14 +94,13 @@ export default function DashboardClient() {
     router.replace(`/dashboard?${next.toString()}`)
   }
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   function handleRadiusChange(km: number) {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => updateParam('radius', String(km)), 400)
+    updateParam('radius', String(km))
   }
 
   function handleCardSelect(id: number) {
     setSelectedId(prev => prev === id ? null : id)
+    setMobileTab('map')
   }
 
   function handlePinClick(id: number) {
@@ -107,10 +134,17 @@ export default function DashboardClient() {
   }
 
   const sortedStations = sortStations(stations, sortMode)
-  const cheapest = sortedStations.length > 0 ? parseFloat(sortedStations[0].price_cents) : null
+  const cheapest   = sortedStations.length > 0 ? parseFloat(sortedStations[0].price_cents) : null
+  const dearest    = sortedStations.length > 0 ? parseFloat(sortedStations[sortedStations.length - 1].price_cents) : null
+  const avg        = sortedStations.length > 0
+    ? sortedStations.reduce((s, st) => s + parseFloat(st.price_cents), 0) / sortedStations.length
+    : null
   const stationCount = sortedStations.length
+
+  const isMobileMapVisible = mobileTab === 'map'
+
   return (
-    <div className="flex flex-col h-screen bg-slate-50">
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#111111' }}>
       <FilterBar
         activeFuel={activeFuel}
         radius={radius}
@@ -119,32 +153,53 @@ export default function DashboardClient() {
         sortMode={sortMode}
         onSortChange={mode => updateParam('sort', mode)}
         isMobileMapVisible={isMobileMapVisible}
-        onToggleMobileMap={() => setIsMobileMapVisible(v => !v)}
+        onToggleMobileMap={() => setMobileTab(t => t === 'map' ? 'list' : 'map')}
         onLocateMe={handleLocateMe}
         locationStatus={locationStatus}
         onLocationSelect={handleLocationSelect}
       />
 
-      {/* Summary bar */}
+      {/* Stat bar */}
       {!loading && !error && stationCount > 0 && (
-        <div className="flex items-center gap-3 px-4 py-1.5 bg-white border-b border-slate-100 text-sm">
-          {cheapest && (
-            <>
-              <span className="text-base font-bold text-slate-900 tabular-nums">{cheapest.toFixed(1)}¢</span>
-              <span className="text-slate-400">cheapest</span>
-              <span className="text-slate-300">·</span>
-            </>
-          )}
-          <span className="text-slate-500">{stationCount} stations within {radius}km</span>
-          <span className="text-slate-300">·</span>
-          <span className="text-slate-500">{fuelLabel(activeFuel)}</span>
+        <div style={{
+          display: 'flex',
+          borderBottom: '1px solid #2a2a2a',
+          background: '#1a1a1a',
+          flexShrink: 0,
+        }}>
+          {([
+            { label: 'Cheapest', value: cheapest != null ? `${cheapest.toFixed(1)}¢` : '—', color: '#22c55e' },
+            { label: 'Area avg', value: avg      != null ? `${avg.toFixed(1)}¢`      : '—', color: '#f59e0b' },
+            { label: 'Stations', value: String(stationCount),                                color: '#f59e0b' },
+            { label: 'Dearest',  value: dearest  != null ? `${dearest.toFixed(1)}¢`  : '—', color: '#ef4444' },
+          ] as const).map(({ label, value, color }, i, arr) => (
+            <div key={label} style={{
+              flex: 1,
+              textAlign: 'center',
+              padding: '8px 0',
+              borderRight: i < arr.length - 1 ? '1px solid #2a2a2a' : 'none',
+            }}>
+              <div style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#444444', marginBottom: 3 }}>
+                {label}
+              </div>
+              <div style={{ fontSize: 17, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color }}>
+                {value}
+              </div>
+            </div>
+          ))}
         </div>
       )}
 
       {/* Content area */}
-      <div className="flex-1 relative overflow-hidden md:grid md:grid-cols-[280px_1fr]">
-        {/* Station list — narrower on desktop */}
-        <div className={`absolute inset-0 md:relative md:inset-auto h-full overflow-y-auto station-list bg-white border-r border-slate-100 ${isMobileMapVisible ? 'hidden md:block' : 'block'}`}>
+      <div
+        style={{ flex: 1, position: 'relative', overflow: 'hidden' }}
+        className="md:grid md:grid-cols-[320px_1fr]"
+      >
+        {/* Station list */}
+        <div
+          className={`station-list absolute inset-0 md:relative md:inset-auto h-full overflow-y-auto ${mobileTab === 'list' ? 'block' : 'hidden md:block'}`}
+          style={{ borderRight: '1px solid #2a2a2a' }}
+        >
           {loading && <LoadingSkeleton />}
           {!loading && error && <ErrorState onRetry={fetchPrices} />}
           {!loading && !error && sortedStations.length === 0 && (
@@ -161,16 +216,48 @@ export default function DashboardClient() {
         </div>
 
         {/* Map */}
-        <div className={`absolute inset-0 md:relative md:inset-auto h-full ${isMobileMapVisible ? 'block' : 'hidden md:block'}`}>
+        <div
+          className={`absolute inset-0 md:relative md:inset-auto h-full ${mobileTab === 'map' ? 'block' : 'hidden md:block'}`}
+        >
           <MapView
             stations={sortedStations}
             selectedId={selectedId}
             activeFuel={activeFuel}
             onPinClick={handlePinClick}
             userLocation={userLocation}
-            isVisible={isMobileMapVisible}
+            isVisible={mobileTab === 'map'}
           />
         </div>
+      </div>
+
+      {/* Mobile bottom nav */}
+      <div
+        className="md:hidden flex-shrink-0 flex"
+        style={{ background: '#111111', borderTop: '1px solid #2a2a2a' }}
+      >
+        {([
+          { tab: 'map'    as MobileTab, label: 'Map',    Icon: IconMap    },
+          { tab: 'list'   as MobileTab, label: 'List',   Icon: IconList   },
+          { tab: 'trends' as MobileTab, label: 'Trends', Icon: IconTrends },
+        ]).map(({ tab, label, Icon }) => (
+          <button
+            key={tab}
+            onClick={() => setMobileTab(tab)}
+            style={{ flex: 1, padding: '10px 0 8px', textAlign: 'center', background: 'transparent', border: 'none', cursor: 'pointer' }}
+          >
+            <Icon active={mobileTab === tab} />
+            <div style={{
+              fontSize: 10,
+              fontWeight: 700,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              color: mobileTab === tab ? '#f59e0b' : '#444444',
+              marginTop: 2,
+            }}>
+              {label}
+            </div>
+          </button>
+        ))}
       </div>
     </div>
   )
