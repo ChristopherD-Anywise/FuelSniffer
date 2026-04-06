@@ -66,13 +66,13 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
         return L.divIcon({
           className: '',
           html: `<div style="
-            width:36px;height:36px;border-radius:50%;
-            background:#0ea5e9;color:white;
-            display:flex;align-items:center;justify-content:center;
-            font-weight:700;font-size:13px;font-family:Inter,system-ui,sans-serif;
-            box-shadow:0 2px 6px rgba(0,0,0,0.2);
-            border:2px solid white;
-          ">${count}</div>`,
+  width:36px;height:36px;border-radius:50%;
+  background:#f59e0b;color:#000000;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:13px;font-family:Inter,system-ui,sans-serif;
+  box-shadow:0 2px 6px rgba(0,0,0,0.4);
+  border:2px solid #111111;
+">${count}</div>`,
           iconSize: [36, 36],
           iconAnchor: [18, 18],
         })
@@ -162,8 +162,8 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
     if (userLocation) {
       const icon = L.divIcon({
         className: '',
-        html: `<div style="width:14px;height:14px;border-radius:50%;background:#0ea5e9;
-                border:3px solid white;box-shadow:0 0 0 2px #0ea5e9,0 2px 6px rgba(0,0,0,0.3);"></div>`,
+        html: `<div style="width:14px;height:14px;border-radius:50%;background:#f59e0b;
+                border:3px solid #111111;box-shadow:0 0 0 2px #f59e0b,0 2px 6px rgba(0,0,0,0.4);"></div>`,
         iconSize: [14, 14],
         iconAnchor: [7, 7],
       })
