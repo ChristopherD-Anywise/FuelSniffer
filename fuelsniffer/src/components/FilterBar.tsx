@@ -1,6 +1,5 @@
 'use client'
 
-import FuelSelect from '@/components/FuelSelect'
 import DistanceSlider from '@/components/DistanceSlider'
 import LocationSearch from '@/components/LocationSearch'
 
@@ -18,158 +17,110 @@ interface FilterBarProps {
   onLocationSelect?: (location: { lat: number; lng: number; label: string }) => void
 }
 
+const FUEL_TABS = [
+  { id: '2',  label: 'ULP 91' },
+  { id: '5',  label: 'PULP 95' },
+  { id: '8',  label: 'PULP 98' },
+  { id: '12', label: 'E10' },
+  { id: '3',  label: 'Diesel' },
+  { id: '14', label: 'Prem Diesel' },
+  { id: '4',  label: 'LPG' },
+]
+
 export default function FilterBar({
   activeFuel,
-  radius,
   onFuelChange,
+  radius,
   onRadiusChange,
   sortMode,
   onSortChange,
-  isMobileMapVisible,
-  onToggleMobileMap,
   onLocateMe,
   locationStatus = 'idle',
   onLocationSelect,
 }: FilterBarProps) {
   return (
-    <div className="sticky top-0 z-10 bg-white/80 backdrop-blur-lg border-b border-slate-200/60 shadow-sm">
-      {/* Desktop: single row */}
-      <div className="hidden md:flex items-center gap-3 px-5 h-14">
-        <h1 className="text-lg font-bold tracking-tight text-slate-900 mr-1">
-          FuelSniffer
-        </h1>
+    <div className="sticky top-0 z-20 flex-shrink-0">
+      {/* Top bar */}
+      <div
+        style={{ background: '#111111', borderBottom: '3px solid #f59e0b' }}
+        className="flex items-center justify-between px-4 h-[52px]"
+      >
+        <span className="text-lg font-black uppercase tracking-tight text-white">
+          FUEL<span style={{ color: '#f59e0b' }}>SNIFFER</span>
+        </span>
 
-        <FuelSelect activeFuel={activeFuel} onSelect={onFuelChange} />
-
-        {onLocationSelect && (
-          <LocationSearch onSelect={onLocationSelect} />
-        )}
-
-        <DistanceSlider value={radius} onChange={onRadiusChange} />
-
-        <div className="flex items-center bg-slate-100 rounded-lg p-0.5 shrink-0">
-          <button
-            onClick={() => onSortChange('price')}
-            className={[
-              'h-7 px-3 rounded-md text-xs font-medium transition-all',
-              sortMode === 'price'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700',
-            ].join(' ')}
-          >
-            Cheapest
-          </button>
-          <button
-            onClick={() => onSortChange('distance')}
-            className={[
-              'h-7 px-3 rounded-md text-xs font-medium transition-all',
-              sortMode === 'distance'
-                ? 'bg-white text-slate-900 shadow-sm'
-                : 'text-slate-500 hover:text-slate-700',
-            ].join(' ')}
-          >
-            Nearest
-          </button>
-        </div>
-
-        {onLocateMe && (
-          <button
-            onClick={onLocateMe}
-            className={[
-              'flex items-center gap-1.5 h-9 px-3 rounded-full text-xs font-medium transition-all ml-auto',
-              locationStatus === 'active'
-                ? 'bg-sky-100 text-sky-700 ring-1 ring-sky-200'
-                : locationStatus === 'loading'
-                ? 'bg-slate-100 text-slate-500 animate-pulse'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-            ].join(' ')}
-            title="Use my location"
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
-            </svg>
-            {locationStatus === 'active' ? 'Near me' : locationStatus === 'loading' ? 'Locating...' : 'Near me'}
-          </button>
-        )}
-      </div>
-
-      {/* Mobile: two rows */}
-      <div className="md:hidden">
-        {/* Row 1: Logo + action buttons */}
-        <div className="flex items-center justify-between px-5 h-12">
-          <h1 className="text-lg font-bold tracking-tight text-slate-900">
-            FuelSniffer
-          </h1>
-          <div className="flex items-center gap-2">
-            {onLocateMe && (
-              <button
-                onClick={onLocateMe}
-                className={[
-                  'flex items-center justify-center h-9 w-9 rounded-full text-xs font-medium transition-all',
-                  locationStatus === 'active'
-                    ? 'bg-sky-100 text-sky-700 ring-1 ring-sky-200'
-                    : locationStatus === 'loading'
-                    ? 'bg-slate-100 text-slate-500 animate-pulse'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-                ].join(' ')}
-                title="Use my location"
-              >
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>
-                </svg>
-              </button>
-            )}
-            <button
-              onClick={onToggleMobileMap}
-              className="flex items-center gap-1 h-9 px-3 bg-slate-900 text-white rounded-full text-xs font-medium"
-            >
-              {isMobileMapVisible ? (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3" y2="6"/><line x1="3" y1="12" x2="3" y2="12"/><line x1="3" y1="18" x2="3" y2="18"/></svg>
-                  List
-                </>
-              ) : (
-                <>
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg>
-                  Map
-                </>
-              )}
-            </button>
-          </div>
-        </div>
-
-        {/* Row 2: Controls */}
-        <div className="flex items-center gap-3 px-5 pb-3 overflow-x-auto">
-          <FuelSelect activeFuel={activeFuel} onSelect={onFuelChange} />
+        <div className="flex items-center gap-2">
           {onLocationSelect && (
             <LocationSearch onSelect={onLocationSelect} />
           )}
+
+          {onLocateMe && (
+            <button
+              onClick={onLocateMe}
+              style={{
+                background: locationStatus === 'active' ? 'rgba(245,158,11,0.15)' : '#1a1a1a',
+                border: `1px solid ${locationStatus === 'active' ? '#f59e0b' : '#2a2a2a'}`,
+                color: locationStatus === 'active' ? '#f59e0b' : '#888888',
+              }}
+              className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
+              title={locationStatus === 'active' ? 'Clear location' : 'Use my location'}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="3"/>
+                <path d="M12 2v3M12 19v3M2 12h3M19 12h3"/>
+              </svg>
+            </button>
+          )}
+
           <DistanceSlider value={radius} onChange={onRadiusChange} />
-          <div className="flex items-center bg-slate-100 rounded-lg p-0.5 shrink-0">
-            <button
-              onClick={() => onSortChange('price')}
-              className={[
-                'h-7 px-3 rounded-md text-xs font-medium transition-all',
-                sortMode === 'price'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700',
-              ].join(' ')}
-            >
-              Cheapest
-            </button>
-            <button
-              onClick={() => onSortChange('distance')}
-              className={[
-                'h-7 px-3 rounded-md text-xs font-medium transition-all',
-                sortMode === 'distance'
-                  ? 'bg-white text-slate-900 shadow-sm'
-                  : 'text-slate-500 hover:text-slate-700',
-              ].join(' ')}
-            >
-              Nearest
-            </button>
+
+          <div
+            style={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+            className="flex items-center rounded-lg p-0.5 shrink-0"
+          >
+            {(['price', 'distance'] as const).map((mode) => (
+              <button
+                key={mode}
+                onClick={() => onSortChange(mode)}
+                style={{
+                  background: sortMode === mode ? '#f59e0b' : 'transparent',
+                  color: sortMode === mode ? '#000000' : '#666666',
+                }}
+                className="h-7 px-3 rounded-md text-xs font-bold uppercase tracking-wide transition-all"
+              >
+                {mode === 'price' ? 'Price' : 'Near'}
+              </button>
+            ))}
           </div>
+
+          <span
+            style={{ background: '#f59e0b', color: '#000000' }}
+            className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded"
+          >
+            LIVE
+          </span>
         </div>
+      </div>
+
+      {/* Fuel type tab row */}
+      <div
+        style={{ background: '#1a1a1a', borderBottom: '2px solid #2a2a2a' }}
+        className="flex overflow-x-auto [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden"
+      >
+        {FUEL_TABS.map((fuel) => (
+          <button
+            key={fuel.id}
+            onClick={() => onFuelChange(fuel.id)}
+            style={{
+              borderBottom: activeFuel === fuel.id ? '3px solid #f59e0b' : '3px solid transparent',
+              color: activeFuel === fuel.id ? '#f59e0b' : '#555555',
+              marginBottom: '-2px',
+            }}
+            className="flex-shrink-0 px-5 py-3 text-[13px] font-black uppercase tracking-wide transition-colors whitespace-nowrap"
+          >
+            {fuel.label}
+          </button>
+        ))}
       </div>
     </div>
   )
