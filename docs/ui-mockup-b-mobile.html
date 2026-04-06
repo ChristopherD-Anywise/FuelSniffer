@@ -1,0 +1,882 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FuelSniffer — Direction B Mobile</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #0a0a0a;
+    color: #fff;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 40px 20px 60px;
+  }
+
+  .page-header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+  .page-header h1 { font-size: 13px; letter-spacing: 0.14em; text-transform: uppercase; color: #555; margin-bottom: 8px; }
+  .page-header p { font-size: 20px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+  .page-header small { font-size: 13px; color: #444; }
+
+  /* ── Screen nav ── */
+  .screen-nav {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .screen-nav button {
+    padding: 8px 18px;
+    border-radius: 8px;
+    border: 1px solid #2a2a2a;
+    background: #1a1a1a;
+    color: #666;
+    cursor: pointer;
+    font-size: 13px;
+  }
+  .screen-nav button.active { background: #f59e0b; border-color: #f59e0b; color: #000; font-weight: 700; }
+
+  /* ── Phone shell ── */
+  .phone {
+    width: 390px;
+    background: #111;
+    border-radius: 48px;
+    border: 2px solid #2a2a2a;
+    box-shadow:
+      0 0 0 6px #0a0a0a,
+      0 0 0 7px #222,
+      0 40px 100px rgba(0,0,0,0.8);
+    overflow: hidden;
+    position: relative;
+  }
+
+  /* notch */
+  .phone-notch {
+    height: 44px;
+    background: #111;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 10;
+    flex-shrink: 0;
+  }
+  .phone-notch-pill {
+    width: 120px;
+    height: 34px;
+    background: #000;
+    border-radius: 20px;
+  }
+
+  /* Status bar */
+  .status-bar {
+    height: 0;
+    overflow: hidden;
+  }
+
+  /* All screens sit inside .phone-content */
+  .phone-content {
+    height: 800px;
+    overflow: hidden;
+    position: relative;
+    background: #111;
+  }
+
+  .screen { display: none; height: 100%; flex-direction: column; }
+  .screen.active { display: flex; }
+
+  /* ────────────────────────────────────────────
+     SCREEN 1: Map view (default landing)
+     ──────────────────────────────────────────── */
+  /* Top bar */
+  .s1-topbar {
+    background: #111;
+    padding: 12px 20px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid #f59e0b;
+    flex-shrink: 0;
+  }
+  .b-logo { font-size: 18px; font-weight: 900; letter-spacing: -0.02em; color: #fff; text-transform: uppercase; }
+  .b-logo em { color: #f59e0b; font-style: normal; }
+  .live-badge {
+    background: #f59e0b;
+    color: #000;
+    font-size: 10px;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 4px 10px;
+    border-radius: 4px;
+  }
+
+  /* Fuel type horizontal scroll */
+  .s1-fueltabs {
+    background: #1a1a1a;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 2px solid #2a2a2a;
+    flex-shrink: 0;
+  }
+  .s1-fueltabs::-webkit-scrollbar { display: none; }
+  .ftab {
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #555;
+    border-bottom: 3px solid transparent;
+    margin-bottom: -2px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .ftab.active { color: #f59e0b; border-bottom-color: #f59e0b; }
+
+  /* Map area */
+  .s1-map {
+    flex: 1;
+    background: #0d0d0d;
+    position: relative;
+    overflow: hidden;
+  }
+  /* subtle road lines */
+  .road-h { position: absolute; left: 0; right: 0; background: #1a1a1a; }
+  .road-v { position: absolute; top: 0; bottom: 0; background: #1a1a1a; }
+  /* price pins */
+  .map-pin {
+    position: absolute;
+    background: #f59e0b;
+    color: #000;
+    font-size: 12px;
+    font-weight: 900;
+    padding: 5px 8px;
+    border-radius: 6px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.8);
+    white-space: nowrap;
+    transform: translateX(-50%);
+  }
+  .map-pin::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 0; height: 0;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 5px solid #f59e0b;
+  }
+  .map-pin.green { background: #22c55e; }
+  .map-pin.green::after { border-top-color: #22c55e; }
+  .map-pin.red { background: #ef4444; color: #fff; }
+  .map-pin.red::after { border-top-color: #ef4444; }
+  .map-pin.selected {
+    background: #fff;
+    color: #000;
+    box-shadow: 0 0 0 3px #f59e0b, 0 4px 16px rgba(0,0,0,0.8);
+    z-index: 10;
+  }
+  .map-pin.selected::after { border-top-color: #fff; }
+
+  /* Floating controls */
+  .map-search-pill {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    right: 16px;
+    background: rgba(17,17,17,0.95);
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+  }
+  .map-radius-pill {
+    position: absolute;
+    top: 62px;
+    right: 16px;
+    background: rgba(17,17,17,0.95);
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 8px 12px;
+    font-size: 12px;
+    font-weight: 700;
+    color: #f59e0b;
+    backdrop-filter: blur(8px);
+    box-shadow: 0 2px 10px rgba(0,0,0,0.6);
+  }
+
+  /* Bottom sheet (partially open) */
+  .bottom-sheet {
+    background: #111;
+    border-top: 2px solid #f59e0b;
+    border-radius: 20px 20px 0 0;
+    flex-shrink: 0;
+  }
+  .sheet-handle-row {
+    padding: 10px;
+    display: flex;
+    justify-content: center;
+  }
+  .sheet-handle { width: 40px; height: 4px; background: #2a2a2a; border-radius: 2px; }
+  .sheet-peek {
+    padding: 0 16px 14px;
+  }
+  .sheet-stat-row {
+    display: flex;
+    gap: 0;
+    margin-bottom: 12px;
+  }
+  .sheet-stat {
+    flex: 1;
+    text-align: center;
+    padding: 8px 0;
+    border-right: 1px solid #2a2a2a;
+  }
+  .sheet-stat:last-child { border-right: none; }
+  .sheet-stat-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #444; margin-bottom: 3px; }
+  .sheet-stat-value { font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; }
+  .sheet-stat-value.green { color: #22c55e; }
+  .sheet-stat-value.amber { color: #f59e0b; }
+  .sheet-cta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #1a1a1a;
+    border: 1px solid #2a2a2a;
+    border-radius: 10px;
+    padding: 12px 16px;
+    cursor: pointer;
+  }
+  .sheet-cta-text { font-size: 14px; font-weight: 700; color: #fff; }
+  .sheet-cta-sub { font-size: 11px; color: #555; margin-top: 1px; }
+  .sheet-cta-arrow { font-size: 20px; color: #f59e0b; }
+
+  /* Bottom nav */
+  .bottom-nav {
+    background: #111;
+    border-top: 1px solid #1e1e1e;
+    display: flex;
+    flex-shrink: 0;
+  }
+  .bnav-item {
+    flex: 1;
+    padding: 10px 0 8px;
+    text-align: center;
+    cursor: pointer;
+  }
+  .bnav-icon { font-size: 20px; margin-bottom: 2px; }
+  .bnav-label { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: #444; }
+  .bnav-item.active .bnav-label { color: #f59e0b; }
+
+  /* ────────────────────────────────────────────
+     SCREEN 2: Station list (sheet fully open)
+     ──────────────────────────────────────────── */
+  .s2-header {
+    background: #111;
+    padding: 14px 20px 12px;
+    border-bottom: 3px solid #f59e0b;
+    flex-shrink: 0;
+  }
+  .s2-header-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .s2-title { font-size: 17px; font-weight: 900; text-transform: uppercase; letter-spacing: 0.04em; }
+  .s2-count {
+    background: #f59e0b;
+    color: #000;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 3px 9px;
+    border-radius: 4px;
+  }
+  .s2-stat-row {
+    display: flex;
+    gap: 0;
+  }
+  .s2-stat {
+    flex: 1;
+    text-align: center;
+    border-right: 1px solid #2a2a2a;
+    padding: 4px 0;
+  }
+  .s2-stat:last-child { border-right: none; }
+  .s2-stat-lbl { font-size: 9px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: #444; }
+  .s2-stat-val { font-size: 15px; font-weight: 900; font-variant-numeric: tabular-nums; }
+  .s2-stat-val.green { color: #22c55e; }
+  .s2-stat-val.amber { color: #f59e0b; }
+  .s2-stat-val.red { color: #ef4444; }
+
+  /* Fuel tab row */
+  .s2-ftabs {
+    background: #1a1a1a;
+    display: flex;
+    overflow-x: auto;
+    scrollbar-width: none;
+    border-bottom: 1px solid #2a2a2a;
+    flex-shrink: 0;
+  }
+  .s2-ftabs::-webkit-scrollbar { display: none; }
+
+  /* Station list scroll */
+  .s2-list { flex: 1; overflow-y: auto; }
+  .s2-list-header {
+    padding: 8px 16px;
+    background: #1a1a1a;
+    font-size: 9px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: #444;
+    display: flex;
+    justify-content: space-between;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+
+  .s2-station {
+    padding: 14px 16px;
+    border-bottom: 1px solid #1a1a1a;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .s2-rank {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 900;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .s2-rank.r1 { background: #f59e0b; color: #000; }
+  .s2-rank.r2 { background: #2a2a2a; color: #888; }
+  .s2-rank.r3 { background: #2a2a2a; color: #888; }
+  .s2-info { flex: 1; min-width: 0; }
+  .s2-name { font-size: 14px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .s2-meta { font-size: 11px; color: #444; margin-top: 2px; }
+  .s2-price-col { text-align: right; flex-shrink: 0; }
+  .s2-price { font-size: 24px; font-weight: 900; font-variant-numeric: tabular-nums; color: #fff; line-height: 1; }
+  .s2-price .unit { font-size: 13px; color: #555; font-weight: 600; }
+  .s2-delta { font-size: 11px; font-weight: 700; text-align: right; margin-top: 3px; }
+  .s2-delta.down { color: #22c55e; }
+  .s2-delta.up { color: #ef4444; }
+
+  /* ────────────────────────────────────────────
+     SCREEN 3: Station detail / popup
+     ──────────────────────────────────────────── */
+  .s3-header {
+    background: #111;
+    padding: 14px 20px 12px;
+    border-bottom: 3px solid #f59e0b;
+    flex-shrink: 0;
+  }
+  .s3-back {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 13px;
+    color: #f59e0b;
+    font-weight: 700;
+    margin-bottom: 10px;
+    cursor: pointer;
+  }
+  .s3-station-name { font-size: 20px; font-weight: 900; color: #fff; margin-bottom: 2px; }
+  .s3-station-meta { font-size: 12px; color: #555; }
+
+  .s3-hero {
+    background: #1a1a1a;
+    margin: 0;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #2a2a2a;
+    flex-shrink: 0;
+  }
+  .s3-price-main { font-size: 52px; font-weight: 900; font-variant-numeric: tabular-nums; color: #f59e0b; line-height: 1; }
+  .s3-price-main .s3-fuel { font-size: 14px; color: #555; font-weight: 600; display: block; margin-bottom: 4px; }
+  .s3-price-main .s3-unit { font-size: 24px; }
+  .s3-price-side { text-align: right; }
+  .s3-delta-big {
+    font-size: 22px;
+    font-weight: 900;
+    color: #22c55e;
+    margin-bottom: 4px;
+  }
+  .s3-delta-big.up { color: #ef4444; }
+  .s3-delta-label { font-size: 11px; color: #444; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; }
+
+  .s3-other-fuels {
+    background: #111;
+    padding: 14px 20px;
+    border-bottom: 1px solid #1a1a1a;
+    flex-shrink: 0;
+  }
+  .s3-section-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em; color: #444; margin-bottom: 10px; }
+  .s3-fuel-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .s3-fuel-row:last-child { border-bottom: none; }
+  .s3-fuel-name { font-size: 13px; font-weight: 700; color: #888; }
+  .s3-fuel-price { font-size: 18px; font-weight: 900; font-variant-numeric: tabular-nums; color: #fff; }
+
+  .s3-chart {
+    flex: 1;
+    background: #111;
+    padding: 14px 20px;
+    overflow: hidden;
+  }
+  .s3-chart-area {
+    background: #1a1a1a;
+    border-radius: 10px;
+    height: 110px;
+    position: relative;
+    overflow: hidden;
+    margin-top: 10px;
+  }
+  /* fake sparkline */
+  .s3-chart-area::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(245,158,11,0.06) 100%);
+  }
+  .s3-chart-line {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 60px;
+    background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 300 60' preserveAspectRatio='none'%3E%3Cpolyline points='0,55 40,50 80,52 120,45 160,48 200,40 240,30 280,35 300,28' fill='none' stroke='%23f59e0b' stroke-width='2.5'/%3E%3C/svg%3E") no-repeat;
+    background-size: 100% 100%;
+  }
+
+  .s3-actions {
+    background: #111;
+    padding: 12px 20px;
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+    border-top: 1px solid #1a1a1a;
+  }
+  .s3-btn {
+    flex: 1;
+    padding: 13px;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 800;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .s3-btn.primary { background: #f59e0b; color: #000; }
+  .s3-btn.secondary { background: #1a1a1a; color: #888; border: 1px solid #2a2a2a; }
+
+  /* annotation callouts */
+  .annotations {
+    margin-top: 32px;
+    width: 390px;
+  }
+  .annotation {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 0;
+    border-bottom: 1px solid #1a1a1a;
+  }
+  .annotation-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #f59e0b;
+    flex-shrink: 0;
+    margin-top: 5px;
+  }
+  .annotation-text { font-size: 13px; color: #666; line-height: 1.5; }
+  .annotation-text strong { color: #aaa; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Direction B — High-Vis Mobile</h1>
+  <p>Three key screens</p>
+  <small>Click tabs to switch between screens</small>
+</div>
+
+<div class="screen-nav">
+  <button class="active" onclick="showScreen(1, this)">1 · Map + Bottom Sheet</button>
+  <button onclick="showScreen(2, this)">2 · Station List</button>
+  <button onclick="showScreen(3, this)">3 · Station Detail</button>
+</div>
+
+<!-- ═══════════════ PHONE ═══════════════ -->
+<div class="phone">
+  <div class="phone-notch">
+    <div class="phone-notch-pill"></div>
+  </div>
+  <div class="phone-content">
+
+    <!-- ── SCREEN 1: Map ── -->
+    <div class="screen active" id="screen-1">
+      <!-- Top bar -->
+      <div class="s1-topbar">
+        <div class="b-logo">FUEL<em>SNIFFER</em></div>
+        <div class="live-badge">LIVE</div>
+      </div>
+      <!-- Fuel tabs -->
+      <div class="s1-fueltabs">
+        <div class="ftab active">ULP 91</div>
+        <div class="ftab">PULP 95</div>
+        <div class="ftab">PULP 98</div>
+        <div class="ftab">Diesel</div>
+        <div class="ftab">E10</div>
+      </div>
+      <!-- Map -->
+      <div class="s1-map">
+        <div class="road-h" style="top:38%;height:3px"></div>
+        <div class="road-h" style="top:62%;height:2px"></div>
+        <div class="road-v" style="left:28%;width:2px"></div>
+        <div class="road-v" style="left:68%;width:2px"></div>
+
+        <!-- Search bar float -->
+        <div class="map-search-pill">
+          <span>🔍</span>
+          <span>Petrie, QLD</span>
+        </div>
+        <div class="map-radius-pill">10km ▾</div>
+
+        <!-- Price pins -->
+        <div class="map-pin selected" style="left:34%;top:44%">172.9¢</div>
+        <div class="map-pin green" style="left:44%;top:52%">174.5¢</div>
+        <div class="map-pin" style="left:56%;top:35%">179.9¢</div>
+        <div class="map-pin red" style="left:70%;top:50%">189.9¢</div>
+        <div class="map-pin green" style="left:22%;top:58%">175.7¢</div>
+      </div>
+
+      <!-- Bottom sheet (peeking) -->
+      <div class="bottom-sheet">
+        <div class="sheet-handle-row"><div class="sheet-handle"></div></div>
+        <div class="sheet-peek">
+          <div class="sheet-stat-row">
+            <div class="sheet-stat">
+              <div class="sheet-stat-label">Cheapest</div>
+              <div class="sheet-stat-value green">172.9¢</div>
+            </div>
+            <div class="sheet-stat">
+              <div class="sheet-stat-label">Avg nearby</div>
+              <div class="sheet-stat-value amber">181.4¢</div>
+            </div>
+            <div class="sheet-stat">
+              <div class="sheet-stat-label">7-day trend</div>
+              <div class="sheet-stat-value green">▼ 2.8¢</div>
+            </div>
+          </div>
+          <div class="sheet-cta">
+            <div>
+              <div class="sheet-cta-text">7-Eleven Petrie</div>
+              <div class="sheet-cta-sub">Cheapest nearby · 1.2 km away</div>
+            </div>
+            <div class="sheet-cta-arrow">›</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom nav -->
+      <div class="bottom-nav">
+        <div class="bnav-item active">
+          <div class="bnav-icon">🗺</div>
+          <div class="bnav-label">Map</div>
+        </div>
+        <div class="bnav-item">
+          <div class="bnav-icon">📋</div>
+          <div class="bnav-label">List</div>
+        </div>
+        <div class="bnav-item">
+          <div class="bnav-icon">📈</div>
+          <div class="bnav-label">Trends</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 2: List ── -->
+    <div class="screen" id="screen-2">
+      <!-- Header -->
+      <div class="s2-header">
+        <div class="s2-header-top">
+          <div class="s2-title">Stations nearby</div>
+          <div class="s2-count">47</div>
+        </div>
+        <div class="s2-stat-row">
+          <div class="s2-stat">
+            <div class="s2-stat-lbl">Cheapest</div>
+            <div class="s2-stat-val green">172.9¢</div>
+          </div>
+          <div class="s2-stat">
+            <div class="s2-stat-lbl">Area avg</div>
+            <div class="s2-stat-val amber">181.4¢</div>
+          </div>
+          <div class="s2-stat">
+            <div class="s2-stat-lbl">7d trend</div>
+            <div class="s2-stat-val green">▼ 2.8¢</div>
+          </div>
+          <div class="s2-stat">
+            <div class="s2-stat-lbl">Dearest</div>
+            <div class="s2-stat-val red">191.5¢</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Fuel tabs -->
+      <div class="s2-ftabs">
+        <div class="ftab active">ULP 91</div>
+        <div class="ftab">PULP 95</div>
+        <div class="ftab">PULP 98</div>
+        <div class="ftab">Diesel</div>
+        <div class="ftab">E10</div>
+      </div>
+
+      <!-- Station list -->
+      <div class="s2-list">
+        <div class="s2-list-header">
+          <span>Sorted by price · 10km radius</span>
+          <span>Sort ▾</span>
+        </div>
+
+        <div class="s2-station">
+          <div class="s2-rank r1">1</div>
+          <div class="s2-info">
+            <div class="s2-name">7-Eleven Petrie</div>
+            <div class="s2-meta">1.2 km · 4 mins ago</div>
+          </div>
+          <div class="s2-price-col">
+            <div class="s2-price">172.9<span class="unit">¢</span></div>
+            <div class="s2-delta down">▼ 4.1¢ / 7d</div>
+          </div>
+        </div>
+
+        <div class="s2-station">
+          <div class="s2-rank r2">2</div>
+          <div class="s2-info">
+            <div class="s2-name">Caltex Kallangur</div>
+            <div class="s2-meta">2.4 km · 11 mins ago</div>
+          </div>
+          <div class="s2-price-col">
+            <div class="s2-price">174.5<span class="unit">¢</span></div>
+            <div class="s2-delta down">▼ 2.3¢ / 7d</div>
+          </div>
+        </div>
+
+        <div class="s2-station">
+          <div class="s2-rank r2">3</div>
+          <div class="s2-info">
+            <div class="s2-name">BP North Lakes</div>
+            <div class="s2-meta">3.1 km · 7 mins ago</div>
+          </div>
+          <div class="s2-price-col">
+            <div class="s2-price">179.9<span class="unit">¢</span></div>
+            <div class="s2-delta up">▲ 1.0¢ / 7d</div>
+          </div>
+        </div>
+
+        <div class="s2-station">
+          <div class="s2-rank r3">4</div>
+          <div class="s2-info">
+            <div class="s2-name">Ampol Murrumba Downs</div>
+            <div class="s2-meta">4.0 km · 3 mins ago</div>
+          </div>
+          <div class="s2-price-col">
+            <div class="s2-price">182.7<span class="unit">¢</span></div>
+            <div class="s2-delta down">▼ 0.5¢ / 7d</div>
+          </div>
+        </div>
+
+        <div class="s2-station">
+          <div class="s2-rank r3">5</div>
+          <div class="s2-info">
+            <div class="s2-name">Shell Narangba</div>
+            <div class="s2-meta">5.6 km · 22 mins ago</div>
+          </div>
+          <div class="s2-price-col">
+            <div class="s2-price">189.9<span class="unit">¢</span></div>
+            <div class="s2-delta up">▲ 6.2¢ / 7d</div>
+          </div>
+        </div>
+
+        <div class="s2-station">
+          <div class="s2-rank r3">6</div>
+          <div class="s2-info">
+            <div class="s2-name">Metro Petrie</div>
+            <div class="s2-meta">1.8 km · 58 mins ago</div>
+          </div>
+          <div class="s2-price-col">
+            <div class="s2-price">191.5<span class="unit">¢</span></div>
+            <div class="s2-delta up">▲ 8.9¢ / 7d</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bottom nav -->
+      <div class="bottom-nav">
+        <div class="bnav-item">
+          <div class="bnav-icon">🗺</div>
+          <div class="bnav-label">Map</div>
+        </div>
+        <div class="bnav-item active">
+          <div class="bnav-icon">📋</div>
+          <div class="bnav-label">List</div>
+        </div>
+        <div class="bnav-item">
+          <div class="bnav-icon">📈</div>
+          <div class="bnav-label">Trends</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCREEN 3: Station detail ── -->
+    <div class="screen" id="screen-3">
+      <div class="s3-header">
+        <div class="s3-back">‹ Back to list</div>
+        <div class="s3-station-name">7-Eleven Petrie</div>
+        <div class="s3-station-meta">1.2 km · Cnr Dayboro Rd &amp; Petrie Parade</div>
+      </div>
+
+      <!-- Big price hero -->
+      <div class="s3-hero">
+        <div class="s3-price-main">
+          <span class="s3-fuel">ULP 91</span>
+          172.9<span class="s3-unit">¢</span>
+        </div>
+        <div class="s3-price-side">
+          <div class="s3-delta-big">▼ 4.1¢</div>
+          <div class="s3-delta-label">/ 7 days</div>
+        </div>
+      </div>
+
+      <!-- Other fuel types -->
+      <div class="s3-other-fuels">
+        <div class="s3-section-label">Other fuels at this station</div>
+        <div class="s3-fuel-row">
+          <div class="s3-fuel-name">PULP 95</div>
+          <div class="s3-fuel-price">183.9¢</div>
+        </div>
+        <div class="s3-fuel-row">
+          <div class="s3-fuel-name">PULP 98</div>
+          <div class="s3-fuel-price">194.9¢</div>
+        </div>
+        <div class="s3-fuel-row">
+          <div class="s3-fuel-name">Diesel</div>
+          <div class="s3-fuel-price">198.7¢</div>
+        </div>
+        <div class="s3-fuel-row">
+          <div class="s3-fuel-name">E10</div>
+          <div class="s3-fuel-price">169.9¢</div>
+        </div>
+      </div>
+
+      <!-- Chart -->
+      <div class="s3-chart">
+        <div class="s3-section-label">7-day price history</div>
+        <div class="s3-chart-area">
+          <div class="s3-chart-line"></div>
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="s3-actions">
+        <div class="s3-btn primary">Directions</div>
+        <div class="s3-btn secondary">Share</div>
+      </div>
+    </div>
+
+  </div><!-- /phone-content -->
+</div><!-- /phone -->
+
+<!-- Annotations below phone -->
+<div class="annotations" id="ann-1">
+  <div class="annotation">
+    <div class="annotation-dot"></div>
+    <div class="annotation-text"><strong>Map stays primary.</strong> Price pins are the map markers — colour-coded green/amber/red by value. Selected station gets a white halo.</div>
+  </div>
+  <div class="annotation">
+    <div class="annotation-dot"></div>
+    <div class="annotation-text"><strong>Bottom sheet (persistent).</strong> Shows cheapest price, area avg, 7-day trend, and the selected station CTA. Drag up to expand into the full list.</div>
+  </div>
+  <div class="annotation">
+    <div class="annotation-dot"></div>
+    <div class="annotation-text"><strong>Fuel type tabs</strong> are full-width scrollable, large tap targets, amber underline for active.</div>
+  </div>
+</div>
+
+<div class="annotations" id="ann-2" style="display:none">
+  <div class="annotation">
+    <div class="annotation-dot"></div>
+    <div class="annotation-text"><strong>Rank number badge</strong> (gold #1, grey others) makes cheapest instantly obvious without reading prices.</div>
+  </div>
+  <div class="annotation">
+    <div class="annotation-dot"></div>
+    <div class="annotation-text"><strong>Stat bar</strong> at top: cheapest, area avg, 7-day trend, dearest — the four numbers you want at a glance.</div>
+  </div>
+  <div class="annotation">
+    <div class="annotation-dot"></div>
+    <div class="annotation-text"><strong>Large price number</strong> (24px, 900 weight) is readable at arm's length. 7-day delta is always present.</div>
+  </div>
+</div>
+
+<div class="annotations" id="ann-3" style="display:none">
+  <div class="annotation">
+    <div class="annotation-dot"></div>
+    <div class="annotation-text"><strong>Hero price</strong> is 52px — can't miss it. Fuel type and 7-day change are the two supporting data points.</div>
+  </div>
+  <div class="annotation">
+    <div class="annotation-dot"></div>
+    <div class="annotation-text"><strong>All fuels table</strong> shows every type at this station — useful for E10 vs 91 decisions.</div>
+  </div>
+  <div class="annotation">
+    <div class="annotation-dot"></div>
+    <div class="annotation-text"><strong>7-day sparkline</strong> gives a visual sense of the price cycle. "Is now a good time to fill up?"</div>
+  </div>
+</div>
+
+<script>
+function showScreen(n, btn) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.screen-nav button').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.annotations').forEach(a => a.style.display = 'none');
+  document.getElementById('screen-' + n).classList.add('active');
+  document.getElementById('ann-' + n).style.display = 'block';
+  btn.classList.add('active');
+}
+</script>
+
+</body>
+</html>

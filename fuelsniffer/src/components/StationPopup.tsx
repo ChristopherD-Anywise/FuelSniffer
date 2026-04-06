@@ -22,10 +22,12 @@ interface StationPopupProps {
   fuelId: string
 }
 
+const DEV_PLACEHOLDER = process.env.NODE_ENV === 'development'
+
 function PopupAdBanner() {
   const pushed = useRef(false)
   useEffect(() => {
-    if (pushed.current) return
+    if (DEV_PLACEHOLDER || pushed.current) return
     pushed.current = true
     try {
       // @ts-expect-error — adsbygoogle injected by script tag
@@ -34,6 +36,22 @@ function PopupAdBanner() {
       // AdSense not loaded
     }
   }, [])
+
+  if (DEV_PLACEHOLDER) {
+    return (
+      <div style={{ margin: '10px 0', display: 'flex', justifyContent: 'center' }}>
+        <div style={{
+          width: '300px', height: '50px',
+          background: '#2a2a2a', border: '1px dashed #f59e0b', borderRadius: '4px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: '11px', fontWeight: 700, color: '#f59e0b',
+          letterSpacing: '0.1em', textTransform: 'uppercase',
+        }}>
+          Ad · 300×50
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div style={{ margin: '10px 0', display: 'flex', justifyContent: 'center' }}>
