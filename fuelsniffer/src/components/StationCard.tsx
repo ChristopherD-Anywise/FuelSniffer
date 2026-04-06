@@ -8,9 +8,10 @@ interface StationCardProps {
   isSelected: boolean
   onClick: () => void
   cardRef?: (el: HTMLDivElement | null) => void
+  rank: number
 }
 
-export default function StationCard({ station, isSelected, onClick, cardRef }: StationCardProps) {
+export default function StationCard({ station, isSelected, onClick, cardRef, rank }: StationCardProps) {
   const priceTime = station.source_ts ? new Date(station.source_ts) : new Date(station.recorded_at)
   const price = parseFloat(station.price_cents)
   const ago = formatDistanceToNowStrict(priceTime, { addSuffix: false }) + ' ago'
@@ -20,43 +21,94 @@ export default function StationCard({ station, isSelected, onClick, cardRef }: S
     <div
       ref={cardRef}
       onClick={onClick}
-      className={[
-        'group flex items-center gap-3 px-3 py-2.5 cursor-pointer transition-colors duration-150',
-        'hover:bg-slate-50',
-        isSelected ? 'bg-sky-50/80' : '',
-      ].join(' ')}
       role="button"
       tabIndex={0}
       onKeyDown={(e) => e.key === 'Enter' && onClick()}
+      style={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: '12px',
+        padding: '14px 16px',
+        borderBottom: '1px solid #1a1a1a',
+        borderLeft: isSelected ? '3px solid #f59e0b' : '3px solid transparent',
+        paddingLeft: isSelected ? '13px' : '16px',
+        background: isSelected ? '#1a0d00' : '#111111',
+        cursor: 'pointer',
+        transition: 'background 0.1s',
+        minHeight: '64px',
+      }}
+      onMouseEnter={(e) => {
+        if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a'
+      }}
+      onMouseLeave={(e) => {
+        if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = '#111111'
+      }}
     >
-      {/* Price + change */}
-      <div className="flex-shrink-0 w-[72px]">
-        <div className="text-xl font-extrabold tabular-nums text-slate-900 leading-tight">
-          {price.toFixed(1)}
+      <div
+        style={{
+          width: '26px',
+          height: '26px',
+          borderRadius: '6px',
+          background: rank === 1 ? '#f59e0b' : '#2a2a2a',
+          color: rank === 1 ? '#000000' : '#888888',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          fontSize: '13px',
+          fontWeight: 900,
+          flexShrink: 0,
+        }}
+      >
+        {rank}
+      </div>
+
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <div style={{
+          fontSize: '14px',
+          fontWeight: 700,
+          color: '#ffffff',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          marginBottom: '2px',
+        }}>
+          {station.name}
+        </div>
+        <div style={{ fontSize: '11px', color: '#555555' }}>
+          {station.distance_km.toFixed(1)} km · {ago}
+        </div>
+      </div>
+
+      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+        <div style={{
+          fontSize: '24px',
+          fontWeight: 900,
+          fontVariantNumeric: 'tabular-nums',
+          color: '#ffffff',
+          lineHeight: 1,
+          marginBottom: '3px',
+        }}>
+          {price.toFixed(1)}<span style={{ fontSize: '13px', color: '#555555', fontWeight: 600 }}>¢</span>
         </div>
         {change !== null && change !== 0 && (
-          <div className={`flex items-center gap-0.5 text-[11px] font-semibold leading-tight ${
-            change > 0 ? 'text-red-500' : 'text-emerald-600'
-          }`}>
-            <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
-              {change > 0
-                ? <path d="M5 2L8.5 7H1.5L5 2Z" />
-                : <path d="M5 8L1.5 3H8.5L5 8Z" />
+          <div style={{
+            fontSize: '11px',
+            fontWeight: 700,
+            color: change < 0 ? '#22c55e' : '#ef4444',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'flex-end',
+            gap: '2px',
+          }}>
+            <svg width="8" height="8" viewBox="0 0 10 10" fill="currentColor">
+              {change < 0
+                ? <path d="M5 8L1.5 3H8.5L5 8Z" />
+                : <path d="M5 2L8.5 7H1.5L5 2Z" />
               }
             </svg>
             {Math.abs(change).toFixed(1)}¢ / 7d
           </div>
         )}
-      </div>
-
-      {/* Station details */}
-      <div className="flex-1 min-w-0">
-        <div className="text-sm font-semibold text-slate-900 truncate">
-          {station.name}
-        </div>
-        <div className="text-xs text-slate-500 truncate">
-          {[station.distance_km.toFixed(1) + ' km', ago].filter(Boolean).join(' · ')}
-        </div>
       </div>
     </div>
   )
