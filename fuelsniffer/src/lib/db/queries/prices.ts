@@ -24,7 +24,7 @@ export async function getLatestPrices(
   fuelTypeId: number,
   radiusKm: number,
   userLocation?: { lat: number; lng: number },
-  changeHours: number = 24
+  changeHours: number = 168
 ): Promise<PriceResult[]> {
   const lat = userLocation?.lat ?? DEFAULT_LAT
   const lng = userLocation?.lng ?? DEFAULT_LNG

@@ -66,10 +66,8 @@ export default function DashboardClient() {
     router.replace(`/dashboard?${next.toString()}`)
   }
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   function handleRadiusChange(km: number) {
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-    debounceRef.current = setTimeout(() => updateParam('radius', String(km)), 400)
+    updateParam('radius', String(km))
   }
 
   function handleCardSelect(id: number) {

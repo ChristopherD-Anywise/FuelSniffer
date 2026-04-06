@@ -44,7 +44,7 @@ export default function StationCard({ station, isSelected, onClick, cardRef }: S
                 : <path d="M5 8L1.5 3H8.5L5 8Z" />
               }
             </svg>
-            {Math.abs(change).toFixed(1)}¢
+            {Math.abs(change).toFixed(1)}¢ / 7d
           </div>
         )}
       </div>
@@ -55,7 +55,7 @@ export default function StationCard({ station, isSelected, onClick, cardRef }: S
           {station.name}
         </div>
         <div className="text-xs text-slate-500 truncate">
-          {[station.brand, station.distance_km.toFixed(1) + ' km', ago].filter(Boolean).join(' · ')}
+          {[station.distance_km.toFixed(1) + ' km', ago].filter(Boolean).join(' · ')}
         </div>
       </div>
     </div>

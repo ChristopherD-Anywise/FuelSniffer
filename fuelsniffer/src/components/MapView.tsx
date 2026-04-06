@@ -171,13 +171,15 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
     }
   }, [userLocation, map])
 
-  // Open popup for selected station and pan to it
+  // Open popup for selected station — zoom to uncluster if needed
   useEffect(() => {
     if (selectedId) {
       const marker = markersRef.current.get(selectedId)
-      if (marker) {
-        marker.openPopup()
-        map.panTo(marker.getLatLng(), { animate: true, duration: 0.3 })
+      const cluster = clusterRef.current
+      if (marker && cluster) {
+        cluster.zoomToShowLayer(marker, () => {
+          marker.openPopup()
+        })
       }
     } else {
       map.closePopup()
