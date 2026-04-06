@@ -1,11 +1,25 @@
 export default function EmptyState({ fuelLabel, radius }: { fuelLabel: string; radius: number }) {
   return (
-    <div className="flex flex-col items-center justify-center h-64 px-8 text-center">
-      <div className="text-4xl mb-4">🔍</div>
-      <p className="text-base font-semibold text-slate-700 mb-1">No stations found</p>
-      <p className="text-sm text-slate-500 max-w-[280px]">
-        No {fuelLabel} stations within {radius} km. Try increasing the radius or switching fuel type.
-      </p>
+    <div style={{
+      display: 'flex',
+      flexDirection: 'column',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: '60px 24px',
+      background: '#111111',
+      color: '#555555',
+      height: '100%',
+    }}>
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#2a2a2a" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginBottom: 16 }}>
+        <circle cx="11" cy="11" r="8"/>
+        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <div style={{ fontSize: 15, fontWeight: 700, color: '#666666', marginBottom: 6 }}>
+        No stations found
+      </div>
+      <div style={{ fontSize: 13, color: '#444444', textAlign: 'center', maxWidth: 240 }}>
+        No {fuelLabel} prices within {radius}km. Try increasing the radius.
+      </div>
     </div>
   )
 }
