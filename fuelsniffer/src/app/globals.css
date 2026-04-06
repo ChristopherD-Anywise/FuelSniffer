@@ -1,85 +1,46 @@
 @import "tailwindcss";
 
-@theme inline {
-  --color-background: #f8fafc;
-  --color-foreground: #0f172a;
-  --color-brand: #0ea5e9;
-  --color-brand-dark: #0284c7;
-  --color-cheap: #10b981;
-  --color-mid: #f59e0b;
-  --color-expensive: #ef4444;
-  --color-change-up: #ef4444;
-  --color-change-down: #10b981;
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
+html,
 body {
-  background: var(--color-background);
-  color: var(--color-foreground);
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background: #111111;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 
-/* Custom scrollbar for the station list */
+/* Leaflet popup — dark theme override */
+.leaflet-popup-content-wrapper {
+  background: #1a1a1a !important;
+  border: 1px solid #2a2a2a !important;
+  border-radius: 12px !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6) !important;
+}
+
+.leaflet-popup-tip {
+  background: #1a1a1a !important;
+}
+
+.leaflet-popup-close-button {
+  color: #555555 !important;
+}
+
+/* Station list scrollbar */
 .station-list::-webkit-scrollbar {
-  width: 6px;
+  width: 4px;
 }
 .station-list::-webkit-scrollbar-track {
-  background: transparent;
+  background: #111111;
 }
 .station-list::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 3px;
-}
-
-/* Range slider styling */
-input[type="range"] {
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 3px;
-  background: #e2e8f0;
-  outline: none;
-}
-input[type="range"]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
-  background: var(--color-brand);
-  cursor: pointer;
-  border: 3px solid white;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-}
-
-/* Station detail panel animations */
-@keyframes slide-up {
-  from { transform: translateY(100%); }
-  to { transform: translateY(0); }
-}
-@keyframes slide-in-right {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
-}
-.detail-panel-mobile {
-  animation: slide-up 0.2s ease-out;
-}
-.detail-panel-desktop {
-  animation: slide-in-right 0.2s ease-out;
-}
-
-/* Leaflet overrides */
-.leaflet-popup-content-wrapper {
-  border-radius: 12px !important;
-  box-shadow: 0 10px 25px -5px rgba(0,0,0,0.15) !important;
-  padding: 0 !important;
-}
-.leaflet-popup-content {
-  margin: 0 !important;
-  min-width: 240px !important;
-}
-.leaflet-popup-tip {
-  box-shadow: 0 3px 6px rgba(0,0,0,0.1) !important;
+  background: #2a2a2a;
+  border-radius: 2px;
 }
