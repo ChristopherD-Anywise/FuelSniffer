@@ -171,7 +171,7 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
     }
   }, [userLocation, map])
 
-  // Open popup for selected station — zoom to uncluster if needed
+  // Open popup for selected station — zoom to uncluster, then pan so popup is fully visible
   useEffect(() => {
     if (selectedId) {
       const marker = markersRef.current.get(selectedId)
@@ -179,6 +179,22 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
       if (marker && cluster) {
         cluster.zoomToShowLayer(marker, () => {
           marker.openPopup()
+          // Give the popup DOM a tick to render, then pan to keep it in view
+          setTimeout(() => {
+            const popup = marker.getPopup()
+            if (!popup) return
+            const px = map.latLngToContainerPoint(marker.getLatLng())
+            const mapSize = map.getSize()
+            const popupHeight = 420 // approximate popup height in px
+            const popupWidth  = 320
+            const PAD = 16
+            let dx = 0
+            let dy = 0
+            if (px.y - popupHeight - PAD < 0) dy = px.y - popupHeight - PAD
+            if (px.x + popupWidth / 2 + PAD > mapSize.x) dx = px.x + popupWidth / 2 + PAD - mapSize.x
+            if (px.x - popupWidth / 2 - PAD < 0) dx = px.x - popupWidth / 2 - PAD
+            if (dx !== 0 || dy !== 0) map.panBy([dx, dy], { animate: true, duration: 0.25 })
+          }, 50)
         })
       }
     } else {
