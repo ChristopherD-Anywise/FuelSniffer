@@ -24,10 +24,55 @@ export async function getLatestPrices(
   fuelTypeId: number,
   radiusKm: number,
   userLocation?: { lat: number; lng: number },
-  changeHours: number = 168
+  changeHours: number = 168,
+  suburb?: string
 ): Promise<PriceResult[]> {
   const lat = userLocation?.lat ?? DEFAULT_LAT
   const lng = userLocation?.lng ?? DEFAULT_LNG
+
+  // When a suburb is specified, return all stations in that suburb (no radius filter)
+  if (suburb) {
+    const rows = await db.execute(sql`
+      WITH latest AS (
+        SELECT DISTINCT ON (station_id)
+          station_id,
+          price_cents,
+          recorded_at,
+          source_ts
+        FROM price_readings
+        WHERE fuel_type_id = ${fuelTypeId}
+        ORDER BY station_id, recorded_at DESC
+      )
+      SELECT
+        s.id,
+        s.name,
+        s.brand,
+        s.address,
+        s.suburb,
+        s.latitude,
+        s.longitude,
+        l.price_cents,
+        l.recorded_at,
+        l.source_ts,
+        0 AS distance_km,
+        (l.price_cents::numeric - prev.price_cents::numeric) AS price_change
+      FROM latest l
+      JOIN stations s ON s.id = l.station_id
+      LEFT JOIN LATERAL (
+        SELECT price_cents
+        FROM price_readings pr
+        WHERE pr.station_id = l.station_id
+          AND pr.fuel_type_id = ${fuelTypeId}
+          AND pr.recorded_at < NOW() - (${changeHours} || ' hours')::interval
+        ORDER BY pr.recorded_at DESC
+        LIMIT 1
+      ) prev ON true
+      WHERE s.is_active = true
+        AND s.suburb ILIKE ${suburb}
+      ORDER BY l.price_cents ASC
+    `)
+    return rows as unknown as PriceResult[]
+  }
 
   const rows = await db.execute(sql`
     WITH latest AS (

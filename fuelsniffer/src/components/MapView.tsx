@@ -29,9 +29,11 @@ interface MapViewProps {
   onPinClick: (id: number) => void
   userLocation?: { lat: number; lng: number } | null
   isVisible?: boolean  // triggers invalidateSize when map container becomes visible
+  fitBounds?: boolean  // when true, fit map to all current stations
+  onFitBoundsDone?: () => void
 }
 
-function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocation, isVisible }: MapViewProps) {
+function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocation, isVisible, fitBounds, onFitBoundsDone }: MapViewProps) {
   const map = useMap()
   const markersRef = useRef<Map<number, L.Marker>>(new Map())
   const rootsRef = useRef<Map<number, ReturnType<typeof createRoot>>>(new Map())
@@ -209,10 +211,18 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
     }
   }, [isVisible, map])
 
+  // Fit map to all stations when a suburb search result is selected
+  useEffect(() => {
+    if (!fitBounds || stations.length === 0) return
+    const bounds = L.latLngBounds(stations.map(s => [s.latitude, s.longitude]))
+    map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 })
+    onFitBoundsDone?.()
+  }, [fitBounds, stations, map, onFitBoundsDone])
+
   return null
 }
 
-export default function MapView({ stations, selectedId, activeFuel, onPinClick, userLocation, isVisible }: MapViewProps) {
+export default function MapView({ stations, selectedId, activeFuel, onPinClick, userLocation, isVisible, fitBounds, onFitBoundsDone }: MapViewProps) {
   const center = userLocation
     ? [userLocation.lat, userLocation.lng] as [number, number]
     : [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng] as [number, number]
@@ -226,7 +236,7 @@ export default function MapView({ stations, selectedId, activeFuel, onPinClick, 
       zoomControl={false}
     >
       <TileLayer url={OSM_TILE_URL} attribution={OSM_ATTRIBUTION} />
-      <PriceMarkers stations={stations} selectedId={selectedId} activeFuel={activeFuel} onPinClick={onPinClick} userLocation={userLocation} isVisible={isVisible} />
+      <PriceMarkers stations={stations} selectedId={selectedId} activeFuel={activeFuel} onPinClick={onPinClick} userLocation={userLocation} isVisible={isVisible} fitBounds={fitBounds} onFitBoundsDone={onFitBoundsDone} />
     </MapContainer>
   )
 }

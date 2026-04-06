@@ -3,13 +3,14 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 
 interface LocationSearchProps {
-  onSelect: (location: { lat: number; lng: number; label: string }) => void
+  onSelect: (location: { lat: number; lng: number; label: string; suburb?: string }) => void
 }
 
 interface SearchResult {
   type: 'area' | 'station'
   label?: string
   name?: string
+  suburb?: string
   id?: number
   lat: number
   lng: number
@@ -51,7 +52,7 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
 
   const handleSelect = (result: SearchResult) => {
     const label = result.type === 'area' ? result.label! : result.name!
-    onSelect({ lat: result.lat, lng: result.lng, label })
+    onSelect({ lat: result.lat, lng: result.lng, label, suburb: result.type === 'area' ? result.suburb : undefined })
     setQuery('')
     setResults([])
     setIsOpen(false)

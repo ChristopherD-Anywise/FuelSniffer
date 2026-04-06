@@ -13,6 +13,7 @@ const SearchQuerySchema = z.object({
 type SearchResult = {
   type: 'area'
   label: string
+  suburb: string
   lat: number
   lng: number
   stationCount: number
@@ -54,6 +55,7 @@ export async function GET(req: Request) {
   const results: SearchResult[] = (rows as unknown as Array<Record<string, unknown>>).map(row => ({
     type: 'area' as const,
     label: `${row.suburb}${row.postcode ? ` (${row.postcode})` : ''}`,
+    suburb: String(row.suburb),
     lat: Number(row.lat),
     lng: Number(row.lng),
     stationCount: Number(row.station_count),

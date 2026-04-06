@@ -66,6 +66,8 @@ export default function DashboardClient() {
   const [mobileTab,      setMobileTab]      = useState<MobileTab>('map')
   const [userLocation,   setUserLocation]   = useState<{ lat: number; lng: number } | null>(null)
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'active' | 'denied'>('idle')
+  const [activeSuburb,   setActiveSuburb]   = useState<string | null>(null)
+  const [fitBounds,      setFitBounds]      = useState(false)
   // Local radius drives the slider display immediately; URL is updated after dragging stops
   const [localRadius,    setLocalRadius]    = useState(radiusParam)
   const radiusDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -79,8 +81,13 @@ export default function DashboardClient() {
     setLoading(true)
     setError(false)
     try {
-      let url = `/api/prices?fuel=${activeFuel}&radius=${radiusParam}`
-      if (userLocation) url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`
+      let url: string
+      if (activeSuburb) {
+        url = `/api/prices?fuel=${activeFuel}&suburb=${encodeURIComponent(activeSuburb)}`
+      } else {
+        url = `/api/prices?fuel=${activeFuel}&radius=${radiusParam}`
+        if (userLocation) url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`
+      }
       const res = await fetch(url)
       if (!res.ok) throw new Error('API error')
       const data: PriceResult[] = await res.json()
@@ -90,7 +97,7 @@ export default function DashboardClient() {
     } finally {
       setLoading(false)
     }
-  }, [activeFuel, radiusParam, userLocation])
+  }, [activeFuel, radiusParam, userLocation, activeSuburb])
 
   useEffect(() => { fetchPrices() }, [fetchPrices])
 
@@ -117,9 +124,15 @@ export default function DashboardClient() {
     setSelectedId(prev => prev === id ? null : id)
   }
 
-  function handleLocationSelect(location: { lat: number; lng: number; label: string }) {
+  function handleLocationSelect(location: { lat: number; lng: number; label: string; suburb?: string }) {
     setUserLocation({ lat: location.lat, lng: location.lng })
     setLocationStatus('active')
+    if (location.suburb) {
+      setActiveSuburb(location.suburb)
+      setFitBounds(true)
+    } else {
+      setActiveSuburb(null)
+    }
   }
 
   function handleLocateMe() {
@@ -127,6 +140,7 @@ export default function DashboardClient() {
     if (locationStatus === 'active') {
       setUserLocation(null)
       setLocationStatus('idle')
+      setActiveSuburb(null)
       return
     }
     setLocationStatus('loading')
@@ -134,6 +148,7 @@ export default function DashboardClient() {
       (pos) => {
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
         setLocationStatus('active')
+        setActiveSuburb(null)
       },
       () => {
         setLocationStatus('denied')
@@ -236,6 +251,8 @@ export default function DashboardClient() {
             onPinClick={handlePinClick}
             userLocation={userLocation}
             isVisible={mobileTab === 'map'}
+            fitBounds={fitBounds}
+            onFitBoundsDone={() => setFitBounds(false)}
           />
         </div>
       </div>

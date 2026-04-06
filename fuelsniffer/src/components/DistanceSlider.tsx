@@ -11,7 +11,7 @@ export default function DistanceSlider({ value, onChange }: DistanceSliderProps)
       <input
         type="range"
         min={1}
-        max={50}
+        max={500}
         step={1}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
