@@ -13,7 +13,8 @@ const SearchQuerySchema = z.object({
 type SearchResult = {
   type: 'area'
   label: string
-  suburb: string
+  suburb?: string
+  postcode?: string
   lat: number
   lng: number
   stationCount: number
@@ -35,6 +36,7 @@ export async function GET(req: Request) {
 
   const rows = await db.execute(sql`
     SELECT
+      COALESCE(suburb, postcode, 'Unknown') AS display_suburb,
       suburb,
       postcode,
       AVG(latitude)::numeric(10,6) AS lat,
@@ -42,10 +44,10 @@ export async function GET(req: Request) {
       COUNT(*)::int AS station_count
     FROM stations
     WHERE is_active = true
-      AND suburb IS NOT NULL
       AND (
         suburb ILIKE ${'%' + q + '%'}
         OR postcode LIKE ${q + '%'}
+        OR name ILIKE ${'%' + q + '%'}
       )
     GROUP BY suburb, postcode
     ORDER BY COUNT(*) DESC
@@ -54,8 +56,11 @@ export async function GET(req: Request) {
 
   const results: SearchResult[] = (rows as unknown as Array<Record<string, unknown>>).map(row => ({
     type: 'area' as const,
-    label: `${row.suburb}${row.postcode ? ` (${row.postcode})` : ''}`,
-    suburb: String(row.suburb),
+    label: row.suburb
+      ? `${row.suburb}${row.postcode ? ` (${row.postcode})` : ''}`
+      : `Postcode ${row.postcode}`,
+    suburb: row.suburb ? String(row.suburb) : undefined,
+    postcode: row.postcode ? String(row.postcode) : undefined,
     lat: Number(row.lat),
     lng: Number(row.lng),
     stationCount: Number(row.station_count),

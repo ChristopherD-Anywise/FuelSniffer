@@ -83,8 +83,26 @@ export function isWithinRadius(lat: number, lng: number): boolean {
 // ── API response normalisation ────────────────────────────────────────────────
 
 /**
+ * Extract suburb from a QLD API address string.
+ * The Direct API has no suburb field, but the address usually ends with
+ * "SUBURB_NAME QLD POSTCODE" or "SUBURB_NAME, QLD POSTCODE".
+ * We extract the suburb by taking the token(s) before "QLD" if present,
+ * otherwise fall back to the second-to-last comma-delimited segment.
+ */
+export function extractSuburb(address: string | null): string | null {
+  if (!address) return null
+  // Match "... SUBURB QLD POSTCODE" or "... SUBURB, QLD POSTCODE"
+  const m = address.match(/,\s*([^,]+?)\s*,?\s*QLD\b/i)
+  if (m) return m[1].trim()
+  // Fallback: second segment of comma-split (e.g. "123 Main St, NORTH LAKES, 4509")
+  const parts = address.split(',').map(p => p.trim()).filter(Boolean)
+  if (parts.length >= 2) return parts[parts.length - 2] || null
+  return null
+}
+
+/**
  * Convert a normalised SiteDetails record to a NewStation domain object.
- * Note: The real API has no suburb field — we leave it null.
+ * Suburb is extracted from the address string since the Direct API has no suburb field.
  */
 export function normaliseStation(site: SiteDetails): NewStation {
   return {
@@ -92,7 +110,7 @@ export function normaliseStation(site: SiteDetails): NewStation {
     name:       site.Name,
     brand:      site.Brand ?? null,
     address:    site.Address ?? null,
-    suburb:     null,  // API does not provide suburb
+    suburb:     extractSuburb(site.Address ?? null),
     postcode:   site.Postcode ?? null,
     latitude:   site.Lat,
     longitude:  site.Lng,

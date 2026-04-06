@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
 
 interface LocationSearchProps {
-  onSelect: (location: { lat: number; lng: number; label: string; suburb?: string }) => void
+  onSelect: (location: { lat: number; lng: number; label: string; suburb?: string; postcode?: string }) => void
 }
 
 interface SearchResult {
@@ -11,6 +11,7 @@ interface SearchResult {
   label?: string
   name?: string
   suburb?: string
+  postcode?: string
   id?: number
   lat: number
   lng: number
@@ -23,6 +24,7 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [hoveredArea, setHoveredArea] = useState<number | null>(null)
   const [hoveredStation, setHoveredStation] = useState<number | null>(null)
+  const [highlightedIndex, setHighlightedIndex] = useState<number>(-1)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -31,6 +33,7 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
     if (q.length < 2) {
       setResults([])
       setIsOpen(false)
+      setHighlightedIndex(-1)
       return
     }
     try {
@@ -39,6 +42,7 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
       const data: SearchResult[] = await res.json()
       setResults(data)
       setIsOpen(data.length > 0)
+      setHighlightedIndex(-1)
     } catch {
       // silently ignore fetch errors
     }
@@ -52,7 +56,13 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
 
   const handleSelect = (result: SearchResult) => {
     const label = result.type === 'area' ? result.label! : result.name!
-    onSelect({ lat: result.lat, lng: result.lng, label, suburb: result.type === 'area' ? result.suburb : undefined })
+    onSelect({
+      lat: result.lat,
+      lng: result.lng,
+      label,
+      suburb: result.type === 'area' ? result.suburb : undefined,
+      postcode: result.type === 'area' ? result.postcode : undefined,
+    })
     setQuery('')
     setResults([])
     setIsOpen(false)
@@ -69,10 +79,22 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
-  // Close on Escape
+  const allResults = [...results.filter(r => r.type === 'area'), ...results.filter(r => r.type === 'station')]
+
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Escape') {
       setIsOpen(false)
+      setHighlightedIndex(-1)
+    } else if (e.key === 'ArrowDown') {
+      e.preventDefault()
+      setHighlightedIndex(i => Math.min(i + 1, allResults.length - 1))
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault()
+      setHighlightedIndex(i => Math.max(i - 1, 0))
+    } else if (e.key === 'Enter') {
+      e.preventDefault()
+      const idx = highlightedIndex >= 0 ? highlightedIndex : 0
+      if (allResults[idx]) handleSelect(allResults[idx])
     }
   }
 
@@ -83,8 +105,8 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
     }
   }, [])
 
-  const areas = results.filter((r) => r.type === 'area')
-  const stations = results.filter((r) => r.type === 'station')
+  const areas = allResults.filter((r) => r.type === 'area')
+  const stations = allResults.filter((r) => r.type === 'station')
 
   return (
     <div ref={containerRef} style={{ position: 'relative', flexShrink: 0 }}>
@@ -140,70 +162,65 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
           width: '100%',
           minWidth: '224px',
         }}>
-          {areas.length > 0 && (
-            <>
-              {areas.map((area, i) => (
-                <button
-                  key={`area-${i}`}
-                  onClick={() => handleSelect(area)}
-                  onMouseEnter={() => setHoveredArea(i)}
-                  onMouseLeave={() => setHoveredArea(null)}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    paddingLeft: '12px',
-                    paddingRight: '12px',
-                    paddingTop: '8px',
-                    paddingBottom: '8px',
-                    background: hoveredArea === i ? '#2a2a2a' : 'transparent',
-                    cursor: 'pointer',
-                    border: 'none',
-                    transition: 'background-color 150ms',
-                  }}
-                >
-                  <span style={{ fontSize: '14px', fontWeight: 500, color: '#ffffff' }}>
-                    {area.label}
-                  </span>
-                  {area.stationCount != null && (
-                    <span style={{ fontSize: '12px', color: '#555555', marginLeft: '6px' }}>
-                      ({area.stationCount} station{area.stationCount !== 1 ? 's' : ''})
-                    </span>
-                  )}
-                </button>
-              ))}
-            </>
-          )}
+          {areas.map((area, i) => (
+            <button
+              key={`area-${i}`}
+              onClick={() => handleSelect(area)}
+              onMouseEnter={() => setHoveredArea(i)}
+              onMouseLeave={() => setHoveredArea(null)}
+              style={{
+                width: '100%',
+                textAlign: 'left',
+                paddingLeft: '12px',
+                paddingRight: '12px',
+                paddingTop: '8px',
+                paddingBottom: '8px',
+                background: highlightedIndex === i || hoveredArea === i ? '#2a2a2a' : 'transparent',
+                cursor: 'pointer',
+                border: 'none',
+                transition: 'background-color 150ms',
+              }}
+            >
+              <span style={{ fontSize: '14px', fontWeight: 500, color: '#ffffff' }}>
+                {area.label}
+              </span>
+              {area.stationCount != null && (
+                <span style={{ fontSize: '12px', color: '#555555', marginLeft: '6px' }}>
+                  ({area.stationCount} station{area.stationCount !== 1 ? 's' : ''})
+                </span>
+              )}
+            </button>
+          ))}
 
           {areas.length > 0 && stations.length > 0 && (
             <div style={{ borderTop: '1px solid #2a2a2a', margin: '4px 0' }} />
           )}
 
-          {stations.length > 0 && (
-            <>
-              {stations.map((station, i) => (
-                <button
-                  key={`station-${station.id ?? i}`}
-                  onClick={() => handleSelect(station)}
-                  onMouseEnter={() => setHoveredStation(i)}
-                  onMouseLeave={() => setHoveredStation(null)}
-                  style={{
-                    width: '100%',
-                    textAlign: 'left',
-                    paddingLeft: '12px',
-                    paddingRight: '12px',
-                    paddingTop: '8px',
-                    paddingBottom: '8px',
-                    background: hoveredStation === i ? '#2a2a2a' : 'transparent',
-                    cursor: 'pointer',
-                    border: 'none',
-                    transition: 'background-color 150ms',
-                  }}
-                >
-                  <span style={{ fontSize: '14px', color: '#ffffff' }}>{station.name}</span>
-                </button>
-              ))}
-            </>
-          )}
+          {stations.map((station, i) => {
+            const globalIndex = areas.length + i
+            return (
+              <button
+                key={`station-${station.id ?? i}`}
+                onClick={() => handleSelect(station)}
+                onMouseEnter={() => setHoveredStation(i)}
+                onMouseLeave={() => setHoveredStation(null)}
+                style={{
+                  width: '100%',
+                  textAlign: 'left',
+                  paddingLeft: '12px',
+                  paddingRight: '12px',
+                  paddingTop: '8px',
+                  paddingBottom: '8px',
+                  background: highlightedIndex === globalIndex || hoveredStation === i ? '#2a2a2a' : 'transparent',
+                  cursor: 'pointer',
+                  border: 'none',
+                  transition: 'background-color 150ms',
+                }}
+              >
+                <span style={{ fontSize: '14px', color: '#ffffff' }}>{station.name}</span>
+              </button>
+            )
+          })}
         </div>
       )}
     </div>

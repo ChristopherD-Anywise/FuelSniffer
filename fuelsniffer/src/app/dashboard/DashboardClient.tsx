@@ -67,6 +67,7 @@ export default function DashboardClient() {
   const [userLocation,   setUserLocation]   = useState<{ lat: number; lng: number } | null>(null)
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'active' | 'denied'>('idle')
   const [activeSuburb,   setActiveSuburb]   = useState<string | null>(null)
+  const [activePostcode, setActivePostcode] = useState<string | null>(null)
   const [fitBounds,      setFitBounds]      = useState(false)
   // Local radius drives the slider display immediately; URL is updated after dragging stops
   const [localRadius,    setLocalRadius]    = useState(radiusParam)
@@ -82,8 +83,10 @@ export default function DashboardClient() {
     setError(false)
     try {
       let url: string
-      if (activeSuburb) {
-        url = `/api/prices?fuel=${activeFuel}&suburb=${encodeURIComponent(activeSuburb)}`
+      if (activeSuburb || activePostcode) {
+        url = `/api/prices?fuel=${activeFuel}`
+        if (activeSuburb) url += `&suburb=${encodeURIComponent(activeSuburb)}`
+        if (activePostcode) url += `&postcode=${encodeURIComponent(activePostcode)}`
       } else {
         url = `/api/prices?fuel=${activeFuel}&radius=${radiusParam}`
         if (userLocation) url += `&lat=${userLocation.lat}&lng=${userLocation.lng}`
@@ -97,7 +100,7 @@ export default function DashboardClient() {
     } finally {
       setLoading(false)
     }
-  }, [activeFuel, radiusParam, userLocation, activeSuburb])
+  }, [activeFuel, radiusParam, userLocation, activeSuburb, activePostcode])
 
   useEffect(() => { fetchPrices() }, [fetchPrices])
 
@@ -124,15 +127,12 @@ export default function DashboardClient() {
     setSelectedId(prev => prev === id ? null : id)
   }
 
-  function handleLocationSelect(location: { lat: number; lng: number; label: string; suburb?: string }) {
+  function handleLocationSelect(location: { lat: number; lng: number; label: string; suburb?: string; postcode?: string }) {
     setUserLocation({ lat: location.lat, lng: location.lng })
     setLocationStatus('active')
-    if (location.suburb) {
-      setActiveSuburb(location.suburb)
-      setFitBounds(true)
-    } else {
-      setActiveSuburb(null)
-    }
+    setActiveSuburb(location.suburb ?? null)
+    setActivePostcode(location.postcode ?? null)
+    if (location.suburb || location.postcode) setFitBounds(true)
   }
 
   function handleLocateMe() {
@@ -141,6 +141,7 @@ export default function DashboardClient() {
       setUserLocation(null)
       setLocationStatus('idle')
       setActiveSuburb(null)
+      setActivePostcode(null)
       return
     }
     setLocationStatus('loading')
@@ -149,6 +150,7 @@ export default function DashboardClient() {
         setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude })
         setLocationStatus('active')
         setActiveSuburb(null)
+        setActivePostcode(null)
       },
       () => {
         setLocationStatus('denied')

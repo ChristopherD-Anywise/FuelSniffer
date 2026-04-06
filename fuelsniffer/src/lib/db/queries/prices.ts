@@ -25,13 +25,14 @@ export async function getLatestPrices(
   radiusKm: number,
   userLocation?: { lat: number; lng: number },
   changeHours: number = 168,
-  suburb?: string
+  suburb?: string,
+  postcode?: string
 ): Promise<PriceResult[]> {
   const lat = userLocation?.lat ?? DEFAULT_LAT
   const lng = userLocation?.lng ?? DEFAULT_LNG
 
-  // When a suburb is specified, return all stations in that suburb (no radius filter)
-  if (suburb) {
+  // When a suburb or postcode is specified, return all matching stations (no radius filter)
+  if (suburb || postcode) {
     const rows = await db.execute(sql`
       WITH latest AS (
         SELECT DISTINCT ON (station_id)
@@ -68,7 +69,10 @@ export async function getLatestPrices(
         LIMIT 1
       ) prev ON true
       WHERE s.is_active = true
-        AND s.suburb ILIKE ${suburb}
+        AND (
+          ${suburb ? sql`s.suburb ILIKE ${suburb}` : sql`false`}
+          OR ${postcode ? sql`s.postcode = ${postcode}` : sql`false`}
+        )
       ORDER BY l.price_cents ASC
     `)
     return rows as unknown as PriceResult[]

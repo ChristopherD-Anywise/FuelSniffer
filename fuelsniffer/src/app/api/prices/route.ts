@@ -20,6 +20,7 @@ const PricesQuerySchema = z.object({
   lat: z.string().optional().transform(v => v ? parseFloat(v) : undefined),
   lng: z.string().optional().transform(v => v ? parseFloat(v) : undefined),
   suburb: z.string().optional(),
+  postcode: z.string().optional(),
   changeHours: z
     .string()
     .optional()
@@ -45,6 +46,7 @@ export async function GET(req: Request) {
     lat: searchParams.get('lat') ?? undefined,
     lng: searchParams.get('lng') ?? undefined,
     suburb: searchParams.get('suburb') ?? undefined,
+    postcode: searchParams.get('postcode') ?? undefined,
     changeHours: searchParams.get('changeHours') ?? undefined,
   })
 
@@ -57,7 +59,7 @@ export async function GET(req: Request) {
     ? { lat: parsed.data.lat, lng: parsed.data.lng }
     : undefined
 
-  const stations = await getLatestPrices(parsed.data.fuel, parsed.data.radius, userLocation, parsed.data.changeHours, parsed.data.suburb)
+  const stations = await getLatestPrices(parsed.data.fuel, parsed.data.radius, userLocation, parsed.data.changeHours, parsed.data.suburb, parsed.data.postcode)
 
   return NextResponse.json(stations, { status: 200 })
 }
