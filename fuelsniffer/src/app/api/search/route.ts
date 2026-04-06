@@ -36,31 +36,39 @@ export async function GET(req: Request) {
 
   const rows = await db.execute(sql`
     SELECT
-      COALESCE(suburb, postcode, 'Unknown') AS display_suburb,
-      suburb,
       postcode,
-      AVG(latitude)::numeric(10,6) AS lat,
+      -- Take the most common non-null suburb for this postcode
+      (
+        SELECT suburb
+        FROM stations s2
+        WHERE s2.postcode = s.postcode
+          AND s2.suburb IS NOT NULL
+          AND s2.is_active = true
+        GROUP BY suburb
+        ORDER BY COUNT(*) DESC
+        LIMIT 1
+      ) AS suburb,
+      AVG(latitude)::numeric(10,6)  AS lat,
       AVG(longitude)::numeric(10,6) AS lng,
-      COUNT(*)::int AS station_count
-    FROM stations
+      COUNT(*)::int                 AS station_count
+    FROM stations s
     WHERE is_active = true
       AND (
         suburb ILIKE ${'%' + q + '%'}
         OR postcode LIKE ${q + '%'}
-        OR name ILIKE ${'%' + q + '%'}
       )
-    GROUP BY suburb, postcode
-    ORDER BY COUNT(*) DESC
+    GROUP BY postcode
+    ORDER BY station_count DESC
     LIMIT 8
   `)
 
   const results: SearchResult[] = (rows as unknown as Array<Record<string, unknown>>).map(row => ({
     type: 'area' as const,
+    suburb: row.suburb ? String(row.suburb) : undefined,
+    postcode: row.postcode ? String(row.postcode) : undefined,
     label: row.suburb
       ? `${row.suburb}${row.postcode ? ` (${row.postcode})` : ''}`
       : `Postcode ${row.postcode}`,
-    suburb: row.suburb ? String(row.suburb) : undefined,
-    postcode: row.postcode ? String(row.postcode) : undefined,
     lat: Number(row.lat),
     lng: Number(row.lng),
     stationCount: Number(row.station_count),
