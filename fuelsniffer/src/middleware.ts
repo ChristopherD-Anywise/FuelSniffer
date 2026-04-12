@@ -2,10 +2,20 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { buildSecurityHeaders } from '@/lib/security/headers'
 import { checkRateLimit, getRateLimitConfig } from '@/lib/security/rate-limit'
-import { createHash } from 'crypto'
 
+/**
+ * Simple non-cryptographic hash for IP rate limiting keys.
+ * Edge runtime doesn't support Node.js crypto module.
+ * This is NOT for security — just for bucketing IPs in the rate limiter.
+ */
 function hashIp(ip: string): string {
-  return createHash('sha256').update(ip).digest('hex').slice(0, 16)
+  let hash = 0
+  for (let i = 0; i < ip.length; i++) {
+    const char = ip.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Convert to 32-bit integer
+  }
+  return Math.abs(hash).toString(36)
 }
 
 export function middleware(request: NextRequest) {

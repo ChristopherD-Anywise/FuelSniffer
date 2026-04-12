@@ -7,10 +7,10 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-# The package-lock.json was generated on macOS so it only records
-# @tailwindcss/oxide-darwin-arm64. Force-install the Linux musl variant
-# explicitly so the Tailwind build step can find its native binding.
-RUN npm ci && npm install @tailwindcss/oxide-linux-arm64-musl --no-save
+# The package-lock.json was generated on macOS and may include
+# platform-specific optional deps that fail on Linux. Use --force to
+# skip platform checks, then install the Linux musl Tailwind variant.
+RUN npm ci --force && npm install @tailwindcss/oxide-linux-arm64-musl --no-save
 
 COPY . .
 
