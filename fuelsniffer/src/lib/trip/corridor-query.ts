@@ -90,18 +90,19 @@ export async function findStationsAlongRoute(params: CorridorParams): Promise<Co
     LIMIT ${limit}
   `)
 
-  return (rows as unknown as CorridorStation[]).map(r => ({
-    stationId: Number((r as Record<string, unknown>).stationId ?? (r as Record<string, unknown>).station_id),
-    externalId: String((r as Record<string, unknown>).externalId ?? (r as Record<string, unknown>).external_id),
-    sourceProvider: String((r as Record<string, unknown>).sourceProvider ?? (r as Record<string, unknown>).source_provider),
-    name: String((r as Record<string, unknown>).name),
-    brand: (r as Record<string, unknown>).brand ? String((r as Record<string, unknown>).brand) : null,
-    address: (r as Record<string, unknown>).address ? String((r as Record<string, unknown>).address) : null,
-    suburb: (r as Record<string, unknown>).suburb ? String((r as Record<string, unknown>).suburb) : null,
-    latitude: Number((r as Record<string, unknown>).latitude),
-    longitude: Number((r as Record<string, unknown>).longitude),
-    priceCents: Number((r as Record<string, unknown>).priceCents ?? (r as Record<string, unknown>).price_cents),
-    fuelTypeId: Number((r as Record<string, unknown>).fuelTypeId ?? (r as Record<string, unknown>).fuel_type_id),
-    detourMeters: Number((r as Record<string, unknown>).detourMeters ?? (r as Record<string, unknown>).detour_meters),
+  const rawRows = rows as unknown as Record<string, unknown>[]
+  return rawRows.map(r => ({
+    stationId: Number(r.stationId ?? r.station_id),
+    externalId: String(r.externalId ?? r.external_id),
+    sourceProvider: String(r.sourceProvider ?? r.source_provider),
+    name: String(r.name),
+    brand: r.brand ? String(r.brand) : null,
+    address: r.address ? String(r.address) : null,
+    suburb: r.suburb ? String(r.suburb) : null,
+    latitude: Number(r.latitude),
+    longitude: Number(r.longitude),
+    priceCents: Number(r.priceCents ?? r.price_cents),
+    fuelTypeId: Number(r.fuelTypeId ?? r.fuel_type_id),
+    detourMeters: Number(r.detourMeters ?? r.detour_meters),
   }))
 }
