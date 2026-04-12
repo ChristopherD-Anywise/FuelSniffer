@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import FilterBar from '@/components/FilterBar'
 import { FUEL_TYPES } from '@/components/FuelSelect'
 import StationList from '@/components/StationList'
@@ -201,6 +202,38 @@ export default function DashboardClient() {
           ))}
         </div>
       )}
+
+      {/* Trip planner CTA */}
+      <div style={{ background: '#111111', borderBottom: '1px solid #1a1a1a', flexShrink: 0, padding: '8px 12px' }}>
+        <Link
+          href="/dashboard/trip"
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            background: 'rgba(245,158,11,0.08)',
+            border: '1px solid rgba(245,158,11,0.25)',
+            borderRadius: '8px',
+            padding: '8px 12px',
+            textDecoration: 'none',
+            color: '#f59e0b',
+            fontSize: '13px',
+            fontWeight: 700,
+          }}
+        >
+          <span style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+              <line x1="8" y1="2" x2="8" y2="18"/>
+              <line x1="16" y1="6" x2="16" y2="22"/>
+            </svg>
+            Find fuel on my route
+          </span>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="9 18 15 12 9 6"/>
+          </svg>
+        </Link>
+      </div>
 
       {/* Content area */}
       <div
