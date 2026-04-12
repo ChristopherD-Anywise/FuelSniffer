@@ -76,16 +76,18 @@ export function extractSuburb(address: string | null): string | null {
  */
 export function normaliseStation(site: SiteDetails): NewStation {
   return {
-    id:         site.SiteId,
-    name:       site.Name,
-    brand:      site.Brand ?? null,
-    address:    site.Address ?? null,
-    suburb:     extractSuburb(site.Address ?? null),
-    postcode:   site.Postcode ?? null,
-    latitude:   site.Lat,
-    longitude:  site.Lng,
-    isActive:   true,
-    lastSeenAt: new Date(),
+    id:             site.SiteId,
+    name:           site.Name,
+    brand:          site.Brand ?? null,
+    address:        site.Address ?? null,
+    suburb:         extractSuburb(site.Address ?? null),
+    postcode:       site.Postcode ?? null,
+    latitude:       site.Lat,
+    longitude:      site.Lng,
+    isActive:       true,
+    lastSeenAt:     new Date(),
+    externalId:     site.SiteId.toString(),
+    sourceProvider: 'qld',
   }
 }
 
@@ -104,10 +106,11 @@ export function normalisePrice(
     const priceCents = rawToPrice(sitePrice.Price).toFixed(1)
     return {
       recordedAt,
-      stationId:   sitePrice.SiteId,
-      fuelTypeId:  sitePrice.FuelId,
-      priceCents:  priceCents,
-      sourceTs:    new Date(sitePrice.TransactionDateUtc),
+      stationId:      sitePrice.SiteId,
+      fuelTypeId:     sitePrice.FuelId,
+      priceCents:     priceCents,
+      sourceTs:       new Date(sitePrice.TransactionDateUtc),
+      sourceProvider: 'qld',
     }
   } catch (err) {
     console.error(

@@ -98,6 +98,8 @@ async function runCkanScrapeJob(): Promise<ScrapeResult> {
           longitude: parseFloat(r.Site_Longitude),
           isActive: true,
           lastSeenAt: new Date(),
+          externalId: siteId,
+          sourceProvider: 'qld',
         })
         .onConflictDoUpdate({
           target: stations.id,
@@ -133,6 +135,7 @@ async function runCkanScrapeJob(): Promise<ScrapeResult> {
         priceCents: String(priceCents),
         recordedAt,
         sourceTs,
+        sourceProvider: 'qld',
       }).onConflictDoNothing()
       priceCount++
     }

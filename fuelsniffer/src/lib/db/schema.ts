@@ -23,8 +23,10 @@ export const stations = pgTable('stations', {
   postcode:    text('postcode'),
   latitude:    doublePrecision('latitude').notNull(),
   longitude:   doublePrecision('longitude').notNull(),
-  isActive:    boolean('is_active').notNull().default(true),
-  lastSeenAt:  timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  isActive:       boolean('is_active').notNull().default(true),
+  lastSeenAt:     timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  externalId:     text('external_id').notNull(),
+  sourceProvider: text('source_provider').notNull(),
 })
 
 /**
@@ -40,8 +42,9 @@ export const priceReadings = pgTable('price_readings', {
   recordedAt:  timestamp('recorded_at', { withTimezone: true }).notNull(),
   stationId:   integer('station_id').notNull().references(() => stations.id),
   fuelTypeId:  integer('fuel_type_id').notNull(),
-  priceCents:  numeric('price_cents', { precision: 6, scale: 1 }).notNull(),
-  sourceTs:    timestamp('source_ts', { withTimezone: true }).notNull(), // TransactionDateUtc from API
+  priceCents:     numeric('price_cents', { precision: 6, scale: 1 }).notNull(),
+  sourceTs:       timestamp('source_ts', { withTimezone: true }).notNull(), // TransactionDateUtc from API
+  sourceProvider: text('source_provider').notNull(),
 })
 
 /**
