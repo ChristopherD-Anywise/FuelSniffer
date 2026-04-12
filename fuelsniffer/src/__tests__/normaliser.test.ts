@@ -3,7 +3,7 @@
  * Run: npx vitest run src/__tests__/normaliser.test.ts
  */
 import { describe, it, expect } from 'vitest'
-import { rawToPrice, isWithinRadius, toBrisbaneHour, normalisePrice, normaliseStation, extractSuburb } from '@/lib/scraper/normaliser'
+import { rawToPrice, toBrisbaneHour, normalisePrice, normaliseStation, extractSuburb } from '@/lib/scraper/normaliser'
 
 describe('rawToPrice', () => {
   it('converts QLD API integer 1459 to 145.9 cents per litre', () => {
@@ -55,28 +55,6 @@ describe('toBrisbaneHour — timezone correctness (no DST in Queensland)', () =>
   })
 })
 
-describe('isWithinRadius — 50km from North Lakes (-27.2353, 153.0189)', () => {
-  it('accepts North Lakes itself (0km)', () => {
-    expect(isWithinRadius(-27.2353, 153.0189)).toBe(true)
-  })
-
-  it('accepts Mango Hill (~2km from North Lakes)', () => {
-    expect(isWithinRadius(-27.2545, 153.0282)).toBe(true)
-  })
-
-  it('accepts Brisbane CBD (~26km from North Lakes — within 50km)', () => {
-    expect(isWithinRadius(-27.4698, 153.0251)).toBe(true)
-  })
-
-  it('rejects Gold Coast (~100km south)', () => {
-    expect(isWithinRadius(-28.0167, 153.4000)).toBe(false)
-  })
-
-  it('rejects Sunshine Coast (~90km north)', () => {
-    expect(isWithinRadius(-26.6500, 153.0667)).toBe(false)
-  })
-})
-
 describe('normaliseStation', () => {
   it('returns a NewStation for any station regardless of location', () => {
     const northLakesStation = {
@@ -97,6 +75,20 @@ describe('normaliseStation', () => {
     const result = normaliseStation(goldCoastStation)
     expect(result).not.toBeNull()
     expect(result.id).toBe(999)
+    expect(result.isActive).toBe(true)
+  })
+
+  it('accepts a Sydney CBD station (~920km from North Lakes) — NSW coverage', () => {
+    const sydneyStation = {
+      SiteId: 5001, Name: 'Sydney CBD 7-Eleven', Brand: '7-Eleven',
+      Address: '1 George St, SYDNEY NSW 2000', Postcode: '2000',
+      Lat: -33.87, Lng: 151.20,
+    }
+    const result = normaliseStation(sydneyStation)
+    expect(result).not.toBeNull()
+    expect(result.id).toBe(5001)
+    expect(result.latitude).toBe(-33.87)
+    expect(result.longitude).toBe(151.20)
     expect(result.isActive).toBe(true)
   })
 })

@@ -50,36 +50,6 @@ export function toUtcDate(isoString: string): Date {
   return new Date(isoString)
 }
 
-// ── Geographic filter ─────────────────────────────────────────────────────────
-
-// D-06 (locked): Only store stations within ~50km of North Lakes
-const NORTH_LAKES_LAT = -27.2353
-const NORTH_LAKES_LNG = 153.0189
-const MAX_RADIUS_KM = 50
-
-function haversineDistanceKm(
-  lat1: number, lng1: number,
-  lat2: number, lng2: number
-): number {
-  const R = 6371
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-/**
- * Returns true if the given coordinates are within MAX_RADIUS_KM of North Lakes.
- * D-06: Applied at ingest time — stations outside this radius are never stored.
- */
-export function isWithinRadius(lat: number, lng: number): boolean {
-  return haversineDistanceKm(NORTH_LAKES_LAT, NORTH_LAKES_LNG, lat, lng) <= MAX_RADIUS_KM
-}
-
 // ── API response normalisation ────────────────────────────────────────────────
 
 /**
