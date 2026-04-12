@@ -5,8 +5,10 @@ import {
   boolean,
   doublePrecision,
   serial,
+  bigserial,
   timestamp,
   numeric,
+  varchar,
 } from 'drizzle-orm/pg-core'
 
 /**
@@ -99,3 +101,25 @@ export type InviteCode = typeof inviteCodes.$inferSelect
 export type NewInviteCode = typeof inviteCodes.$inferInsert
 export type Session = typeof sessions.$inferSelect
 export type NewSession = typeof sessions.$inferInsert
+
+/**
+ * Waitlist signups table — stores encrypted email addresses for the NSW waitlist.
+ * email_encrypted: AES-256-GCM ciphertext (iv:ciphertext:authTag, base64-encoded segments)
+ * email_hash: SHA-256 HMAC hex digest used for deduplication
+ * source: signup source identifier (e.g. "nsw-landing")
+ * ip_hash / ua_hash: hashed IP and User-Agent for abuse detection
+ * consent: whether the user explicitly opted in
+ */
+export const waitlistSignups = pgTable('waitlist_signups', {
+  id:             bigserial('id', { mode: 'number' }).primaryKey(),
+  emailEncrypted: text('email_encrypted').notNull(),
+  emailHash:      varchar('email_hash', { length: 64 }).notNull().unique(),
+  source:         varchar('source', { length: 32 }).notNull(),
+  ipHash:         varchar('ip_hash', { length: 64 }).notNull(),
+  uaHash:         varchar('ua_hash', { length: 64 }).notNull(),
+  consent:        boolean('consent').notNull().default(false),
+  createdAt:      timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type WaitlistSignup = typeof waitlistSignups.$inferSelect
+export type NewWaitlistSignup = typeof waitlistSignups.$inferInsert
