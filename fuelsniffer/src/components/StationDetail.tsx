@@ -53,7 +53,7 @@ function PriceChangeIndicator({ change }: { change: number | null }) {
     )
   }
   return (
-    <span className="text-slate-400 text-sm">
+    <span className="text-slate-500 text-sm">
       — 0¢
     </span>
   )
@@ -142,7 +142,7 @@ export default function StationDetail({
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute -top-1 -right-1 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-400 hover:text-slate-600"
+              className="absolute -top-1 -right-1 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-600"
               aria-label="Close"
             >
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -156,26 +156,26 @@ export default function StationDetail({
               <span className="text-5xl font-extrabold tabular-nums text-slate-900 leading-none">
                 {price.toFixed(1)}
               </span>
-              <span className="text-lg text-slate-400 font-medium">c/L</span>
+              <span className="text-lg text-slate-500 font-medium">c/L</span>
             </div>
 
             {/* 24h change */}
             <div className="mb-3">
               <PriceChangeIndicator change={station.price_change} />
-              <span className="text-xs text-slate-400 ml-2">{ago}</span>
+              <span className="text-xs text-slate-500 ml-2">{ago}</span>
             </div>
 
             {/* Station name + brand */}
             <div className="text-lg font-bold text-slate-900">{station.name}</div>
             {station.brand && (
-              <div className="text-sm text-slate-400 mt-0.5">{station.brand}</div>
+              <div className="text-sm text-slate-500 mt-0.5">{station.brand}</div>
             )}
 
             {/* Address + distance */}
             <div className="text-sm text-slate-500 mt-1">
               {addr}
               {station.distance_km != null && (
-                <span className="text-slate-400"> · {station.distance_km.toFixed(1)} km</span>
+                <span className="text-slate-500"> · {station.distance_km.toFixed(1)} km</span>
               )}
             </div>
           </div>
@@ -223,11 +223,11 @@ export default function StationDetail({
             </div>
 
             {loading ? (
-              <div className="h-[160px] flex items-center justify-center text-sm text-slate-400">
+              <div className="h-[160px] flex items-center justify-center text-sm text-slate-500">
                 Loading...
               </div>
             ) : data.length === 0 ? (
-              <div className="h-[160px] flex items-center justify-center text-sm text-slate-400">
+              <div className="h-[160px] flex items-center justify-center text-sm text-slate-500">
                 Not enough history yet
               </div>
             ) : (
@@ -242,8 +242,8 @@ export default function StationDetail({
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                    <YAxis domain={domain} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={v => `${v}¢`} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                    <YAxis domain={domain} tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} tickFormatter={v => `${v}¢`} />
                     <Tooltip
                       content={({ active, payload }) => {
                         if (!active || !payload?.length) return null
@@ -268,8 +268,8 @@ export default function StationDetail({
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                    <YAxis domain={domain} tick={{ fontSize: 10, fill: '#94a3b8' }} tickLine={false} axisLine={false} tickFormatter={v => `${v}¢`} />
+                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                    <YAxis domain={domain} tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} tickFormatter={v => `${v}¢`} />
                     <Tooltip
                       content={({ active, payload }) => {
                         if (!active || !payload?.length) return null
@@ -304,14 +304,14 @@ export default function StationDetail({
                       </span>
                       <div className="flex-1 min-w-0">
                         <div className="text-sm font-medium text-slate-700 truncate">{s.name}</div>
-                        <div className="text-xs text-slate-400">{distDelta.toFixed(1)}km away</div>
+                        <div className="text-xs text-slate-500">{distDelta.toFixed(1)}km away</div>
                       </div>
                       {sPrice < price ? (
                         <span className="text-xs font-semibold text-emerald-600">
                           {(price - sPrice).toFixed(1)}¢ cheaper
                         </span>
                       ) : sPrice > price ? (
-                        <span className="text-xs font-medium text-slate-400">
+                        <span className="text-xs font-medium text-slate-500">
                           +{(sPrice - price).toFixed(1)}¢
                         </span>
                       ) : null}

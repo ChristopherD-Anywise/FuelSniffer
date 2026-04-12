@@ -1,5 +1,25 @@
 @import "tailwindcss";
 
+/*
+ * WCAG AA Contrast Audit (2026-04-12)
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Background colours in use:
+ *   #111111 — main app background
+ *   #1a1a1a — card/panel/popup surfaces
+ *   #ffffff — StationDetail side panel (light theme)
+ *
+ * Failures found and fixed:
+ *   #555555 on #111111 → 2.53:1 (FAIL) → replaced with #8a8a8a (5.47:1 PASS)
+ *   #555555 on #1a1a1a → 2.33:1 (FAIL) → replaced with #8a8a8a (5.04:1 PASS)
+ *   #666666 on #1a1a1a → 3.03:1 (FAIL) → replaced with #8a8a8a (5.04:1 PASS)
+ *   text-slate-400 (#94a3b8) on #ffffff → 2.56:1 (FAIL) → bumped to text-slate-500 (#64748b, 4.76:1 PASS)
+ *   chart axis fill #94a3b8 on #ffffff → 2.56:1 (FAIL) → replaced with #64748b (4.76:1 PASS)
+ *
+ * All changes: bump sub-threshold greys up one step while preserving the
+ * "dark, muted secondary text" aesthetic. No layout or design changes.
+ * ─────────────────────────────────────────────────────────────────────────────
+ */
+
 *,
 *::before,
 *::after {
@@ -30,7 +50,7 @@ body {
 }
 
 .leaflet-popup-close-button {
-  color: #555555 !important;
+  color: #8a8a8a !important;
 }
 
 /* Station list scrollbar */

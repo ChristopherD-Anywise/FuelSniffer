@@ -74,7 +74,7 @@ export default function StationCard({ station, isSelected, onClick, cardRef, ran
         }}>
           {station.name}
         </div>
-        <div style={{ fontSize: '11px', color: '#555555' }}>
+        <div style={{ fontSize: '11px', color: '#8a8a8a' }}>
           {station.distance_km.toFixed(1)} km · {ago}
         </div>
       </div>
@@ -88,7 +88,7 @@ export default function StationCard({ station, isSelected, onClick, cardRef, ran
           lineHeight: 1,
           marginBottom: '3px',
         }}>
-          {price.toFixed(1)}<span style={{ fontSize: '13px', color: '#555555', fontWeight: 600 }}>¢</span>
+          {price.toFixed(1)}<span style={{ fontSize: '13px', color: '#8a8a8a', fontWeight: 600 }}>¢</span>
         </div>
         {change !== null && change !== 0 && (
           <div style={{

@@ -60,7 +60,7 @@ export default function FilterBar({
               style={{
                 background: locationStatus === 'active' ? 'rgba(245,158,11,0.15)' : '#1a1a1a',
                 border: `1px solid ${locationStatus === 'active' ? '#f59e0b' : '#2a2a2a'}`,
-                color: locationStatus === 'active' ? '#f59e0b' : '#888888',
+                color: locationStatus === 'active' ? '#f59e0b' : '#8a8a8a',
               }}
               className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
               title={locationStatus === 'active' ? 'Clear location' : 'Use my location'}
@@ -84,7 +84,7 @@ export default function FilterBar({
                 onClick={() => onSortChange(mode)}
                 style={{
                   background: sortMode === mode ? '#f59e0b' : 'transparent',
-                  color: sortMode === mode ? '#000000' : '#666666',
+                  color: sortMode === mode ? '#000000' : '#8a8a8a',
                 }}
                 className="h-7 px-3 rounded-md text-xs font-bold uppercase tracking-wide transition-all"
               >
@@ -113,7 +113,7 @@ export default function FilterBar({
             onClick={() => onFuelChange(fuel.id)}
             style={{
               borderBottom: activeFuel === fuel.id ? '3px solid #f59e0b' : '3px solid transparent',
-              color: activeFuel === fuel.id ? '#f59e0b' : '#555555',
+              color: activeFuel === fuel.id ? '#f59e0b' : '#8a8a8a',
               marginBottom: '-2px',
             }}
             className="flex-shrink-0 px-5 py-3 text-[13px] font-black uppercase tracking-wide transition-colors whitespace-nowrap"
