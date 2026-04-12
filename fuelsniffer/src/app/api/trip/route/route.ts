@@ -7,7 +7,13 @@ import { getRoutingProvider, registerRoutingProvider } from '@/lib/providers/rou
 import { MapboxRoutingProvider } from '@/lib/providers/routing/mapbox'
 
 // Lazy-register the Mapbox provider if not already registered
-try { registerRoutingProvider(new MapboxRoutingProvider()) } catch { /* already registered */ }
+try {
+  registerRoutingProvider(new MapboxRoutingProvider())
+} catch (err) {
+  if (err instanceof Error && !err.message.includes('already registered')) {
+    console.error('[trip] Failed to register Mapbox provider:', err.message)
+  }
+}
 
 const RouteRequestSchema = z.object({
   start: z.object({

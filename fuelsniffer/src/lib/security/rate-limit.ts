@@ -96,6 +96,7 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   '/api/health': { maxRequests: 30, windowMs: 60_000 },
   '/api/csp-report': { maxRequests: 10, windowMs: 60_000 },
   '/api/trip/route': { maxRequests: 30, windowMs: 60_000 },
+  '/api/trip/stations': { maxRequests: 30, windowMs: 60_000 },
 }
 
 /**

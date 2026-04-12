@@ -76,6 +76,10 @@ export function startScheduler(): void {
       await db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY hourly_prices`)
       console.log('[scheduler] hourly_prices refreshed (post-delete)')
 
+      // Step 4: Evict expired route cache entries
+      await db.execute(sql`DELETE FROM route_cache WHERE expires_at < NOW()`)
+      console.log('[scheduler] Expired route_cache entries deleted')
+
       console.log('[scheduler] Nightly maintenance complete')
     } catch (err) {
       console.error('[scheduler] Nightly maintenance failed:', err)

@@ -32,8 +32,9 @@ export default function TripStationList({ stations, start, end, selectedId, onSe
     )
   }
 
-  const minPrice = stations[0].priceCents
-  const maxPrice = stations[stations.length - 1].priceCents
+  const prices = stations.map(s => s.priceCents)
+  const minPrice = Math.min(...prices)
+  const maxPrice = Math.max(...prices)
 
   return (
     <div role="list" aria-label="Fuel stations along route">
