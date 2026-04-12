@@ -5,6 +5,7 @@ import { createApiClient } from './client'
 import { normaliseStation, normalisePrice, rawToPrice } from './normaliser'
 import { fetchCkanPrices, findLatestResourceId, deduplicateToLatest, type CkanRecord } from './ckan-client'
 import type { FuelPriceProvider, NormalisedStation, NormalisedPrice, ProviderHealth } from '../index'
+import { normaliseBrand } from '../brand-normaliser'
 
 // ── CKAN fuel type → Direct API FuelId mapping ────────────────────────────────
 
@@ -90,7 +91,7 @@ export class QldFuelProvider implements FuelPriceProvider {
         externalId:     row.externalId,
         sourceProvider: row.sourceProvider,
         name:           row.name,
-        brand:          row.brand ?? null,
+        brand:          normaliseBrand(row.brand ?? null),
         address:        row.address ?? null,
         suburb:         row.suburb ?? null,
         postcode:       row.postcode ?? null,
@@ -146,7 +147,7 @@ export class QldFuelProvider implements FuelPriceProvider {
         externalId:     siteId,
         sourceProvider: 'qld',
         name:           r.Site_Name,
-        brand:          r.Site_Brand || null,
+        brand:          normaliseBrand(r.Site_Brand),
         address:        r.Sites_Address_Line_1 || null,
         suburb:         r.Site_Suburb || null,
         postcode:       r.Site_Post_Code || null,
