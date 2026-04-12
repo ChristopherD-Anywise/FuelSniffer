@@ -15,6 +15,7 @@ export interface RateLimitConfig {
 interface Bucket {
   tokens: number
   windowStart: number   // timestamp (ms) when this window opened
+  windowMs: number      // window duration — stored so eviction can check expiry
 }
 
 const store = new Map<string, Bucket>()
@@ -38,7 +39,7 @@ export function checkRateLimit(
 
   // If no bucket or window has expired, start a fresh window
   if (!bucket || (now - bucket.windowStart) >= config.windowMs) {
-    bucket = { tokens: config.maxRequests - 1, windowStart: now }
+    bucket = { tokens: config.maxRequests - 1, windowStart: now, windowMs: config.windowMs }
     store.set(key, bucket)
     evictIfNeeded()
     return { allowed: true, remaining: bucket.tokens, retryAfterMs: 0 }
@@ -55,16 +56,29 @@ export function checkRateLimit(
   return { allowed: false, remaining: 0, retryAfterMs }
 }
 
-/** Evict oldest entries when store exceeds cap */
+/** Evict expired then oldest entries when store exceeds cap */
 function evictIfNeeded(): void {
   if (store.size <= MAX_ENTRIES) return
-  // Delete the first 10% of entries (Map iterates in insertion order)
-  const deleteCount = Math.floor(MAX_ENTRIES * 0.1)
-  let deleted = 0
-  for (const key of store.keys()) {
-    if (deleted >= deleteCount) break
-    store.delete(key)
-    deleted++
+
+  const now = Date.now()
+
+  // First pass: remove expired windows (windowStart + windowMs < now)
+  for (const [key, bucket] of store.entries()) {
+    if (store.size <= MAX_ENTRIES) break
+    if (bucket.windowStart + bucket.windowMs < now) {
+      store.delete(key)
+    }
+  }
+
+  // Second pass: if still over limit, evict oldest entries by insertion order
+  if (store.size > MAX_ENTRIES) {
+    const deleteCount = Math.floor(MAX_ENTRIES * 0.1)
+    let deleted = 0
+    for (const key of store.keys()) {
+      if (deleted >= deleteCount) break
+      store.delete(key)
+      deleted++
+    }
   }
 }
 

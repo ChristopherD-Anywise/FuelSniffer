@@ -46,11 +46,14 @@ describe('Provider registry', () => {
     expect(all[0].displayName).toBe('Provider qld')
   })
 
-  it('prevents registering a provider with a duplicate id', () => {
-    registerProvider(makeProvider('qld'))
-    expect(() => registerProvider(makeProvider('qld'))).toThrow(
-      "Provider 'qld' is already registered"
-    )
+  it('silently skips registering a provider with a duplicate id (idempotent)', () => {
+    const p1 = makeProvider('qld', 'First')
+    const p2 = makeProvider('qld', 'Second')
+    registerProvider(p1)
+    expect(() => registerProvider(p2)).not.toThrow()
+    // Registry should still have exactly one entry and it should be the first one
+    expect(getProviders()).toHaveLength(1)
+    expect(getProviders()[0].displayName).toBe('First')
   })
 
   it('returns undefined for an unknown provider id', () => {

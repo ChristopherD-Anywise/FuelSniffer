@@ -11,22 +11,22 @@ import { describe, it, expect } from 'vitest'
 import { encryptEmail, decryptEmail, hashEmail } from '@/lib/waitlist/encryption'
 
 describe('encryptEmail / decryptEmail', () => {
-  it('round-trip: decrypt(encrypt(email)) === email', async () => {
+  it('round-trip: decrypt(encrypt(email)) === email', () => {
     const email = 'hello@example.com'
-    const encrypted = await encryptEmail(email)
-    const decrypted = await decryptEmail(encrypted)
+    const encrypted = encryptEmail(email)
+    const decrypted = decryptEmail(encrypted)
     expect(decrypted).toBe(email)
   })
 
-  it('produces different ciphertexts for the same email (random IV)', async () => {
+  it('produces different ciphertexts for the same email (random IV)', () => {
     const email = 'hello@example.com'
-    const enc1 = await encryptEmail(email)
-    const enc2 = await encryptEmail(email)
+    const enc1 = encryptEmail(email)
+    const enc2 = encryptEmail(email)
     expect(enc1).not.toBe(enc2)
   })
 
-  it('encrypted value contains three colon-separated base64 segments', async () => {
-    const encrypted = await encryptEmail('test@test.com')
+  it('encrypted value contains three colon-separated base64 segments', () => {
+    const encrypted = encryptEmail('test@test.com')
     const parts = encrypted.split(':')
     expect(parts).toHaveLength(3)
     // Each segment should be valid base64 (non-empty)
@@ -37,26 +37,26 @@ describe('encryptEmail / decryptEmail', () => {
 })
 
 describe('decryptEmail error handling', () => {
-  it('throws when given a malformed encrypted string', async () => {
-    await expect(decryptEmail('not-valid-format')).rejects.toThrow()
+  it('throws when given a malformed encrypted string', () => {
+    expect(() => decryptEmail('not-valid-format')).toThrow()
   })
 
-  it('throws when the auth tag is wrong (tampered ciphertext)', async () => {
-    const encrypted = await encryptEmail('victim@example.com')
+  it('throws when the auth tag is wrong (tampered ciphertext)', () => {
+    const encrypted = encryptEmail('victim@example.com')
     const parts = encrypted.split(':')
     // Corrupt the ciphertext segment
     const corrupted = [parts[0], Buffer.from('AAAAAAAAAA==', 'base64').toString('base64'), parts[2]].join(':')
-    await expect(decryptEmail(corrupted)).rejects.toThrow()
+    expect(() => decryptEmail(corrupted)).toThrow()
   })
 
-  it('throws when decrypting with a different key', async () => {
-    const encrypted = await encryptEmail('secret@example.com')
+  it('throws when decrypting with a different key', () => {
+    const encrypted = encryptEmail('secret@example.com')
 
     // Temporarily swap the key
     const originalKey = process.env.WAITLIST_EMAIL_AES_KEY
     process.env.WAITLIST_EMAIL_AES_KEY = 'b'.repeat(64)
     try {
-      await expect(decryptEmail(encrypted)).rejects.toThrow()
+      expect(() => decryptEmail(encrypted)).toThrow()
     } finally {
       process.env.WAITLIST_EMAIL_AES_KEY = originalKey
     }

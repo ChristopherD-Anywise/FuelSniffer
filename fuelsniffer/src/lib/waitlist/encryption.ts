@@ -34,7 +34,7 @@ function getPepper(): string {
  * Returns a base64-encoded string in the format: `iv:ciphertext:authTag`
  * where each segment is individually base64-encoded and joined with colons.
  */
-export async function encryptEmail(email: string): Promise<string> {
+export function encryptEmail(email: string): string {
   const key = getKey()
   const iv = randomBytes(IV_BYTES)
   const cipher = createCipheriv(ALGORITHM, key, iv)
@@ -56,7 +56,7 @@ export async function encryptEmail(email: string): Promise<string> {
  * Decrypts an email address previously encrypted by `encryptEmail`.
  * Throws if the ciphertext is tampered with (GCM auth tag mismatch).
  */
-export async function decryptEmail(encrypted: string): Promise<string> {
+export function decryptEmail(encrypted: string): string {
   const key = getKey()
   const parts = encrypted.split(':')
   if (parts.length !== 3) {

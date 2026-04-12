@@ -80,10 +80,12 @@ export async function runProviderScrape(provider: FuelPriceProvider): Promise<Sc
     }
 
     // Fetch the latest source_ts per station+fuel to deduplicate
+    // Restrict to last 24 hours to keep the query fast (index-friendly)
     const latestSourceTs = await db.execute(sql`
       SELECT DISTINCT ON (station_id, fuel_type_id)
         station_id, fuel_type_id, source_ts
       FROM price_readings
+      WHERE recorded_at > NOW() - INTERVAL '1 day'
       ORDER BY station_id, fuel_type_id, recorded_at DESC
     `)
     const seenKey = new Set(

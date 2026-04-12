@@ -42,13 +42,14 @@ const providers: FuelPriceProvider[] = []
 
 export function registerProvider(provider: FuelPriceProvider): void {
   if (providers.some(p => p.id === provider.id)) {
-    throw new Error(`Provider '${provider.id}' is already registered`)
+    console.warn(`[providers] registerProvider: provider '${provider.id}' is already registered — skipping`)
+    return
   }
   providers.push(provider)
 }
 
-export function getProviders(): readonly FuelPriceProvider[] {
-  return providers
+export function getProviders(): FuelPriceProvider[] {
+  return [...providers]
 }
 
 export function getProvider(id: string): FuelPriceProvider | undefined {
