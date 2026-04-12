@@ -112,7 +112,7 @@ function TripMapLayers({ routes, selectedRouteIndex, stations, selectedStationId
       const marker = L.marker([station.latitude, station.longitude], {
         icon,
         title: station.name,
-        alt: `${station.name}, ${priceText} cents`,
+        alt: `${station.name}, ${priceText}¢`,
       })
 
       marker.bindPopup(
