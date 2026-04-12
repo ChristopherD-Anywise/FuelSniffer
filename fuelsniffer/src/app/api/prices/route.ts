@@ -55,12 +55,16 @@ export async function GET(req: Request) {
     ? { lat: parsed.data.lat, lng: parsed.data.lng }
     : undefined
 
-  const stations = await getLatestPrices(
-    parsed.data.fuel,
-    parsed.data.radius,
-    userLocation,
-    parsed.data.changeHours
-  )
+  try {
+    const stations = await getLatestPrices(
+      parsed.data.fuel,
+      parsed.data.radius,
+      userLocation,
+      parsed.data.changeHours
+    )
 
-  return NextResponse.json(stations, { status: 200 })
+    return NextResponse.json(stations, { status: 200 })
+  } catch {
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }
