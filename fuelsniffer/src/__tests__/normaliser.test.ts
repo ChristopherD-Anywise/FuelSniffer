@@ -70,7 +70,9 @@ describe('normaliseStation', () => {
 
   it('returns a NewStation for stations far from North Lakes', () => {
     const goldCoastStation = {
-      SiteId: 999, Name: 'Gold Coast BP', Lat: -28.0167, Lng: 153.4000,
+      SiteId: 999, Name: 'Gold Coast BP', Brand: 'BP',
+      Address: '1 Surfers Paradise Blvd, SURFERS PARADISE QLD 4217', Postcode: '4217',
+      Lat: -28.0167, Lng: 153.4000,
     }
     const result = normaliseStation(goldCoastStation)
     expect(result).not.toBeNull()
