@@ -39,7 +39,7 @@ export default function FilterBar({
   onLocationSelect,
 }: FilterBarProps) {
   return (
-    <div className="sticky top-0 z-20 flex-shrink-0">
+    <nav aria-label="Filters" className="sticky top-0 z-20 flex-shrink-0">
       {/* Top bar */}
       <div
         style={{ background: '#111111', borderBottom: '3px solid #f59e0b' }}
@@ -82,6 +82,8 @@ export default function FilterBar({
               <button
                 key={mode}
                 onClick={() => onSortChange(mode)}
+                aria-label={`Sort by ${mode === 'price' ? 'price' : 'distance'}`}
+                aria-pressed={sortMode === mode}
                 style={{
                   background: sortMode === mode ? '#f59e0b' : 'transparent',
                   color: sortMode === mode ? '#000000' : '#8a8a8a',
@@ -111,6 +113,8 @@ export default function FilterBar({
           <button
             key={fuel.id}
             onClick={() => onFuelChange(fuel.id)}
+            aria-label={`Filter by ${fuel.label}`}
+            aria-pressed={activeFuel === fuel.id}
             style={{
               borderBottom: activeFuel === fuel.id ? '3px solid #f59e0b' : '3px solid transparent',
               color: activeFuel === fuel.id ? '#f59e0b' : '#8a8a8a',
@@ -122,6 +126,6 @@ export default function FilterBar({
           </button>
         ))}
       </div>
-    </div>
+    </nav>
   )
 }

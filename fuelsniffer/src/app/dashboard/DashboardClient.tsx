@@ -156,7 +156,7 @@ export default function DashboardClient() {
   const isMobileMapVisible = mobileTab === 'map'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#111111' }}>
+    <div id="main-content" role="main" style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#111111' }}>
       <FilterBar
         activeFuel={activeFuel}
         radius={localRadius}

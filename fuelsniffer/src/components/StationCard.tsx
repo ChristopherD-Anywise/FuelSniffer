@@ -9,9 +9,11 @@ interface StationCardProps {
   onClick: () => void
   cardRef?: (el: HTMLDivElement | null) => void
   rank: number
+  stationIndex?: number
+  onArrowKey?: (e: React.KeyboardEvent<HTMLDivElement>) => void
 }
 
-export default function StationCard({ station, isSelected, onClick, cardRef, rank }: StationCardProps) {
+export default function StationCard({ station, isSelected, onClick, cardRef, rank, stationIndex, onArrowKey }: StationCardProps) {
   const priceTime = station.source_ts ? new Date(station.source_ts) : new Date(station.recorded_at)
   const price = parseFloat(station.price_cents)
   const ago = formatDistanceToNowStrict(priceTime, { addSuffix: false }) + ' ago'
@@ -23,7 +25,12 @@ export default function StationCard({ station, isSelected, onClick, cardRef, ran
       onClick={onClick}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => e.key === 'Enter' && onClick()}
+      aria-label={`${station.name}, ${parseFloat(station.price_cents).toFixed(1)} cents`}
+      data-station-index={stationIndex}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onClick() }
+        else onArrowKey?.(e)
+      }}
       style={{
         display: 'flex',
         alignItems: 'center',

@@ -53,6 +53,13 @@ body {
   color: #8a8a8a !important;
 }
 
+/* Global focus ring — visible on dark backgrounds */
+*:focus-visible {
+  outline: 2px solid #60a5fa; /* blue-400 — visible on dark and light surfaces */
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
 /* Station list scrollbar */
 .station-list::-webkit-scrollbar {
   width: 4px;
