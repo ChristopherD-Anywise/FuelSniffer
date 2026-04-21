@@ -117,24 +117,63 @@ describe('normalisePrice', () => {
   })
 })
 
+describe('extractSuburb — postcode fallback', () => {
+  it('extracts suburb from enriched address (regex path)', () => {
+    expect(extractSuburb('123 Main St, NORTH LAKES QLD 4509', '4509'))
+      .toBe('NORTH LAKES')
+  })
+
+  it('falls back to postcode lookup when address is bare street', () => {
+    expect(extractSuburb('1256 Anzac Avenue', '4503')).toBe('Dakabin')
+  })
+
+  it('returns null when address is bare and postcode is unknown', () => {
+    expect(extractSuburb('bare street', '9999')).toBeNull()
+  })
+
+  it('returns null when both address and postcode are null', () => {
+    expect(extractSuburb(null, null)).toBeNull()
+  })
+
+  it('falls back to postcode lookup when address is null but postcode is known', () => {
+    expect(extractSuburb(null, '4000')).toBe('Brisbane City')
+  })
+})
+
+describe('normaliseStation.suburb — postcode fallback', () => {
+  it('populates suburb from postcode when address lacks suburb info', () => {
+    const site = {
+      SiteId: 9999001,
+      Name: 'Test',
+      Brand: null,
+      Address: '1256 Anzac Avenue',
+      Postcode: '4503',
+      Lat: -27.2,
+      Lng: 153.0,
+    }
+    const result = normaliseStation(site)
+    expect(result.suburb).toBe('Dakabin')
+  })
+})
+
 describe('extractSuburb — parse suburb from QLD API address string', () => {
   it('extracts suburb from "123 Main St, NORTH LAKES, QLD 4509"', () => {
-    expect(extractSuburb('123 Main St, NORTH LAKES, QLD 4509')).toBe('NORTH LAKES')
+    expect(extractSuburb('123 Main St, NORTH LAKES, QLD 4509', null)).toBe('NORTH LAKES')
   })
 
   it('extracts suburb from "45 Anzac Ave, REDCLIFFE QLD 4020"', () => {
-    expect(extractSuburb('45 Anzac Ave, REDCLIFFE QLD 4020')).toBe('REDCLIFFE')
+    expect(extractSuburb('45 Anzac Ave, REDCLIFFE QLD 4020', null)).toBe('REDCLIFFE')
   })
 
   it('extracts suburb from "Shop 1, NARANGBA, QLD 4504"', () => {
-    expect(extractSuburb('Shop 1, NARANGBA, QLD 4504')).toBe('NARANGBA')
+    expect(extractSuburb('Shop 1, NARANGBA, QLD 4504', null)).toBe('NARANGBA')
   })
 
   it('returns null for null input', () => {
-    expect(extractSuburb(null)).toBeNull()
+    expect(extractSuburb(null, null)).toBeNull()
   })
 
   it('returns null for an address with no recognisable suburb pattern', () => {
-    expect(extractSuburb('No suburb here')).toBeNull()
+    expect(extractSuburb('No suburb here', null)).toBeNull()
   })
 })

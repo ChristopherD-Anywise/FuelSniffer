@@ -4,6 +4,7 @@ import path from 'path'
 export default defineConfig({
   test: {
     environment: 'node',
+    environmentMatchGlobs: [['src/**/*.test.tsx', 'happy-dom']],
     globals: true,
     reporters: ['verbose'],
     coverage: {

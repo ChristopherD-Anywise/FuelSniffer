@@ -65,6 +65,7 @@ services:
       SESSION_SECRET: ${SESSION_SECRET}
       QLD_API_TOKEN: ${QLD_API_TOKEN}
       HEALTHCHECKS_PING_URL: ${HEALTHCHECKS_PING_URL}
+      MAPBOX_TOKEN: ${MAPBOX_TOKEN:-}
       TZ: Australia/Brisbane
       NODE_ENV: production
     depends_on:

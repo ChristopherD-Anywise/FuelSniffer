@@ -90,6 +90,7 @@ export function resetRateLimits(): void {
 // ── Endpoint configs ────────────────────────────────────────────────────────
 
 export const RATE_LIMITS: Record<string, RateLimitConfig> = {
+  '/api/geocode': { maxRequests: 60, windowMs: 60_000 },
   '/api/prices': { maxRequests: 120, windowMs: 60_000 },
   '/api/prices/history': { maxRequests: 30, windowMs: 60_000 },
   '/api/search': { maxRequests: 60, windowMs: 60_000 },
