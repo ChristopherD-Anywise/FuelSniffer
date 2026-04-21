@@ -138,6 +138,19 @@ describe('extractSuburb — postcode fallback', () => {
   it('falls back to postcode lookup when address is null but postcode is known', () => {
     expect(extractSuburb(null, '4000')).toBe('Brisbane City')
   })
+
+  it('does not treat a 2-part "street, suburb" address as a street fragment', () => {
+    // Legacy bug: the parts[length-2] fallback fired on 2-part addresses
+    // and returned the street (parts[0]) as the "suburb". Now the comma
+    // split only fires at 3+ parts, so 2-part addresses fall through to
+    // the postcode lookup instead of poisoning stations.suburb.
+    expect(extractSuburb('143A Targo St, Kedron', '4031')).toBe('Glen Kedron')
+  })
+
+  it('uses the middle segment on a proper 3-part address', () => {
+    expect(extractSuburb('123 Main St, North Lakes, 4509', '4509'))
+      .toBe('North Lakes')
+  })
 })
 
 describe('normaliseStation.suburb — postcode fallback', () => {

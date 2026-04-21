@@ -36,5 +36,25 @@ describe('backfillSuburbs', () => {
     await backfillSuburbs()
     const second = await backfillSuburbs()
     expect(second.updated).toBe(0)
+    expect(second.cleared).toBe(0)
+  })
+
+  it('clears street-fragment suburbs and repopulates from postcode', async () => {
+    // Legacy bug: "143A Targo St" ended up in the suburb column for
+    // 2-comma addresses like "143A Targo St, Kedron". Clear + refill.
+    await db.execute(sql`DELETE FROM price_readings WHERE station_id BETWEEN 9000000 AND 9000099`)
+    await db.execute(sql`DELETE FROM stations WHERE id BETWEEN 9000000 AND 9000099`)
+    await db.execute(sql`
+      INSERT INTO stations (id, name, address, suburb, postcode, latitude, longitude, is_active, last_seen_at, external_id, source_provider)
+      VALUES (9000010, 'X', '143A Targo St, Kedron', '143A Targo St', '4031', -27.0, 153.0, true, NOW(), '9000010', 'qld')
+    `)
+
+    const result = await backfillSuburbs()
+    expect(result.cleared).toBe(1)
+
+    const rows = await db.execute(sql`SELECT suburb FROM stations WHERE id = 9000010`) as unknown as Array<{ suburb: string | null }>
+    // '4031' → 'Chermside' in the QLD lookup; any real suburb name is fine so long as it isn't the street fragment.
+    expect(rows[0].suburb).not.toBe('143A Targo St')
+    expect(rows[0].suburb).not.toBeNull()
   })
 })

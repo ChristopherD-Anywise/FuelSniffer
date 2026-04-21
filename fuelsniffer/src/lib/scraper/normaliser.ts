@@ -65,10 +65,15 @@ export function extractSuburb(
   postcode: string | null
 ): string | null {
   if (address) {
+    // Primary: "... SUBURB, QLD POSTCODE" — pull the token before "QLD".
     const m = address.match(/,\s*([^,]+?)\s*,?\s*QLD\b/i)
     if (m) return m[1].trim()
+    // Secondary: "STREET, SUBURB, POSTCODE" — exactly 3+ comma parts. A
+    // 2-part address like "123 Street, Suburb" would be picked up here
+    // too, except it's ambiguous with "Unit 5, 123 Street" so we require
+    // 3+ parts to avoid misclassifying the street number as the suburb.
     const parts = address.split(',').map(p => p.trim()).filter(Boolean)
-    if (parts.length >= 2) {
+    if (parts.length >= 3) {
       const candidate = parts[parts.length - 2]
       if (candidate) return candidate
     }
