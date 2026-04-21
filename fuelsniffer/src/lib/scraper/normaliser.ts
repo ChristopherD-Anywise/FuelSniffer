@@ -1,5 +1,6 @@
 import type { SiteDetails, SitePrice } from './client'
 import type { NewPriceReading, NewStation } from '@/lib/db/schema'
+import { postcodeToSuburb } from '@/lib/data/qld-postcodes'
 
 // ── Price encoding ────────────────────────────────────────────────────────────
 
@@ -53,21 +54,26 @@ export function toUtcDate(isoString: string): Date {
 // ── API response normalisation ────────────────────────────────────────────────
 
 /**
- * Extract suburb from a QLD API address string.
- * The Direct API has no suburb field, but the address usually ends with
- * "SUBURB_NAME QLD POSTCODE" or "SUBURB_NAME, QLD POSTCODE".
- * We extract the suburb by taking the token(s) before "QLD" if present,
- * otherwise fall back to the second-to-last comma-delimited segment.
+ * Extract suburb from a QLD API address string, falling back to a
+ * static postcode→suburb lookup when the address has no suburb info.
+ *
+ * The Direct API typically returns bare street addresses (e.g. "1256 Anzac Avenue"),
+ * so the postcode fallback populates suburb for ~99% of stations.
  */
-export function extractSuburb(address: string | null): string | null {
-  if (!address) return null
-  // Match "... SUBURB QLD POSTCODE" or "... SUBURB, QLD POSTCODE"
-  const m = address.match(/,\s*([^,]+?)\s*,?\s*QLD\b/i)
-  if (m) return m[1].trim()
-  // Fallback: second segment of comma-split (e.g. "123 Main St, NORTH LAKES, 4509")
-  const parts = address.split(',').map(p => p.trim()).filter(Boolean)
-  if (parts.length >= 2) return parts[parts.length - 2] || null
-  return null
+export function extractSuburb(
+  address: string | null,
+  postcode: string | null
+): string | null {
+  if (address) {
+    const m = address.match(/,\s*([^,]+?)\s*,?\s*QLD\b/i)
+    if (m) return m[1].trim()
+    const parts = address.split(',').map(p => p.trim()).filter(Boolean)
+    if (parts.length >= 2) {
+      const candidate = parts[parts.length - 2]
+      if (candidate) return candidate
+    }
+  }
+  return postcodeToSuburb(postcode)
 }
 
 /**
@@ -80,7 +86,7 @@ export function normaliseStation(site: SiteDetails): NewStation {
     name:           site.Name,
     brand:          site.Brand ?? null,
     address:        site.Address ?? null,
-    suburb:         extractSuburb(site.Address ?? null),
+    suburb:         extractSuburb(site.Address ?? null, site.Postcode ?? null),
     postcode:       site.Postcode ?? null,
     latitude:       site.Lat,
     longitude:      site.Lng,
