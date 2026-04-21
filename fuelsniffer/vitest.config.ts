@@ -3,8 +3,9 @@ import path from 'path'
 
 export default defineConfig({
   test: {
+    // Default env is 'node'. Per-file `// @vitest-environment happy-dom`
+    // comments opt component tests (.test.tsx) into the DOM env.
     environment: 'node',
-    environmentMatchGlobs: [['src/**/*.test.tsx', 'happy-dom']],
     globals: true,
     reporters: ['verbose'],
     coverage: {
