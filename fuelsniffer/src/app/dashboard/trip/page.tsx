@@ -8,6 +8,11 @@ export const metadata = {
   description: 'Find the cheapest fuel along your route',
 }
 
+// MAPBOX_TOKEN is read at request time, not at build time, so this page
+// must not be prerendered. Without this the build-time absence of the
+// token would bake a permanent "disabled" state into the static HTML.
+export const dynamic = 'force-dynamic'
+
 export default function TripPage() {
   if (!process.env.MAPBOX_TOKEN) {
     return <TripDisabled />
