@@ -91,7 +91,8 @@ function TripMapLayers({ routes, selectedRouteIndex, stations, selectedStationId
     stations.forEach(station => {
       const ratio = priceRange > 0 ? (station.priceCents - minPrice) / priceRange : 0
       const colour = ratio < 0.33 ? '#22c55e' : ratio < 0.67 ? '#f59e0b' : '#ef4444'
-      const priceText = (station.priceCents / 10).toFixed(1)
+      // price_cents is already c/L (e.g. 197.9), do not divide by 10.
+      const priceText = station.priceCents.toFixed(1)
 
       const isSelected = station.stationId === selectedStationId
 

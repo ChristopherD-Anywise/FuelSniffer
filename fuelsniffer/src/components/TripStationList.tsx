@@ -41,7 +41,8 @@ export default function TripStationList({ stations, start, end, selectedId, onSe
       {stations.map((station, rank) => {
         const isSelected = station.stationId === selectedId
         const detour = detourMinutes(station.detourMeters)
-        const priceDisplay = (station.priceCents / 10).toFixed(1)
+        // price_cents is already stored in c/L (e.g. 197.9) — do not divide by 10.
+        const priceDisplay = station.priceCents.toFixed(1)
         // Colour: green → amber → red based on price in range
         const priceRange = maxPrice - minPrice
         const ratio = priceRange > 0 ? (station.priceCents - minPrice) / priceRange : 0
