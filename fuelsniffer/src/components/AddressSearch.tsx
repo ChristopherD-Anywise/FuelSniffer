@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect, useCallback } from 'react'
+import { useState, useRef, useEffect, useCallback, useId } from 'react'
 
 export interface AddressResult {
   label: string
@@ -34,6 +34,8 @@ export default function AddressSearch({
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const reactId = useId()
+  const listboxId = `${reactId}-listbox`
 
   useEffect(() => { setQuery(initialValue) }, [initialValue])
 
@@ -105,6 +107,14 @@ export default function AddressSearch({
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         disabled={disabled}
+        role="combobox"
+        aria-expanded={isOpen}
+        aria-haspopup="listbox"
+        aria-autocomplete="list"
+        aria-controls={listboxId}
+        aria-activedescendant={
+          isOpen && highlightedIndex >= 0 ? `${listboxId}-option-${highlightedIndex}` : undefined
+        }
         aria-describedby={describedBy}
         aria-invalid={invalid}
         style={{
@@ -122,22 +132,29 @@ export default function AddressSearch({
         }}
       />
       {isOpen && results.length > 0 && (
-        <div style={{
-          position: 'absolute',
-          background: '#1a1a1a',
-          border: '1px solid #2a2a2a',
-          borderRadius: '8px',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
-          marginTop: '4px',
-          maxHeight: '256px',
-          overflowY: 'auto',
-          zIndex: 50,
-          width: '100%',
-        }}>
+        <div
+          id={listboxId}
+          role="listbox"
+          style={{
+            position: 'absolute',
+            background: '#1a1a1a',
+            border: '1px solid #2a2a2a',
+            borderRadius: '8px',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            marginTop: '4px',
+            maxHeight: '256px',
+            overflowY: 'auto',
+            zIndex: 50,
+            width: '100%',
+          }}
+        >
           {results.map((r, i) => (
             <button
               key={i}
+              id={`${listboxId}-option-${i}`}
               type="button"
+              role="option"
+              aria-selected={highlightedIndex === i}
               onClick={() => handleSelect(r)}
               style={{
                 display: 'block',
