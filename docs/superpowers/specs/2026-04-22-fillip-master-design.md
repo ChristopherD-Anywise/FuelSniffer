@@ -304,14 +304,27 @@ All listed above are valid future sub-projects; none belong in MVP.
 
 ---
 
-## 10. Open questions (carried into sub-project specs)
+## 10. Cross-cutting decisions (locked 2026-04-23)
 
-- Final domain choice for Fillip
-- Logo + visual identity direction
-- Magic-link provider (Resend vs. SES vs. roll-our-own)
-- Web Push provider (self-host VAPID vs. OneSignal-style)
-- OG image renderer (Satori vs. Puppeteer vs. CDN service)
-- Social bot infrastructure (which networks day-1, who owns the accounts)
-- Discount registry curation cadence + ownership
+These decisions apply across multiple sub-projects and were resolved before any sub-project planning began. Sub-project specs should reflect these as fact, not open questions.
 
-These are not blocking *this* spec; each will be resolved inside its owning sub-project spec.
+| # | Decision | Value |
+|---|----------|-------|
+| 1 | Email provider | **Resend** (behind a swappable `EmailProvider` interface) |
+| 2 | Web push | **Self-hosted** (`web-push` lib + VAPID, no third-party service) |
+| 3 | Suburb-key namespacing | **`lower(suburb)\|lower(state)`** across SP-1 ingestion and SP-4 cycle keys |
+| 4 | Geo radius queries | **PostGIS** (SP-1 enables the extension; SP-5 reuses it) |
+| 5 | Brand accent colour | **Keep amber** (`#f59e0b`) — no rebrand recolour |
+| 6 | Final domain | **`fillip.clarily.au`** (subdomain on existing Clarily property) |
+| 7 | SP-0 dark mode handling | **Light mode is the default** post-rebrand; **toggle ships in SP-0** so users can opt back into dark while SP-3 finalises the proper theme system |
+| 8 | Apple Sign In | **Yes — in scope for SP-2** (Apple Developer account to be provisioned) |
+
+### Still open (deferred to their owning sub-project)
+
+- Logo + visual identity direction (commission externally)
+- OG image renderer choice (SP-8 — recommendation: Satori + ResVG)
+- Social bot day-1 networks (SP-8 — recommendation: X + BlueSky + Mastodon)
+- Discount registry curator post-MVP (SP-6)
+- 12-month numeric targets in §8 (revisit before launch)
+
+Each remaining open item lives in the relevant sub-project spec's §13/§14/§15 "open questions" section with a recommended default already noted.

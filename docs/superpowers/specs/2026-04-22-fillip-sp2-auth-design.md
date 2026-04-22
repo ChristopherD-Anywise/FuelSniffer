@@ -1,11 +1,26 @@
 # Fillip SP-2 — Auth v2 (Magic Link + Google/Apple OAuth) — Design Spec
 
-**Status:** Draft v1
+**Status:** Draft v1.1 (decisions amended 2026-04-23)
 **Date:** 2026-04-22
 **Author:** cdenn
-**Parent spec:** `2026-04-22-fillip-master-design.md` (§5.3)
+**Parent spec:** `2026-04-22-fillip-master-design.md` (§5.3, §10 cross-cutting decisions)
 **Sub-project:** SP-2 — Auth v2
 **Type:** Sub-project design spec (one of several rolling out of the Fillip master)
+
+---
+
+## 0. Amendments since v1 (2026-04-23)
+
+Cross-cutting decisions from master spec §10 override v1 where they conflict:
+
+| Topic | v1 said | **Now (v1.1)** |
+|---|---|---|
+| Email provider | Pending — Resend recommended | **Resend** (confirmed). `EmailProvider` interface still required so SES/Postmark remain swappable post-MVP. |
+| Apple Sign In | Pending — needs Developer account ($99/yr) and `.p8` ownership | **Confirmed in scope.** Apple Developer account to be provisioned before SP-2 implementation; `.p8` private key stored as env var (consistent with existing `MAPBOX_TOKEN` / `SESSION_SECRET` pattern in docker-compose). |
+| Domain | TBD | **`fillip.clarily.au`** — magic-link callback URLs, OAuth redirect URIs, and email-from headers all bind to this. |
+| Existing `session.ts` | Treated as pre-existing | **Net-new.** Worktree audit on 2026-04-23 confirmed neither `src/lib/session.ts` nor `src/app/api/auth/` exist in the FuelSniffer codebase today. SP-2 creates both from scratch. |
+
+§13 open questions Q1 (email provider), Q2 (Apple account) are now **resolved**. Remaining open questions stand.
 
 ---
 

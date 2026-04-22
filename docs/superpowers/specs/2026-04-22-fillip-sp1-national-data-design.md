@@ -1,11 +1,22 @@
 # Fillip SP-1 — National Data Adapters
 
-**Status:** Draft v1
+**Status:** Draft v1.1 (decisions amended 2026-04-23)
 **Date:** 2026-04-22
 **Author:** cdenn
-**Parent:** [Fillip Master Design](./2026-04-22-fillip-master-design.md) §5.2
+**Parent:** [Fillip Master Design](./2026-04-22-fillip-master-design.md) §5.2, §10 cross-cutting decisions
 **Type:** Sub-project design spec
 **Branch (when started):** `sp1-national-data`
+
+---
+
+## 0. Amendments since v1 (2026-04-23)
+
+| Topic | v1 said | **Now (v1.1)** |
+|---|---|---|
+| Suburb key namespacing | Recommendation: `lower(suburb)\|lower(state)` | **Confirmed.** All adapters MUST emit suburb as `lower(suburb)` and state as `lower(state)`; the canonical key downstream consumers use is `${lower(suburb)}|${lower(state)}`. SP-4 cycle engine and SP-5 alerts depend on this exact shape. |
+| Geo radius queries | Open | **Enable PostGIS in this sub-project.** Add `CREATE EXTENSION IF NOT EXISTS postgis;` to the migration sequence; add `geom geography(Point, 4326)` column to `stations` populated from `(lat, lng)`. SP-5 reuses via `ST_DWithin`. |
+
+§Open Questions Q1 (suburb key) and Q9 (radius) are **resolved**. Q4 (NT API verification) and Healthchecks provisioning remain open.
 
 ---
 

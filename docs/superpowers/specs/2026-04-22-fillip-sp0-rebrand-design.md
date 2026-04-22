@@ -1,11 +1,36 @@
 # SP-0 — Rebrand + Foundations (FuelSniffer → Fillip)
 
-**Status:** Draft v1
+**Status:** Draft v1.1 (decisions amended 2026-04-23)
 **Date:** 2026-04-22
 **Author:** cdenn
-**Parent spec:** `2026-04-22-fillip-master-design.md` (§5.1, §7)
+**Parent spec:** `2026-04-22-fillip-master-design.md` (§5.1, §7, §10 cross-cutting decisions)
 **Sub-project:** SP-0 (entry point — no upstream dependencies)
-**Estimated effort:** small-medium (1–2 focused sessions)
+**Estimated effort:** medium (2–3 focused sessions — increased from v1 due to dual-theme scope)
+
+---
+
+## 0. Amendments since v1 (2026-04-23)
+
+The following cross-cutting decisions from master spec §10 override v1 of this spec where they conflict. The body of the spec below has NOT been line-edited; treat these as authoritative.
+
+| Topic | v1 said | **Now (v1.1)** |
+|---|---|---|
+| Theme | Light only; toggle deferred to SP-3 | **Light is the default. Dark theme ships in SP-0 with a working user-facing toggle.** SP-3 still owns the proper theme system, polish, accessibility, and dark-mode component pass — SP-0 ships a *functional* dark theme by porting the existing dark hex values into a `[data-theme="dark"]` token block, so users who hate light mode can flip back. |
+| Brand accent | Pending | **Keep amber** (`#f59e0b`) — no recolour at rebrand. |
+| Domain | TBD | **`fillip.clarily.au`** — subdomain on existing Clarily property. |
+| Email sender hook | Placeholder | Sender-identity module still placeholder until SP-2; final provider is **Resend**. |
+
+### Concretely, what this changes in SP-0:
+
+1. **`tokens.css`** ships TWO blocks: `[data-theme="light"]` (new clean light values) AND `[data-theme="dark"]` (the existing dark hex values mapped onto the same token names).
+2. **`ThemeProvider`** is no longer locked. `setTheme(theme)` mutates `<html data-theme>` and persists to `localStorage` under `fillip.theme`. SSR reads a `theme` cookie (set by the toggle) to avoid FOUC.
+3. **A toggle UI ships** — minimum: a sun/moon icon button in the existing `AppHeader` (or wherever the user menu sits). Triple state: System / Light / Dark. Default = System (which resolves via `prefers-color-scheme`).
+4. **`APP_DEFAULT_THEME` env var** accepts `"light" | "dark" | "system"`; defaults to `"system"`.
+5. **Domain config** (`APP_PUBLIC_URL`) defaults to `https://fillip.clarily.au`.
+6. **Tests** add: toggle click changes `data-theme`; localStorage round-trip; SSR reads cookie; both themes render the dashboard without contrast regressions (axe pass on each).
+7. **Beta user comms** — no longer "dark mode coming back in 2 weeks." Just: "we renamed and you can choose your theme top-right."
+
+§10 Open Questions Q1 (light-only interim) is now **resolved**. §10 Q2 (accent colour) is **resolved — amber stays**. §10 Q3-Q4 (DB rename, folder rename) remain **deferred** as v1 recommended.
 
 ---
 

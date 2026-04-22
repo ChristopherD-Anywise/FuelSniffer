@@ -1,11 +1,23 @@
 # SP-3 — UX Core: Dark Mode, PWA, Performance, A11y, Redesigned Cards
 
-**Status:** Draft v1
+**Status:** Draft v1.1 (decisions amended 2026-04-23)
 **Date:** 2026-04-22
 **Author:** cdenn
-**Parent spec:** `2026-04-22-fillip-master-design.md` (§3 principles, §4 D5)
+**Parent spec:** `2026-04-22-fillip-master-design.md` (§3 principles, §4 D5, §10 cross-cutting decisions)
 **Sub-project:** SP-3 of the Fillip MVP roadmap
 **Type:** Sub-project design spec (per master §7 — each SP gets its own design + plan)
+
+---
+
+## 0. Amendments since v1 (2026-04-23)
+
+| Topic | v1 said | **Now (v1.1)** |
+|---|---|---|
+| Brand accent (Q2) | Pending; assumed amber | **Confirmed amber** (`#f59e0b`). No re-shoot of visual baselines required. |
+| Theme scope | SP-3 introduces both light + dark themes | **Adjusted:** SP-0 ships a *functional* dark theme + toggle. SP-3 still owns the **proper** dark mode (component-by-component polish, contrast pass, dark-only ad slot tweaks, axe sweep, visual regression baselines for both themes). Treat SP-0's dark theme as "good enough not to scare users" and SP-3's as "production-quality." |
+| Domain | TBD | **`fillip.clarily.au`** — affects PWA `start_url`, manifest `id`, OG tags. |
+
+§Open Question Q2 is **resolved**. Q7 (`prefers-contrast: more`), Q12 (Safari skip-link), Q13 (Cloudflare Tunnel × SW) stand.
 
 ---
 

@@ -1,12 +1,22 @@
 # SP-4 — Cycle Engine Phase A (D1, rule-based predictive)
 
-**Status:** Draft v1
+**Status:** Draft v1.1 (decisions amended 2026-04-23)
 **Date:** 2026-04-22
 **Author:** cdenn
-**Parent spec:** `2026-04-22-fillip-master-design.md` (§4 D1)
+**Parent spec:** `2026-04-22-fillip-master-design.md` (§4 D1, §10 cross-cutting decisions)
 **Owning module:** `src/lib/cycle/`
 **Depends on:** SP-1 national data adapters (for non-QLD coverage); none for QLD-only beta
 **Blocks:** SP-5 alerts (`cycle_low` alert type)
+
+## 0. Amendments since v1 (2026-04-23)
+
+| Topic | v1 said | **Now (v1.1)** |
+|---|---|---|
+| Suburb key namespacing (Q1) | Recommendation: `lower(suburb)\|lower(state)` | **Confirmed.** Use this exact composite key. Same shape as SP-1 emits and SP-5 queries. |
+
+§Open Question Q1 is **resolved**. Q2 (postcode-level fallback) and Q3-Q9 stand.
+
+---
 
 ---
 

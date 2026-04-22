@@ -1,11 +1,24 @@
 # Fillip SP-5 — Alerts (D3) Design Spec
 
-**Status:** Draft v1
+**Status:** Draft v1.1 (decisions amended 2026-04-23)
 **Date:** 2026-04-22
 **Author:** cdenn
-**Parent spec:** `2026-04-22-fillip-master-design.md` (§4 D3)
-**Depends on:** SP-2 (auth + user accounts), SP-3 (PWA + service worker shell), SP-4 (cycle engine / `cycle_signals`)
+**Parent spec:** `2026-04-22-fillip-master-design.md` (§4 D3, §10 cross-cutting decisions)
+**Depends on:** SP-1 (PostGIS extension), SP-2 (auth + user accounts), SP-3 (PWA + service worker shell), SP-4 (cycle engine / `cycle_signals`)
 **Supersedes:** none
+
+---
+
+## 0. Amendments since v1 (2026-04-23)
+
+| Topic | v1 said | **Now (v1.1)** |
+|---|---|---|
+| Email provider (Q1) | Pending — Resend recommended | **Resend** (confirmed). Keep `EmailProvider` interface so SES/Postmark are swappable. |
+| Web push (Q2) | Pending — self-host recommended | **Self-host** confirmed (`web-push` lib + VAPID keys in env). No third-party push service. |
+| Geo radius (Q9) | Pending — coordinate with SP-1 | **PostGIS** confirmed. SP-1 enables the extension; SP-5 evaluator uses `ST_DWithin` for "within X km of home" queries. |
+| Suburb key (cross-cut) | Implicit | **`lower(suburb)\|lower(state)`** — matches SP-1 / SP-4. Affects `cycle_low` alert lookup. |
+
+§12 Q1, Q2, Q9 are now **resolved**.
 
 ---
 
