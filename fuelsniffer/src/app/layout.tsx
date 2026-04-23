@@ -26,7 +26,7 @@ export const metadata: Metadata = {
 // we don't know the user's OS preference at SSR time. This script runs
 // synchronously before first paint and flips data-theme to the resolved
 // value, eliminating a flash of the wrong theme.
-const FOUC_SCRIPT = `(function(){try{var t=document.cookie.match(/(?:^|; )${THEME_COOKIE}=([^;]+)/);var v=t?decodeURIComponent(t[1]):'system';if(v==='system'){v=window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}document.documentElement.setAttribute('data-theme',v);}catch(e){}})();`;
+const FOUC_SCRIPT = `(function(){try{var c=document.cookie.match(/(?:^|; )${THEME_COOKIE}=([^;]*)/),v=c?c[1]:'system';document.documentElement.dataset.theme=v==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):v;}catch(e){}})();`;
 
 export default async function RootLayout({
   children,
