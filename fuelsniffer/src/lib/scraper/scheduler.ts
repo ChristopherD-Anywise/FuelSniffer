@@ -1,5 +1,7 @@
 import cron from 'node-cron'
-import { runScrapeJob } from './writer'
+import { getProviders, registerProvider } from '@/lib/providers/fuel'
+import { QldFuelProvider } from '@/lib/providers/fuel/qld'
+import { runProviderScrape } from './writer'
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 
@@ -15,15 +17,23 @@ import { db } from '@/lib/db/client'
  * D-11 (locked): Run immediately on startup, then every 15 minutes.
  */
 export function startScheduler(): void {
+  registerProvider(new QldFuelProvider())
+  // NSW provider will be registered here in Phase 2
+
+  const providers = getProviders()
+  console.log(
+    `[scheduler] Registered ${providers.length} provider(s): ${providers.map(p => p.id).join(', ')}`
+  )
+
   // D-11: Immediate first execution (before the cron schedule fires)
   console.log('[scheduler] Starting — running immediate scrape on startup (D-11)')
-  runScrapeJob().catch((err) => {
+  runAllProviders().catch((err) => {
     console.error('[scheduler] Immediate startup scrape failed:', err)
   })
 
   // Job 1: Scrape every 15 minutes
   cron.schedule('*/15 * * * *', () => {
-    runScrapeJob().catch((err) => {
+    runAllProviders().catch((err) => {
       console.error('[scheduler] Scheduled scrape failed:', err)
     })
   }, {
@@ -66,6 +76,10 @@ export function startScheduler(): void {
       await db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY hourly_prices`)
       console.log('[scheduler] hourly_prices refreshed (post-delete)')
 
+      // Step 4: Evict expired route cache entries
+      await db.execute(sql`DELETE FROM route_cache WHERE expires_at < NOW()`)
+      console.log('[scheduler] Expired route_cache entries deleted')
+
       console.log('[scheduler] Nightly maintenance complete')
     } catch (err) {
       console.error('[scheduler] Nightly maintenance failed:', err)
@@ -76,4 +90,10 @@ export function startScheduler(): void {
   })
 
   console.log('[scheduler] Running — scraping every 15 min, hourly view refresh, nightly cleanup (Australia/Brisbane)')
+}
+
+async function runAllProviders(): Promise<void> {
+  for (const provider of getProviders()) {
+    await runProviderScrape(provider)
+  }
 }

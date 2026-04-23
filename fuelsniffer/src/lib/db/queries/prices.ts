@@ -23,8 +23,7 @@ export interface PriceResult {
 export async function getLatestPrices(
   fuelTypeId: number,
   radiusKm: number,
-  userLocation?: { lat: number; lng: number },
-  changeHours: number = 168
+  userLocation?: { lat: number; lng: number }
 ): Promise<PriceResult[]> {
   const lat = userLocation?.lat ?? DEFAULT_LAT
   const lng = userLocation?.lng ?? DEFAULT_LNG
@@ -39,6 +38,35 @@ export async function getLatestPrices(
       FROM price_readings
       WHERE fuel_type_id = ${fuelTypeId}
       ORDER BY station_id, recorded_at DESC
+    ),
+    window_start AS (
+      -- Oldest bucket in the 168h window per station.
+      -- Mirrors /api/prices/history?hours=168 semantics: prefer the
+      -- hourly_prices continuous aggregate.
+      SELECT DISTINCT ON (station_id)
+        station_id, avg_price_cents AS prev_price
+      FROM hourly_prices
+      WHERE fuel_type_id = ${fuelTypeId}
+        AND bucket >= NOW() - INTERVAL '168 hours'
+      ORDER BY station_id, bucket ASC
+    ),
+    window_start_raw AS (
+      -- Fallback when the cagg has not yet materialised for this station.
+      SELECT station_id, prev_price FROM (
+        SELECT
+          station_id,
+          AVG(price_cents)::numeric AS prev_price,
+          DATE_TRUNC('hour', recorded_at) AS bucket,
+          ROW_NUMBER() OVER (
+            PARTITION BY station_id
+            ORDER BY DATE_TRUNC('hour', recorded_at) ASC
+          ) AS rn
+        FROM price_readings
+        WHERE fuel_type_id = ${fuelTypeId}
+          AND recorded_at >= NOW() - INTERVAL '168 hours'
+        GROUP BY station_id, DATE_TRUNC('hour', recorded_at)
+      ) ranked
+      WHERE rn = 1
     )
     SELECT
       s.id,
@@ -58,18 +86,14 @@ export async function getLatestPrices(
           POWER(SIN((RADIANS(s.longitude) - RADIANS(${lng})) / 2), 2)
         ))
       ) AS distance_km,
-      (l.price_cents::numeric - prev.price_cents::numeric) AS price_change
+      (
+        l.price_cents::numeric -
+        COALESCE(ws.prev_price, wsr.prev_price)::numeric
+      ) AS price_change
     FROM latest l
     JOIN stations s ON s.id = l.station_id
-    LEFT JOIN LATERAL (
-      SELECT price_cents
-      FROM price_readings pr
-      WHERE pr.station_id = l.station_id
-        AND pr.fuel_type_id = ${fuelTypeId}
-        AND pr.recorded_at < NOW() - (${changeHours} || ' hours')::interval
-      ORDER BY pr.recorded_at DESC
-      LIMIT 1
-    ) prev ON true
+    LEFT JOIN window_start ws ON ws.station_id = l.station_id
+    LEFT JOIN window_start_raw wsr ON wsr.station_id = l.station_id
     WHERE s.is_active = true
       AND (
         6371 * 2 * ASIN(SQRT(
