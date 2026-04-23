@@ -7,6 +7,7 @@ export default defineConfig({
     // comments opt component tests (.test.tsx) into the DOM env.
     environment: 'node',
     globals: true,
+    setupFiles: ['./src/__tests__/setup-happy-dom.ts'],
     reporters: ['verbose'],
     coverage: {
       provider: 'v8',
