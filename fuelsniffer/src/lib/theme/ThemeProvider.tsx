@@ -68,6 +68,9 @@ export function ThemeProvider({ initial, children }: ProviderProps) {
   const setTheme = useCallback((next: Theme) => {
     setThemeState(next)
     persist(next)
+    // Synchronous first-paint update; the useEffect above reconciles on React's
+    // next render. The double-apply is intentional and idempotent — it avoids
+    // a one-frame flash of the prior theme between click and effect run.
     const r = resolve(next)
     setResolved(r)
     applyAttribute(r)
