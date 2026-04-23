@@ -30,6 +30,8 @@
 | `src/__tests__/config/publicUrl.test.ts` | Unit test — validation + default |
 | `src/__tests__/branding.test.ts` | Greppy regression — zero `fuelsniffer` (case-insensitive) outside allowlist |
 | `src/__tests__/branding.playwright.ts` | E2E smoke — `<title>`, no `FuelSniffer` text, `data-theme` set, station card renders |
+| `src/app/icon.svg` | Placeholder Fillip favicon — amber "F" monogram on dark rounded square |
+| `src/app/apple-icon.svg` | Same monogram, sized for Apple touch icon (180x180 viewBox) |
 | `.env.example` | Updated with new vars |
 
 **Files modified:**
@@ -1300,6 +1302,100 @@ git commit -m "feat(fillip): wire ThemeProvider + ThemeToggle into root layout
 
 ---
 
+## Task 10b: Replace favicon with on-brand Fillip "F" monogram
+
+**Files:**
+- Delete: `fuelsniffer/src/app/favicon.ico`
+- Create: `fuelsniffer/src/app/icon.svg` (Next.js 16 App Router auto-generates the favicon link from this)
+- Create: `fuelsniffer/src/app/apple-icon.svg` (Apple touch icon)
+
+**Why two SVGs:** Next.js 16 App Router treats `app/icon.{ico,jpg,jpeg,png,svg}` as the favicon and emits the right `<link rel="icon">` automatically. `app/apple-icon.{jpg,jpeg,png,svg}` does the same for `<link rel="apple-touch-icon">`. Removing `favicon.ico` is required because if both `favicon.ico` and `icon.svg` exist Next.js prefers the `.ico` (it's the more-specific built-in convention) and our SVG would never render.
+
+**Design:** amber `#f59e0b` "F" monogram on a dark `#111111` rounded-square background. Geist-bold-shape glyph. Clearly placeholder (no fuel/pump iconography) so SP-3 / proper logo work can replace without breaking expectations.
+
+- [ ] **Step 1: Delete the existing default Next.js favicon**
+
+```bash
+cd /Users/cdenn/Projects/FuelSniffer/fuelsniffer
+git rm src/app/favicon.ico
+```
+
+Expected: file deleted from working tree and staged for removal.
+
+- [ ] **Step 2: Create `src/app/icon.svg` (browser favicon)**
+
+Create `fuelsniffer/src/app/icon.svg` with this exact content:
+
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <rect width="32" height="32" rx="7" fill="#111111"/>
+  <path d="M10 8 H22 V12 H14 V15 H21 V19 H14 V24 H10 Z" fill="#f59e0b"/>
+</svg>
+```
+
+Notes for the implementer if you want to tweak: the path renders an "F" — left vertical bar from x=10 to x=14, top arm out to x=22 down to y=12, mid arm out to x=21 from y=15 to y=19, base of the vertical extends to y=24. The amber `#f59e0b` matches the brand-accent token. The `#111111` background matches the legacy dark-mode body colour so the icon looks at home in either theme.
+
+- [ ] **Step 3: Create `src/app/apple-icon.svg` (180x180 viewBox for Apple touch)**
+
+Create `fuelsniffer/src/app/apple-icon.svg` with this exact content:
+
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">
+  <rect width="180" height="180" rx="40" fill="#111111"/>
+  <path d="M56 45 H124 V68 H79 V85 H118 V108 H79 V135 H56 Z" fill="#f59e0b"/>
+</svg>
+```
+
+Same glyph, scaled. Apple touch icons must be opaque (no transparency around corners) — the `rx="40"` corner radius is for visual softness only; iOS will further mask if it doesn't like the shape.
+
+- [ ] **Step 4: Verify build picks up the icons**
+
+```bash
+cd /Users/cdenn/Projects/FuelSniffer/fuelsniffer
+npm run build 2>&1 | grep -i "icon\|favicon" | head -5
+```
+
+Expected: build succeeds; output mentions the new icons being collected. (If nothing matches, that's fine — Next.js doesn't always log this. Step 5 is the real verification.)
+
+- [ ] **Step 5: Smoke test the favicon route**
+
+Start the dev server (in another terminal: `npm run dev` from `fuelsniffer/`), then:
+
+```bash
+curl -sI http://localhost:4000/icon.svg | head -5
+curl -sI http://localhost:4000/apple-icon.svg | head -5
+curl -sI http://localhost:4000/favicon.ico | head -5
+```
+
+Expected:
+- `/icon.svg` → `200 OK`, `content-type: image/svg+xml`
+- `/apple-icon.svg` → `200 OK`, `content-type: image/svg+xml`
+- `/favicon.ico` → `404` (correctly deleted)
+
+If you can't run the dev server, check `.next/` after `npm run build` for the generated icon manifest in the build output — Next.js logs the static asset hash for each app icon.
+
+- [ ] **Step 6: Visual check (optional but recommended)**
+
+Open `http://localhost:4000/icon.svg` in a browser. You should see an amber "F" on a dark rounded square. Open `http://localhost:4000` and verify the browser tab shows the new icon.
+
+- [ ] **Step 7: Commit**
+
+```bash
+cd /Users/cdenn/Projects/FuelSniffer
+git add fuelsniffer/src/app/icon.svg fuelsniffer/src/app/apple-icon.svg
+git add fuelsniffer/src/app/favicon.ico  # records the deletion
+git commit -m "feat(fillip): on-brand 'F' monogram favicon (placeholder logo)
+
+- Deletes Next.js default favicon.ico
+- Adds icon.svg (32x32) and apple-icon.svg (180x180)
+- Amber #f59e0b 'F' on dark #111111 rounded square
+- Next.js 16 App Router auto-emits <link rel='icon'> and
+  <link rel='apple-touch-icon'> from these conventional paths
+- Clearly placeholder; real logo lands when commissioned"
+```
+
+---
+
 ## Task 11: Update db README without renaming the postgres role
 
 **Files:**
@@ -1899,7 +1995,7 @@ Spec coverage check (spec §3 In scope + §12 Definition of Done):
 |---|---|
 | Brand strings in src/app | Task 3 |
 | Page titles & meta | Task 3, Task 9 |
-| Favicon & app icons | **Not changed in this plan** — current `favicon.ico` left as-is. Spec §3 lists a "placeholder Fillip mark" but §10 Q5 leaves placeholder design as decision-pending. Plan defers favicon swap until logo decision. (See "Deviations" below.) |
+| Favicon & app icons | Task 10b — amber "F" monogram on dark rounded square (icon.svg + apple-icon.svg) |
 | README & docs | Task 12 |
 | `package.json` name | Task 14 |
 | docker-compose service names | Task 13 |
@@ -1923,10 +2019,10 @@ Spec coverage check (spec §3 In scope + §12 Definition of Done):
 | Vitest passes; Playwright smoke passes | Task 16 |
 
 **Deviations from spec:**
-1. Favicon swap deferred (spec §10 Q5 marks placeholder logo as decision-pending; current `favicon.ico` is untouched). Worth flagging as one open question for the user before merge.
-2. Spec §0 amendment table says SP-0 ships dark theme + toggle but spec body §2 still says "dark mode deferred to SP-3" and §5.3 says provider is "locked to `light`". The plan follows the §0 amendment (the authoritative table per spec preamble: "treat these as authoritative").
-3. Spec §10 Q6 recommends `#2563eb` (Tailwind blue) as accent. Master spec §10 cross-cutting decision 5 LOCKS amber (`#f59e0b`). Plan follows the master spec — amber.
-4. The plan adds `npm run test`/`test:run`/`test:e2e` scripts (Task 1) which the spec doesn't explicitly list. They're necessary because the current `package.json` has no test script — the spec implicitly assumes they exist.
+1. Spec §0 amendment table says SP-0 ships dark theme + toggle but spec body §2 still says "dark mode deferred to SP-3" and §5.3 says provider is "locked to `light`". The plan follows the §0 amendment (the authoritative table per spec preamble: "treat these as authoritative").
+2. Spec §10 Q6 recommends `#2563eb` (Tailwind blue) as accent. Master spec §10 cross-cutting decision 5 LOCKS amber (`#f59e0b`). Plan follows the master spec — amber.
+3. The plan adds `npm run test`/`test:run`/`test:e2e` scripts (Task 1) which the spec doesn't explicitly list. They're necessary because the current `package.json` has no test script — the spec implicitly assumes they exist.
+4. Spec §10 Q5 left favicon design pending. User confirmed 2026-04-23: ship the amber "F" monogram now (Task 10b). Plan resolves this open question.
 
 Placeholder scan: every step contains real code, real commands, real expected output. No "TBD" / "implement later" / "add error handling" / "similar to Task N".
 
