@@ -5,7 +5,7 @@
  * SP-3 will tune values, add semantic aliases, and run a proper a11y
  * pass. SP-0's job is only to:
  *   1. Establish the token names so components can adopt them
- *   2. Ship a functional dark theme (= the existing FuelSniffer values)
+ *   2. Ship a functional dark theme (= the existing pre-rebrand values)
  *      so users who flip to dark see no regression
  *   3. Ship a clean baseline light theme so the rebrand has visible work
  *
@@ -46,9 +46,9 @@
 }
 
 [data-theme='dark'] {
-  /* These values are the EXACT pre-SP-0 FuelSniffer palette.
+  /* These values are the EXACT pre-SP-0 (pre-Fillip) palette.
      Default: when the user picks "Dark" the page looks pixel-identical
-     to the FuelSniffer they are used to. SP-3 will polish. */
+     to the legacy dark theme they are used to. SP-3 will polish. */
   --color-bg: #111111;
   --color-bg-elevated: #1a1a1a;
   --color-surface: #1a1a1a;

@@ -3,7 +3,7 @@
 
 /*
  * SP-0 (Fillip rebrand) — globals.css now consumes theme tokens from
- * tokens.css. The previous WCAG audit comment (FuelSniffer 2026-04-12)
+ * tokens.css. The previous WCAG audit comment (2026-04-12)
  * is preserved in git history; SP-3 will run a fresh contrast pass over
  * both themes and re-record findings.
  */
