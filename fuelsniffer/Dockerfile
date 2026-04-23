@@ -24,6 +24,9 @@ RUN npm run build
 
 # ── Stage 2: runner ──────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner
+LABEL org.opencontainers.image.title="Fillip"
+LABEL org.opencontainers.image.description="Fillip — find cheap fuel across Australia"
+LABEL org.opencontainers.image.source="https://github.com/cdenn/fuelsniffer"
 WORKDIR /app
 
 ENV NODE_ENV=production
