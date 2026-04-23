@@ -1,8 +1,8 @@
 'use client'
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
-import type { Theme } from './getInitialTheme'
-import { THEME_COOKIE } from './getInitialTheme'
+import type { Theme } from './types'
+import { THEME_COOKIE } from './types'
 
 type ResolvedTheme = 'light' | 'dark'
 

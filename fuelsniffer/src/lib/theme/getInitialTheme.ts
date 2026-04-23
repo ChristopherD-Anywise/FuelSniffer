@@ -1,9 +1,11 @@
 import { cookies } from 'next/headers'
+import type { Theme } from './types'
+import { THEME_COOKIE } from './types'
 
-export type Theme = 'light' | 'dark' | 'system'
+export type { Theme }
+export { THEME_COOKIE }
 
 const VALID: ReadonlySet<Theme> = new Set(['light', 'dark', 'system'])
-export const THEME_COOKIE = 'fillip-theme'
 
 function coerce(value: string | undefined): Theme | null {
   if (value && VALID.has(value as Theme)) return value as Theme
