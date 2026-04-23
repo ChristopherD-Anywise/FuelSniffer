@@ -4,7 +4,7 @@ import DashboardClient from './DashboardClient'
 import LoadingSkeleton from '@/components/LoadingSkeleton'
 
 export const metadata: Metadata = {
-  title: 'FuelSniffer — Cheapest fuel near North Lakes',
+  title: 'Fillip — Cheapest fuel near you',
 }
 
 export default function DashboardPage() {

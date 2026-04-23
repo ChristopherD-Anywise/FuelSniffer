@@ -4,7 +4,7 @@ import LoadingSkeleton from '@/components/LoadingSkeleton'
 import TripDisabled from '@/components/TripDisabled'
 
 export const metadata = {
-  title: 'Trip Planner — FuelSniffer',
+  title: 'Trip Planner — Fillip',
   description: 'Find the cheapest fuel along your route',
 }
 

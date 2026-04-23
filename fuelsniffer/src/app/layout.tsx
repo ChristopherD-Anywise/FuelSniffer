@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "FuelSniffer",
-  description: "Real-time Queensland and NSW fuel price tracker",
+  title: "Fillip — find cheap fuel across Australia",
+  description: "Fillip helps Australian drivers find the cheapest fuel near them and across their route. Real-time prices, trend tracking, and national coverage.",
 };
 
 export default function RootLayout({
