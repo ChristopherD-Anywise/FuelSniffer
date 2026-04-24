@@ -10,6 +10,7 @@ import {
   numeric,
   varchar,
   jsonb,
+  date,
 } from 'drizzle-orm/pg-core'
 
 /**
@@ -148,3 +149,27 @@ export const fuelTypes = pgTable('fuel_types', {
 
 export type FuelType = typeof fuelTypes.$inferSelect
 export type NewFuelType = typeof fuelTypes.$inferInsert
+
+/**
+ * Cycle signals table (SP-4).
+ * One row per (suburb_key, fuel_type_id, computed_for, algo_version).
+ * suburb_key format: lower(suburb)|lower(state)  e.g. 'chermside|qld'
+ * Phase B writes algo_version = 'forecast-v1'; query layer prefers higher priority.
+ */
+export const cycleSignals = pgTable('cycle_signals', {
+  id:            bigserial('id', { mode: 'number' }).primaryKey(),
+  suburbKey:     text('suburb_key').notNull(),
+  suburbDisplay: text('suburb_display').notNull(),
+  stateCode:     text('state_code').notNull(),
+  fuelTypeId:    integer('fuel_type_id').notNull(),
+  computedFor:   date('computed_for').notNull(),
+  computedAt:    timestamp('computed_at', { withTimezone: true }).notNull().defaultNow(),
+  signalState:   text('signal_state').notNull(),
+  confidence:    doublePrecision('confidence').notNull(),
+  label:         text('label').notNull(),
+  supporting:    jsonb('supporting').notNull(),
+  algoVersion:   text('algo_version').notNull().default('rule-v1'),
+})
+
+export type CycleSignal = typeof cycleSignals.$inferSelect
+export type NewCycleSignal = typeof cycleSignals.$inferInsert

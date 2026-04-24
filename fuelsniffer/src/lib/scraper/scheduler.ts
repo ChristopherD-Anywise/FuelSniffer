@@ -10,6 +10,16 @@ import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
 import type { FuelPriceProvider } from '@/lib/providers/fuel'
 
+// SP-4: Cycle engine intraday refresh (imported lazily to avoid circular deps)
+let _cycleRefresh: ((keys: Set<string>) => Promise<void>) | null = null
+async function getCycleRefresh() {
+  if (!_cycleRefresh) {
+    const { runIntradayRefresh } = await import('@/lib/cycle/compute')
+    _cycleRefresh = runIntradayRefresh
+  }
+  return _cycleRefresh
+}
+
 // ── Per-provider schedule declarations ────────────────────────────────────────
 
 interface ProviderScheduleEntry {
@@ -55,18 +65,22 @@ export function startScheduler(): void {
     const delayMs = idx * 30_000
     setTimeout(() => {
       console.log(`[scheduler:${provider.id}] Startup scrape (D-11, delay=${delayMs}ms)`)
-      runProviderScrape(provider).catch(err => {
-        console.error(`[scheduler:${provider.id}] Startup scrape failed:`, err)
-      })
+      runProviderScrape(provider)
+        .then(result => triggerIntradayRefresh(provider.id, result.pricesUpserted))
+        .catch(err => {
+          console.error(`[scheduler:${provider.id}] Startup scrape failed:`, err)
+        })
     }, delayMs)
   })
 
   // Per-provider cron jobs
   for (const { provider, cron: cronExpr, tz } of PROVIDER_SCHEDULES) {
     cron.schedule(cronExpr, () => {
-      runProviderScrape(provider).catch(err => {
-        console.error(`[scheduler:${provider.id}] Scheduled scrape failed:`, err)
-      })
+      runProviderScrape(provider)
+        .then(result => triggerIntradayRefresh(provider.id, result.pricesUpserted))
+        .catch(err => {
+          console.error(`[scheduler:${provider.id}] Scheduled scrape failed:`, err)
+        })
     }, {
       timezone:  tz,
       noOverlap: true,
@@ -116,4 +130,39 @@ export function startScheduler(): void {
   })
 
   console.log('[scheduler] Running — per-provider cron schedules active, nightly maintenance at 02:00 Brisbane')
+}
+
+/**
+ * SP-4: Post-scrape intraday cycle refresh.
+ * Called after each successful scrape to recompute today's signals for touched suburbs.
+ * Discovers which suburb keys were affected by querying price_readings updated in the last 30 minutes.
+ * Non-fatal: errors are logged but do not affect scraper operation.
+ */
+async function triggerIntradayRefresh(providerId: string, pricesUpserted: number): Promise<void> {
+  // Only refresh if new prices were written
+  if (pricesUpserted === 0) return
+
+  try {
+    // Discover suburb keys touched in the last 30 minutes
+    const rows = await db.execute(sql`
+      SELECT DISTINCT lower(s.suburb) || '|' || lower(s.state) AS suburb_key
+      FROM price_readings pr
+      JOIN stations s ON s.id = pr.station_id
+      WHERE pr.recorded_at >= NOW() - INTERVAL '30 minutes'
+        AND s.suburb IS NOT NULL
+        AND s.state IS NOT NULL
+    `)
+    const touchedKeys = new Set(
+      (rows as unknown as Array<{ suburb_key: string }>).map(r => r.suburb_key)
+    )
+
+    if (touchedKeys.size === 0) return
+
+    const refresh = await getCycleRefresh()
+    await refresh(touchedKeys)
+    console.log(`[scheduler:${providerId}] SP-4 intraday refresh: ${touchedKeys.size} suburb(s)`)
+  } catch (err) {
+    // Non-fatal: log but don't crash the scraper
+    console.error(`[scheduler:${providerId}] SP-4 intraday refresh failed (non-fatal):`, err)
+  }
 }

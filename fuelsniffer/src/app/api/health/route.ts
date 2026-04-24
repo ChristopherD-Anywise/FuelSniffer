@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/lib/db/client'
 import { scrapeHealth } from '@/lib/db/schema'
 import { desc, sql } from 'drizzle-orm'
+import { getCycleHealth } from '@/lib/cycle/queries'
 
 // ── Legacy response shape (preserved for backward compat) ─────────────────────
 
@@ -140,6 +141,14 @@ export async function GET() {
 
     const legacy = buildHealthResponse(latest ?? null)
 
+    // SP-4: Cycle engine health (graceful: returns nulls if table doesn't exist yet)
+    let cycleHealth: { lastComputedAt: string | null; todaySignals: number; uncertainCount: number } | null = null
+    try {
+      cycleHealth = await getCycleHealth()
+    } catch {
+      // Table may not exist before first migration — graceful degradation
+    }
+
     const response = {
       ...national,
       // Legacy fields
@@ -147,6 +156,12 @@ export async function GET() {
       last_scrape_at:  legacy.last_scrape_at,
       minutes_ago:     legacy.minutes_ago,
       prices_last_run: legacy.prices_last_run,
+      // SP-4: Cycle engine health
+      cycle: cycleHealth ?? {
+        lastComputedAt: null,
+        todaySignals:   0,
+        uncertainCount: 0,
+      },
     }
 
     const httpStatus = national.overall === 'ok' ? 200 : 503
