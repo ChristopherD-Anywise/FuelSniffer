@@ -13,6 +13,12 @@ export const mockStation: PriceResult = {
   source_ts: new Date(Date.now() - 5 * 60 * 1000),
   distance_km: 1.4,
   price_change: -3.1,
+  // SP-6: default no-programme state
+  effective_price_cents: 179.9,
+  applied_programme_id: null,
+  applied_programme_name: null,
+  applied_discount_cents: 0,
+  considered_programme_ids: [],
 }
 
 export const mockStationExpensive: PriceResult = {

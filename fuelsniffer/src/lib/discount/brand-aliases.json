@@ -1,0 +1,144 @@
+{
+  "schema_version": 1,
+  "description": "Canonical brand codes and alias lists for all known fuel brands in our data. Edit aliases here to fix unmatched brands surfaced in unknown_brand_log. Canonical codes are referenced by programmes.json.",
+  "canonical_brands": [
+    {
+      "code": "ampol",
+      "display": "Ampol",
+      "aliases": [
+        "ampol",
+        "ampol foodary",
+        "ampol foodary express",
+        "ampol metro",
+        "ampol petroleum",
+        "caltex starcard",
+        "caltex",
+        "caltex petroleum"
+      ]
+    },
+    {
+      "code": "eg_ampol",
+      "display": "EG Ampol",
+      "aliases": [
+        "eg ampol",
+        "eg ampol foodary",
+        "eg fuelco",
+        "euro garages",
+        "eg fuels"
+      ]
+    },
+    {
+      "code": "caltex_woolworths",
+      "display": "Caltex Woolworths",
+      "aliases": [
+        "caltex woolworths",
+        "woolworths petrol",
+        "woolworths caltex",
+        "woolworths fuel"
+      ]
+    },
+    {
+      "code": "shell",
+      "display": "Shell",
+      "aliases": [
+        "shell",
+        "shell select",
+        "shell v-power",
+        "shell vpower"
+      ]
+    },
+    {
+      "code": "shell_coles_express",
+      "display": "Shell Coles Express",
+      "aliases": [
+        "shell coles express",
+        "coles express",
+        "coles express shell",
+        "coles express fuel"
+      ]
+    },
+    {
+      "code": "united",
+      "display": "United Petroleum",
+      "aliases": [
+        "united",
+        "united petroleum",
+        "united convenience",
+        "united fuel"
+      ]
+    },
+    {
+      "code": "seven_eleven",
+      "display": "7-Eleven",
+      "aliases": [
+        "7-eleven",
+        "7eleven",
+        "seven eleven"
+      ]
+    },
+    {
+      "code": "bp",
+      "display": "BP",
+      "aliases": [
+        "bp",
+        "bp connect",
+        "bp express",
+        "bp ultimate",
+        "bp truckstop"
+      ]
+    },
+    {
+      "code": "liberty",
+      "display": "Liberty",
+      "aliases": [
+        "liberty",
+        "liberty oil",
+        "liberty petroleum"
+      ]
+    },
+    {
+      "code": "puma",
+      "display": "Puma Energy",
+      "aliases": [
+        "puma",
+        "puma energy",
+        "puma fuel"
+      ]
+    },
+    {
+      "code": "metro",
+      "display": "Metro Petroleum",
+      "aliases": [
+        "metro",
+        "metro petroleum",
+        "metro fuel"
+      ]
+    },
+    {
+      "code": "independent",
+      "display": "Independent",
+      "aliases": [
+        "independent",
+        "ind",
+        "independent fuel"
+      ]
+    },
+    {
+      "code": "viva",
+      "display": "Viva Energy",
+      "aliases": [
+        "viva",
+        "viva energy",
+        "viva fuels"
+      ]
+    },
+    {
+      "code": "costco",
+      "display": "Costco",
+      "aliases": [
+        "costco",
+        "costco wholesale"
+      ]
+    }
+  ]
+}
