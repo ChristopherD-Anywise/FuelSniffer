@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { signParams, computeCardHash } from '@/lib/share/sign'
 import { getPublicUrl } from '@/lib/config/publicUrl'
+import { getSession } from '@/lib/session'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +22,11 @@ interface SignBody {
 }
 
 export async function POST(req: NextRequest) {
+  const session = await getSession(req)
+  if (!session) {
+    return NextResponse.json({ error: 'unauthorized' }, { status: 401 })
+  }
+
   let body: SignBody
   try {
     body = await req.json()
