@@ -151,7 +151,7 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
           {/* SP-4 verdict slot */}
           <SlotVerdict station={station} />
           {/* SP-8 share button slot */}
-          <SlotShareButton station={station} disabled />
+          <SlotShareButton station={station} fuelTypeId={parseInt(fuelId, 10)} />
         </div>
       </div>
 

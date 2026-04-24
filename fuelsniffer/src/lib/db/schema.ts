@@ -6,6 +6,7 @@ import {
   doublePrecision,
   serial,
   bigserial,
+  bigint,
   timestamp,
   numeric,
   varchar,
@@ -173,3 +174,49 @@ export const cycleSignals = pgTable('cycle_signals', {
 
 export type CycleSignal = typeof cycleSignals.$inferSelect
 export type NewCycleSignal = typeof cycleSignals.$inferInsert
+
+/**
+ * Share card renders cache index — SP-8.
+ * Actual PNG bytes are re-rendered on each cache miss (CDN absorbs repeat traffic).
+ * hash = sha256(station_id|fuel_type_id|price_cents|radius_km|variant) — content-addressed.
+ * No PII — no user FK.
+ */
+export const shareCardRenders = pgTable('share_card_renders', {
+  id:           bigserial('id', { mode: 'number' }).primaryKey(),
+  hash:         text('hash').notNull().unique(),
+  stationId:    bigint('station_id', { mode: 'number' }).notNull().references(() => stations.id),
+  fuelTypeId:   integer('fuel_type_id').notNull(),
+  priceCents:   integer('price_cents').notNull(),
+  radiusKm:     integer('radius_km'),
+  variant:      text('variant').notNull().default('default'),
+  generatedAt:  timestamp('generated_at', { withTimezone: true }).notNull().defaultNow(),
+  lastServedAt: timestamp('last_served_at', { withTimezone: true }).notNull().defaultNow(),
+  servedCount:  integer('served_count').notNull().default(1),
+})
+
+export type ShareCardRender = typeof shareCardRenders.$inferSelect
+export type NewShareCardRender = typeof shareCardRenders.$inferInsert
+
+/**
+ * Social posts audit log + dispatch queue — SP-8.
+ * Rows are inserted BEFORE posting so admin can preview/cancel (editorial guard).
+ * status flow: pending → approved → posted | failed | cancelled
+ * dry_run=true rows are logged but not sent to the network.
+ */
+export const socialPosts = pgTable('social_posts', {
+  id:               bigserial('id', { mode: 'number' }).primaryKey(),
+  network:          text('network').notNull(),
+  kind:             text('kind').notNull().default('weekly_cheapest_postcode'),
+  composedAt:       timestamp('composed_at', { withTimezone: true }).notNull().defaultNow(),
+  postedAt:         timestamp('posted_at', { withTimezone: true }),
+  contentText:      text('content_text').notNull(),
+  contentImageUrl:  text('content_image_url'),
+  deepLink:         text('deep_link').notNull(),
+  status:           text('status').notNull().default('approved'),
+  responseJson:     jsonb('response_json'),
+  errorText:        text('error_text'),
+  dryRun:           boolean('dry_run').notNull().default(false),
+})
+
+export type SocialPost = typeof socialPosts.$inferSelect
+export type NewSocialPost = typeof socialPosts.$inferInsert

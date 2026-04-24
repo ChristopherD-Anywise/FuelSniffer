@@ -202,7 +202,7 @@ export default function StationDetail({
             {/* Action buttons row (SP-5, SP-8 stubs) */}
             <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
               <SlotAlertButton station={station} disabled />
-              <SlotShareButton station={station} disabled />
+              <SlotShareButton station={station} fuelTypeId={parseInt(fuelId, 10)} />
             </div>
 
             {/* Station name + brand */}

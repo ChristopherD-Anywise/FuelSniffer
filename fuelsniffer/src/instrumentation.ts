@@ -18,5 +18,10 @@ export async function register() {
     // SP-4: Start cycle engine compute scheduler (nightly 03:30 AEST)
     const { startCycleScheduler } = await import('./lib/cycle/scheduler')
     startCycleScheduler()
+
+    // SP-8: Weekly social bot (Mon 07:00 AEST)
+    // All networks OFF by default — enable via FILLIP_BOT_*_ENABLED env vars
+    const { startBotScheduler } = await import('./lib/social-bot/scheduler')
+    startBotScheduler()
   }
 }
