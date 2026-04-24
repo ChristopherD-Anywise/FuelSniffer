@@ -150,7 +150,7 @@ async function runMigrations(): Promise<void> {
 
     // Step 4: Find which files have already been applied.
     const applied = await sql`SELECT filename FROM schema_migrations`
-    const appliedSet = new Set(applied.map((r: { filename: string }) => r.filename))
+    const appliedSet = new Set((applied as unknown as Array<{ filename: string }>).map(r => r.filename))
 
     const pending = allFiles.filter(f => !appliedSet.has(f))
 

@@ -23,7 +23,7 @@ import {
  * D-06: Only stations within ~50km of North Lakes are stored (filtered at ingest).
  */
 export const stations = pgTable('stations', {
-  id:          integer('id').primaryKey(),   // QLD API SiteId (pre-0015); surrogate BIGSERIAL post-0015
+  id:          bigserial('id', { mode: 'number' }).primaryKey(),   // Surrogate BIGSERIAL PK (migration 0015)
   name:        text('name').notNull(),
   brand:       text('brand'),
   address:     text('address'),
@@ -54,7 +54,7 @@ export const stations = pgTable('stations', {
  */
 export const priceReadings = pgTable('price_readings', {
   recordedAt:  timestamp('recorded_at', { withTimezone: true }).notNull(),
-  stationId:   integer('station_id').notNull().references(() => stations.id),
+  stationId:   bigint('station_id', { mode: 'number' }).notNull().references(() => stations.id),
   fuelTypeId:  integer('fuel_type_id').notNull(),
   priceCents:     numeric('price_cents', { precision: 6, scale: 1 }).notNull(),
   sourceTs:       timestamp('source_ts', { withTimezone: true }).notNull(), // TransactionDateUtc from API
