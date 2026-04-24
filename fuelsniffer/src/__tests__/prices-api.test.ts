@@ -12,10 +12,12 @@ vi.mock('@/lib/db/client', () => ({
   db: { execute: mockDbExecute },
 }))
 
-// Mock getLatestPrices for route handler tests
+// Mock getLatestPrices and applyEffectivePrices for route handler tests
 const mockGetLatestPrices = vi.fn().mockResolvedValue([])
+const mockApplyEffectivePrices = vi.fn((results: unknown[]) => results)
 vi.mock('@/lib/db/queries/prices', () => ({
   getLatestPrices: mockGetLatestPrices,
+  applyEffectivePrices: mockApplyEffectivePrices,
 }))
 
 const MOCK_STATION = {

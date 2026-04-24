@@ -159,6 +159,7 @@ describe('GET /api/prices — input validation', () => {
     vi.resetModules()
     vi.mock('@/lib/db/queries/prices', () => ({
       getLatestPrices: vi.fn().mockResolvedValue([]),
+      applyEffectivePrices: vi.fn((results: unknown[]) => results),
     }))
   })
 

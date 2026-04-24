@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server'
-import { getLatestPrices } from '@/lib/db/queries/prices'
+import { getLatestPrices, applyEffectivePrices } from '@/lib/db/queries/prices'
+import { getSession } from '@/lib/session'
+import { db } from '@/lib/db/client'
+import { sql } from 'drizzle-orm'
 import { z } from 'zod'
+
+interface UserProgrammeRow {
+  programme_id: string
+  paused: boolean
+}
 
 const PricesQuerySchema = z.object({
   fuel: z
@@ -50,6 +58,26 @@ export async function GET(req: Request) {
       parsed.data.radius,
       userLocation
     )
+
+    // SP-6: Load enrolled programme IDs for the authenticated user (non-blocking)
+    let enrolledIds: string[] = []
+    try {
+      const session = await getSession(req)
+      if (session) {
+        const rows = await db.execute(sql`
+          SELECT programme_id, paused
+          FROM user_programmes
+          WHERE user_id = ${session.userId}
+        `) as unknown as UserProgrammeRow[]
+        // Only include non-paused enrolments in the effective price calculation
+        enrolledIds = rows.filter(r => !r.paused).map(r => r.programme_id)
+      }
+    } catch {
+      // Session or DB error — continue with pylon-only prices
+      enrolledIds = []
+    }
+
+    applyEffectivePrices(stations, enrolledIds, parsed.data.fuel)
 
     return NextResponse.json(stations, { status: 200 })
   } catch {

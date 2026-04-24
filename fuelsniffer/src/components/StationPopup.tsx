@@ -78,6 +78,10 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
   const [hours, setHours] = useState(168)
 
   const price = parseFloat(station.price_cents)
+  // SP-6: Show effective price as headline when a programme applies; fall back to pylon.
+  const displayPrice = (station.effective_price_cents != null && station.applied_discount_cents > 0)
+    ? station.effective_price_cents
+    : price
   const priceTime = station.source_ts ? new Date(station.source_ts) : new Date(station.recorded_at)
   const ago = formatDistanceToNowStrict(priceTime, { addSuffix: false }) + ' ago'
   const addr = station.address || ''
@@ -112,10 +116,34 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
       <div style={{ display: 'flex', alignItems: 'flex-start', gap: 6, marginBottom: 2 }}>
         <div style={{ flex: 1 }}>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <span style={{ fontSize: 32, fontWeight: 900, color: 'var(--color-text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' } as React.CSSProperties}>{price.toFixed(1)}</span>
+            <span style={{ fontSize: 32, fontWeight: 900, color: 'var(--color-text)', lineHeight: 1, fontVariantNumeric: 'tabular-nums' } as React.CSSProperties}>{displayPrice.toFixed(1)}</span>
             <span style={{ fontSize: 14, color: 'var(--color-text-subtle)', fontWeight: 500 }}>¢/L</span>
             <span style={{ fontSize: 12, color: 'var(--color-text-subtle)', marginLeft: 'auto' }}>{ago}</span>
           </div>
+          {/* SP-6: Struck pylon + programme name when a discount applies */}
+          {station.applied_programme_id && station.applied_discount_cents > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 5, marginTop: 2 }}>
+              <span style={{ fontSize: 12, color: 'var(--color-text-subtle)', textDecoration: 'line-through', fontVariantNumeric: 'tabular-nums' }}>
+                {price.toFixed(1)}¢
+              </span>
+              <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--color-price-down)' }}>
+                −{station.applied_discount_cents}¢
+              </span>
+              <span style={{ fontSize: 11, color: 'var(--color-text-subtle)', fontWeight: 600 }}>
+                {station.applied_programme_name}
+              </span>
+              <span
+                title="Discounts shown are typical; actual savings depend on programme terms."
+                style={{ cursor: 'help', color: 'var(--color-text-subtle)', display: 'inline-flex', alignItems: 'center' }}
+                aria-label="Discount disclaimer"
+              >
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor" aria-hidden="true">
+                  <circle cx="6" cy="6" r="5.5" stroke="currentColor" strokeWidth="1" fill="none"/>
+                  <text x="6" y="9" textAnchor="middle" fontSize="7" fontWeight="bold" fill="currentColor">i</text>
+                </svg>
+              </span>
+            </div>
+          )}
           {/* SP-6 true-cost slot — collapses in popup context */}
           <SlotTrueCost station={station} context="popup" />
         </div>
