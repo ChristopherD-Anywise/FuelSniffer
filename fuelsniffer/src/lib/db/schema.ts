@@ -1,5 +1,6 @@
 import {
   pgTable,
+  pgEnum,
   integer,
   text,
   boolean,
@@ -11,6 +12,8 @@ import {
   varchar,
   jsonb,
   date,
+  uuid,
+  time,
 } from 'drizzle-orm/pg-core'
 
 /**
@@ -173,3 +176,88 @@ export const cycleSignals = pgTable('cycle_signals', {
 
 export type CycleSignal = typeof cycleSignals.$inferSelect
 export type NewCycleSignal = typeof cycleSignals.$inferInsert
+
+// ── SP-5: Alerts ──────────────────────────────────────────────────────────────
+
+export const alertTypeEnum = pgEnum('alert_type', [
+  'price_threshold',
+  'cycle_low',
+  'favourite_drop',
+  'weekly_digest',
+])
+
+export const deliveryStatusEnum = pgEnum('delivery_status', [
+  'queued',
+  'sent',
+  'delivered',
+  'failed',
+  'suppressed_quiet_hours',
+  'suppressed_rate_limit',
+  'bounced',
+])
+
+/**
+ * Alerts table — one row per user-configured alert.
+ */
+export const alerts = pgTable('alerts', {
+  id:               bigserial('id', { mode: 'number' }).primaryKey(),
+  userId:           uuid('user_id').notNull(),
+  type:             alertTypeEnum('type').notNull(),
+  criteriaJson:     jsonb('criteria_json').notNull(),
+  channels:         text('channels').array().notNull().default(['email', 'push']),
+  paused:           boolean('paused').notNull().default(false),
+  createdAt:        timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastFiredAt:      timestamp('last_fired_at', { withTimezone: true }),
+  lastEvaluatedAt:  timestamp('last_evaluated_at', { withTimezone: true }),
+  label:            text('label'),
+})
+
+export type Alert = typeof alerts.$inferSelect
+export type NewAlert = typeof alerts.$inferInsert
+
+/**
+ * Alert deliveries — log of fired alerts per channel.
+ * UNIQUE (alert_id, channel, dedup_key) prevents replays.
+ */
+export const alertDeliveries = pgTable('alert_deliveries', {
+  id:                bigserial('id', { mode: 'number' }).primaryKey(),
+  alertId:           bigserial('alert_id', { mode: 'number' }).notNull(),
+  firedAt:           timestamp('fired_at', { withTimezone: true }).notNull().defaultNow(),
+  channel:           text('channel').notNull(),
+  payloadHash:       text('payload_hash').notNull(),
+  dedupKey:          text('dedup_key').notNull(),
+  status:            deliveryStatusEnum('status').notNull(),
+  providerMessageId: text('provider_message_id'),
+  error:             text('error'),
+  retryCount:        integer('retry_count').notNull().default(0),
+})
+
+export type AlertDelivery = typeof alertDeliveries.$inferSelect
+export type NewAlertDelivery = typeof alertDeliveries.$inferInsert
+
+/**
+ * Web push subscriptions — one row per browser subscription.
+ */
+export const webPushSubscriptions = pgTable('web_push_subscriptions', {
+  id:          bigserial('id', { mode: 'number' }).primaryKey(),
+  userId:      uuid('user_id').notNull(),
+  endpoint:    text('endpoint').notNull(),
+  keysP256dh:  text('keys_p256dh').notNull(),
+  keysAuth:    text('keys_auth').notNull(),
+  ua:          text('ua'),
+  createdAt:   timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt:  timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  revokedAt:   timestamp('revoked_at', { withTimezone: true }),
+})
+
+export type WebPushSubscription = typeof webPushSubscriptions.$inferSelect
+export type NewWebPushSubscription = typeof webPushSubscriptions.$inferInsert
+
+/**
+ * Favourite stations — M2M between users and stations.
+ */
+export const favouriteStations = pgTable('favourite_stations', {
+  userId:    uuid('user_id').notNull(),
+  stationId: integer('station_id').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})

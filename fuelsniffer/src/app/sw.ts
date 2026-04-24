@@ -130,8 +130,34 @@ serwist.addEventListeners()
 // ──────────────────────────────────────────────────────────────────────────────
 
 self.addEventListener('push', (event: PushEvent) => {
-  // SP-5: parse event.data, show notification via self.registration.showNotification()
-  console.debug('[Fillip SW] push event received — SP-5 will handle this', event)
+  if (!event.data) return
+
+  interface PushData {
+    title: string
+    body: string
+    url?: string
+    icon?: string
+    badge?: string
+    tag?: string
+  }
+
+  let data: PushData
+  try {
+    data = event.data.json() as PushData
+  } catch {
+    console.warn('[Fillip SW] push event: failed to parse JSON payload')
+    return
+  }
+
+  event.waitUntil(
+    self.registration.showNotification(data.title, {
+      body: data.body,
+      icon: data.icon ?? '/icons/fillip-192.png',
+      badge: data.badge ?? '/icons/fillip-badge.png',
+      tag: data.tag,
+      data: { url: data.url ?? '/dashboard' },
+    })
+  )
 })
 
 self.addEventListener('notificationclick', (event: NotificationEvent) => {
@@ -142,9 +168,42 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   )
 })
 
-self.addEventListener('pushsubscriptionchange', () => {
-  // SP-5: re-subscribe via POST /api/push/subscribe
-  console.debug('[Fillip SW] pushsubscriptionchange — SP-5 will re-subscribe')
+self.addEventListener('pushsubscriptionchange', (event: Event) => {
+  const pushEvent = event as PushSubscriptionChangeEvent & { waitUntil: (p: Promise<unknown>) => void }
+  pushEvent.waitUntil(
+    (async () => {
+      try {
+        const vapidPublicKey = self.__SW_MANIFEST
+          ? (process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? '')
+          : ''
+
+        if (!vapidPublicKey) {
+          console.warn('[Fillip SW] pushsubscriptionchange: no VAPID key, cannot re-subscribe')
+          return
+        }
+
+        const newSub = await self.registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: vapidPublicKey,
+        })
+
+        // Notify the server about the new subscription
+        await fetch('/api/push/subscriptions', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            endpoint: newSub.endpoint,
+            keys: {
+              p256dh: btoa(String.fromCharCode(...new Uint8Array(newSub.getKey('p256dh') ?? new ArrayBuffer(0)))),
+              auth: btoa(String.fromCharCode(...new Uint8Array(newSub.getKey('auth') ?? new ArrayBuffer(0)))),
+            },
+          }),
+        })
+      } catch (err) {
+        console.error('[Fillip SW] pushsubscriptionchange: re-subscribe failed', err)
+      }
+    })()
+  )
 })
 
 // Allow clients to trigger skipWaiting explicitly (no surprise reloads)

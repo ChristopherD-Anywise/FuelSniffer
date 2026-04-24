@@ -18,5 +18,9 @@ export async function register() {
     // SP-4: Start cycle engine compute scheduler (nightly 03:30 AEST)
     const { startCycleScheduler } = await import('./lib/cycle/scheduler')
     startCycleScheduler()
+
+    // SP-5: Start alerts scheduler (weekly digest + subscription cleanup)
+    const { startAlertsScheduler } = await import('./lib/alerts/scheduler')
+    startAlertsScheduler()
   }
 }
