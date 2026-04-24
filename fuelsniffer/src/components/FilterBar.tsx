@@ -39,7 +39,7 @@ export default function FilterBar({
   onLocationSelect,
 }: FilterBarProps) {
   return (
-    <div className="sticky top-0 z-20 flex-shrink-0">
+    <nav aria-label="Filters" className="sticky top-0 z-20 flex-shrink-0">
       {/* Top bar */}
       <div
         style={{ background: '#111111', borderBottom: '3px solid #f59e0b' }}
@@ -60,7 +60,7 @@ export default function FilterBar({
               style={{
                 background: locationStatus === 'active' ? 'rgba(245,158,11,0.15)' : '#1a1a1a',
                 border: `1px solid ${locationStatus === 'active' ? '#f59e0b' : '#2a2a2a'}`,
-                color: locationStatus === 'active' ? '#f59e0b' : '#888888',
+                color: locationStatus === 'active' ? '#f59e0b' : '#8a8a8a',
               }}
               className="flex items-center justify-center w-9 h-9 rounded-lg transition-colors"
               title={locationStatus === 'active' ? 'Clear location' : 'Use my location'}
@@ -82,9 +82,11 @@ export default function FilterBar({
               <button
                 key={mode}
                 onClick={() => onSortChange(mode)}
+                aria-label={`Sort by ${mode === 'price' ? 'price' : 'distance'}`}
+                aria-pressed={sortMode === mode}
                 style={{
                   background: sortMode === mode ? '#f59e0b' : 'transparent',
-                  color: sortMode === mode ? '#000000' : '#666666',
+                  color: sortMode === mode ? '#000000' : '#8a8a8a',
                 }}
                 className="h-7 px-3 rounded-md text-xs font-bold uppercase tracking-wide transition-all"
               >
@@ -111,9 +113,11 @@ export default function FilterBar({
           <button
             key={fuel.id}
             onClick={() => onFuelChange(fuel.id)}
+            aria-label={`Filter by ${fuel.label}`}
+            aria-pressed={activeFuel === fuel.id}
             style={{
               borderBottom: activeFuel === fuel.id ? '3px solid #f59e0b' : '3px solid transparent',
-              color: activeFuel === fuel.id ? '#f59e0b' : '#555555',
+              color: activeFuel === fuel.id ? '#f59e0b' : '#8a8a8a',
               marginBottom: '-2px',
             }}
             className="flex-shrink-0 px-5 py-3 text-[13px] font-black uppercase tracking-wide transition-colors whitespace-nowrap"
@@ -122,6 +126,6 @@ export default function FilterBar({
           </button>
         ))}
       </div>
-    </div>
+    </nav>
   )
 }

@@ -3,7 +3,7 @@
  * Run: npx vitest run src/__tests__/normaliser.test.ts
  */
 import { describe, it, expect } from 'vitest'
-import { rawToPrice, isWithinRadius, toBrisbaneHour, normalisePrice, normaliseStation, extractSuburb } from '@/lib/scraper/normaliser'
+import { rawToPrice, toBrisbaneHour, normalisePrice, normaliseStation, extractSuburb } from '@/lib/scraper/normaliser'
 
 describe('rawToPrice', () => {
   it('converts QLD API integer 1459 to 145.9 cents per litre', () => {
@@ -55,28 +55,6 @@ describe('toBrisbaneHour — timezone correctness (no DST in Queensland)', () =>
   })
 })
 
-describe('isWithinRadius — 50km from North Lakes (-27.2353, 153.0189)', () => {
-  it('accepts North Lakes itself (0km)', () => {
-    expect(isWithinRadius(-27.2353, 153.0189)).toBe(true)
-  })
-
-  it('accepts Mango Hill (~2km from North Lakes)', () => {
-    expect(isWithinRadius(-27.2545, 153.0282)).toBe(true)
-  })
-
-  it('accepts Brisbane CBD (~26km from North Lakes — within 50km)', () => {
-    expect(isWithinRadius(-27.4698, 153.0251)).toBe(true)
-  })
-
-  it('rejects Gold Coast (~100km south)', () => {
-    expect(isWithinRadius(-28.0167, 153.4000)).toBe(false)
-  })
-
-  it('rejects Sunshine Coast (~90km north)', () => {
-    expect(isWithinRadius(-26.6500, 153.0667)).toBe(false)
-  })
-})
-
 describe('normaliseStation', () => {
   it('returns a NewStation for any station regardless of location', () => {
     const northLakesStation = {
@@ -92,11 +70,27 @@ describe('normaliseStation', () => {
 
   it('returns a NewStation for stations far from North Lakes', () => {
     const goldCoastStation = {
-      SiteId: 999, Name: 'Gold Coast BP', Lat: -28.0167, Lng: 153.4000,
+      SiteId: 999, Name: 'Gold Coast BP', Brand: 'BP',
+      Address: '1 Surfers Paradise Blvd, SURFERS PARADISE QLD 4217', Postcode: '4217',
+      Lat: -28.0167, Lng: 153.4000,
     }
     const result = normaliseStation(goldCoastStation)
     expect(result).not.toBeNull()
     expect(result.id).toBe(999)
+    expect(result.isActive).toBe(true)
+  })
+
+  it('accepts a Sydney CBD station (~920km from North Lakes) — NSW coverage', () => {
+    const sydneyStation = {
+      SiteId: 5001, Name: 'Sydney CBD 7-Eleven', Brand: '7-Eleven',
+      Address: '1 George St, SYDNEY NSW 2000', Postcode: '2000',
+      Lat: -33.87, Lng: 151.20,
+    }
+    const result = normaliseStation(sydneyStation)
+    expect(result).not.toBeNull()
+    expect(result.id).toBe(5001)
+    expect(result.latitude).toBe(-33.87)
+    expect(result.longitude).toBe(151.20)
     expect(result.isActive).toBe(true)
   })
 })
@@ -123,24 +117,76 @@ describe('normalisePrice', () => {
   })
 })
 
+describe('extractSuburb — postcode fallback', () => {
+  it('extracts suburb from enriched address (regex path)', () => {
+    expect(extractSuburb('123 Main St, NORTH LAKES QLD 4509', '4509'))
+      .toBe('NORTH LAKES')
+  })
+
+  it('falls back to postcode lookup when address is bare street', () => {
+    expect(extractSuburb('1256 Anzac Avenue', '4503')).toBe('Dakabin')
+  })
+
+  it('returns null when address is bare and postcode is unknown', () => {
+    expect(extractSuburb('bare street', '9999')).toBeNull()
+  })
+
+  it('returns null when both address and postcode are null', () => {
+    expect(extractSuburb(null, null)).toBeNull()
+  })
+
+  it('falls back to postcode lookup when address is null but postcode is known', () => {
+    expect(extractSuburb(null, '4000')).toBe('Brisbane City')
+  })
+
+  it('does not treat a 2-part "street, suburb" address as a street fragment', () => {
+    // Legacy bug: the parts[length-2] fallback fired on 2-part addresses
+    // and returned the street (parts[0]) as the "suburb". Now the comma
+    // split only fires at 3+ parts, so 2-part addresses fall through to
+    // the postcode lookup instead of poisoning stations.suburb.
+    expect(extractSuburb('143A Targo St, Kedron', '4031')).toBe('Glen Kedron')
+  })
+
+  it('uses the middle segment on a proper 3-part address', () => {
+    expect(extractSuburb('123 Main St, North Lakes, 4509', '4509'))
+      .toBe('North Lakes')
+  })
+})
+
+describe('normaliseStation.suburb — postcode fallback', () => {
+  it('populates suburb from postcode when address lacks suburb info', () => {
+    const site = {
+      SiteId: 9999001,
+      Name: 'Test',
+      Brand: null,
+      Address: '1256 Anzac Avenue',
+      Postcode: '4503',
+      Lat: -27.2,
+      Lng: 153.0,
+    }
+    const result = normaliseStation(site)
+    expect(result.suburb).toBe('Dakabin')
+  })
+})
+
 describe('extractSuburb — parse suburb from QLD API address string', () => {
   it('extracts suburb from "123 Main St, NORTH LAKES, QLD 4509"', () => {
-    expect(extractSuburb('123 Main St, NORTH LAKES, QLD 4509')).toBe('NORTH LAKES')
+    expect(extractSuburb('123 Main St, NORTH LAKES, QLD 4509', null)).toBe('NORTH LAKES')
   })
 
   it('extracts suburb from "45 Anzac Ave, REDCLIFFE QLD 4020"', () => {
-    expect(extractSuburb('45 Anzac Ave, REDCLIFFE QLD 4020')).toBe('REDCLIFFE')
+    expect(extractSuburb('45 Anzac Ave, REDCLIFFE QLD 4020', null)).toBe('REDCLIFFE')
   })
 
   it('extracts suburb from "Shop 1, NARANGBA, QLD 4504"', () => {
-    expect(extractSuburb('Shop 1, NARANGBA, QLD 4504')).toBe('NARANGBA')
+    expect(extractSuburb('Shop 1, NARANGBA, QLD 4504', null)).toBe('NARANGBA')
   })
 
   it('returns null for null input', () => {
-    expect(extractSuburb(null)).toBeNull()
+    expect(extractSuburb(null, null)).toBeNull()
   })
 
   it('returns null for an address with no recognisable suburb pattern', () => {
-    expect(extractSuburb('No suburb here')).toBeNull()
+    expect(extractSuburb('No suburb here', null)).toBeNull()
   })
 })
