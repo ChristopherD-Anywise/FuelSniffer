@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { z } from 'zod'
 import { findStationsAlongRoute } from '@/lib/trip/corridor-query'
+import { getSignalForStation } from '@/lib/cycle/queries'
 
 const StationsRequestSchema = z.object({
   polyline: z.array(
@@ -12,7 +13,8 @@ const StationsRequestSchema = z.object({
   fuelTypeId: z.number().int().positive(),
   corridorMeters: z.number().min(500).max(20000),
   excludeBrands: z.array(z.string()).default([]),
-  limit: z.number().int().min(1).max(50).default(20),
+  // SP-7: raised cap from 20 to 30; UI shows top 10 toggle when >10
+  limit: z.number().int().min(1).max(50).default(30),
 })
 
 export async function POST(req: Request) {
@@ -39,7 +41,25 @@ export async function POST(req: Request) {
       providers: [],
       limit,
     })
-    return NextResponse.json(stations)
+
+    // SP-7 D1 integration: attach cycle verdict for each station (quiet failure)
+    const stationsWithSignals = await Promise.allSettled(
+      stations.map(async station => {
+        try {
+          const verdict = await getSignalForStation(station.stationId, fuelTypeId)
+          return { ...station, verdict: verdict ?? null }
+        } catch {
+          // Non-critical: if cycle query fails, return station without verdict
+          return { ...station, verdict: null }
+        }
+      })
+    )
+
+    const result = stationsWithSignals.map((settled, i) =>
+      settled.status === 'fulfilled' ? settled.value : { ...stations[i], verdict: null }
+    )
+
+    return NextResponse.json(result)
   } catch (err) {
     const message = err instanceof Error ? err.message : 'Failed to query corridor stations'
     console.error('[/api/trip/stations]', message)

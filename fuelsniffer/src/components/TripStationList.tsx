@@ -1,6 +1,14 @@
 'use client'
+/**
+ * TripStationList — SP-7 redesigned station list.
+ *
+ * Delegates rendering to TripStationCard.
+ * Improved empty state with actionable buttons.
+ * Results count announced via role="status" aria-live.
+ */
 
-import NavigateButton from '@/components/NavigateButton'
+import TripStationCard from '@/components/TripStationCard'
+import { FUEL_TYPES } from '@/components/FuelSelect'
 import type { CorridorStation } from '@/lib/trip/corridor-query'
 
 interface TripStationListProps {
@@ -9,142 +17,140 @@ interface TripStationListProps {
   end: { lat: number; lng: number }
   selectedId: number | null
   onSelect: (id: number) => void
+  onSetBestFill?: (id: number) => void
+  bestFillId?: number | null
+  /** Current corridor width in km — shown in empty state */
+  corridorKm?: number
+  /** Current fuel type id — shown in empty state */
+  fuelTypeId?: string
+  /** Called when user clicks "Widen to 5 km" in empty state */
+  onWidenCorridor?: () => void
+  /** Called when user wants to change fuel type */
+  onChangeFuel?: () => void
+  /** Tank size in litres for "save $X" computation */
+  tankSizeLitres?: number
 }
 
-function detourMinutes(detourMeters: number): number {
-  // Approx detour time at 60 km/h: meters / 1000 km * (60 min/h)
-  return Math.max(1, Math.round((detourMeters / 1000) * (60 / 60)))
-}
+export default function TripStationList({
+  stations,
+  start,
+  end,
+  selectedId,
+  onSelect,
+  onSetBestFill,
+  bestFillId,
+  corridorKm = 3,
+  fuelTypeId = '2',
+  onWidenCorridor,
+  onChangeFuel,
+  tankSizeLitres = 50,
+}: TripStationListProps) {
+  const fuelLabel = FUEL_TYPES.find(f => f.id === fuelTypeId)?.label ?? 'this fuel type'
 
-export default function TripStationList({ stations, start, end, selectedId, onSelect }: TripStationListProps) {
   if (stations.length === 0) {
     return (
-      <div style={{
-        padding: '32px 16px',
-        textAlign: 'center',
-        color: 'var(--color-text-subtle)',
-        fontSize: '14px',
-      }}>
-        No stations found along this corridor.
-        <br />
-        <span style={{ fontSize: '12px', color: 'var(--color-text-subtle)' }}>Try widening the corridor.</span>
+      <div
+        role="status"
+        aria-live="polite"
+        style={{
+          padding: '32px 16px',
+          textAlign: 'center',
+          color: 'var(--color-text-subtle)',
+          fontSize: '14px',
+        }}
+      >
+        <div style={{ marginBottom: '8px', fontWeight: 600, color: 'var(--color-text)' }}>
+          No stations found
+        </div>
+        <div style={{ fontSize: '13px', marginBottom: '16px' }}>
+          No fuel stations within <strong style={{ color: 'var(--color-text)' }}>{corridorKm} km</strong> of this route for{' '}
+          <strong style={{ color: 'var(--color-text)' }}>{fuelLabel}</strong>.
+        </div>
+        <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+          {onWidenCorridor && corridorKm < 5 && (
+            <button
+              type="button"
+              onClick={onWidenCorridor}
+              style={{
+                height: '36px',
+                padding: '0 14px',
+                borderRadius: 'var(--radius-sm, 6px)',
+                border: '1px solid var(--color-accent)',
+                background: 'var(--color-accent-muted)',
+                color: 'var(--color-accent)',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer',
+              }}
+            >
+              Widen to 5 km
+            </button>
+          )}
+          {onChangeFuel && (
+            <button
+              type="button"
+              onClick={onChangeFuel}
+              style={{
+                height: '36px',
+                padding: '0 14px',
+                borderRadius: 'var(--radius-sm, 6px)',
+                border: '1px solid var(--color-border)',
+                background: 'transparent',
+                color: 'var(--color-text-subtle)',
+                fontSize: '13px',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              Try a different fuel
+            </button>
+          )}
+        </div>
       </div>
     )
   }
 
-  const prices = stations.map(s => s.priceCents)
-  const minPrice = Math.min(...prices)
-  const maxPrice = Math.max(...prices)
+  // Compute worst effective price for "save $X" callouts
+  const worstEffective = Math.max(
+    ...stations.map(s => s.effectivePriceCents ?? s.priceCents)
+  )
 
   return (
-    <div role="list" aria-label="Fuel stations along route">
-      {stations.map((station, rank) => {
-        const isSelected = station.stationId === selectedId
-        const detour = detourMinutes(station.detourMeters)
-        // price_cents is already stored in c/L (e.g. 197.9) — do not divide by 10.
-        const priceDisplay = station.priceCents.toFixed(1)
-        // Colour: green → amber → red based on price in range
-        const priceRange = maxPrice - minPrice
-        const ratio = priceRange > 0 ? (station.priceCents - minPrice) / priceRange : 0
-        const priceColor = ratio < 0.33 ? 'var(--color-price-down)' : ratio < 0.67 ? 'var(--color-accent)' : 'var(--color-price-up)'
+    <div id="station-list">
+      {/* Results count — announced to screen readers on change */}
+      <div
+        role="status"
+        aria-live="polite"
+        style={{
+          fontSize: '11px',
+          fontWeight: 700,
+          color: 'var(--color-text-subtle)',
+          padding: '8px 16px 0',
+          letterSpacing: '0.02em',
+        }}
+      >
+        {stations.length} station{stations.length !== 1 ? 's' : ''} found
+      </div>
 
-        return (
-          <div
+      <div role="list" aria-label="Fuel stations along route">
+        {stations.map((station, rank) => (
+          <TripStationCard
             key={station.stationId}
-            role="listitem"
-            onClick={() => onSelect(station.stationId)}
-            tabIndex={0}
-            onKeyDown={e => {
-              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(station.stationId) }
-            }}
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              padding: '14px 16px',
-              borderBottom: '1px solid var(--color-bg-elevated)',
-              borderLeft: isSelected ? '3px solid var(--color-accent)' : '3px solid transparent',
-              paddingLeft: isSelected ? '13px' : '16px',
-              background: isSelected ? 'var(--color-accent-muted)' : 'var(--color-bg)',
-              cursor: 'pointer',
-              transition: 'background var(--motion-fast)',
-            }}
-            onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'var(--color-bg-elevated)' }}
-            onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'var(--color-bg)' }}
-            aria-label={`${station.name}, ${priceDisplay} cents, approx ${detour} minute detour`}
-          >
-            {/* Top row */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-              {/* Rank badge */}
-              <div style={{
-                width: '26px',
-                height: '26px',
-                borderRadius: '6px',
-                background: rank === 0 ? 'var(--color-accent)' : 'var(--color-border)',
-                color: rank === 0 ? 'var(--color-accent-fg)' : 'var(--color-text-subtle)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '13px',
-                fontWeight: 900,
-                flexShrink: 0,
-              }}>
-                {rank + 1}
-              </div>
-
-              {/* Station info */}
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  color: 'var(--color-text)',
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                  marginBottom: '2px',
-                }}>
-                  {station.name}
-                </div>
-                <div style={{ fontSize: '11px', color: 'var(--color-text-subtle)' }}>
-                  {station.brand ?? 'Independent'}
-                  {station.suburb ? ` · ${station.suburb}` : ''}
-                </div>
-              </div>
-
-              {/* Price + detour */}
-              <div style={{ textAlign: 'right', flexShrink: 0 }}>
-                <div style={{
-                  fontSize: '24px',
-                  fontWeight: 900,
-                  fontVariantNumeric: 'tabular-nums',
-                  color: priceColor,
-                  lineHeight: 1,
-                  marginBottom: '3px',
-                }}>
-                  {priceDisplay}<span style={{ fontSize: '13px', color: 'var(--color-text-subtle)', fontWeight: 600 }}>¢</span>
-                </div>
-                <div style={{
-                  fontSize: '11px',
-                  fontWeight: 700,
-                  color: 'var(--color-text-subtle)',
-                  whiteSpace: 'nowrap',
-                }}>
-                  ≈+{detour} min
-                </div>
-              </div>
-            </div>
-
-            {/* Navigate button row */}
-            <div onClick={e => e.stopPropagation()}>
-              <NavigateButton
-                start={start}
-                station={{ lat: station.latitude, lng: station.longitude, name: station.name }}
-                end={end}
-              />
-            </div>
-          </div>
-        )
-      })}
+            station={station}
+            rank={rank}
+            start={start}
+            end={end}
+            selectedId={selectedId}
+            onSelect={onSelect}
+            onSetBestFill={onSetBestFill}
+            bestFillId={bestFillId}
+            worstEffective={worstEffective}
+            tankSizeLitres={tankSizeLitres}
+            shouldScroll={true}
+            fuelTypeLabel={fuelLabel}
+          />
+        ))}
+      </div>
     </div>
   )
 }

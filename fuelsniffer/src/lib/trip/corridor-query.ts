@@ -1,6 +1,7 @@
 import { db } from '@/lib/db/client'
 import { sql } from 'drizzle-orm'
 import type { Coord } from '@/lib/providers/routing'
+import type { CycleSignalView } from '@/lib/cycle/types'
 
 export interface CorridorParams {
   polyline: Coord[]
@@ -24,6 +25,10 @@ export interface CorridorStation {
   priceCents: number
   fuelTypeId: number
   detourMeters: number
+  /** SP-7: effective price after enrolled discount programmes (c/L). Falls back to priceCents if absent. */
+  effectivePriceCents?: number
+  /** SP-7: D1 cycle verdict for this station's suburb+fuel. Null if no signal available. */
+  verdict?: CycleSignalView | null
 }
 
 /**
