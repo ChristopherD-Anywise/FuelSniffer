@@ -59,6 +59,22 @@ const ALIASES: Record<string, string> = {
   'apco': 'APCO',
   // Enhance
   'enhance': 'Enhance',
+  // WA-specific
+  'better choice': 'Better Choice',
+  'better choice petroleum': 'Better Choice',
+  'wesco': 'Wesco',
+  'peak': 'Peak',
+  // NT-specific (puma / puma energy already mapped above)
+  // NSW / national additional
+  'caltex woolworths': 'Woolworths',
+  'budget': 'Budget',
+  'budget petrol': 'Budget',
+  'matilda': 'Matilda',
+  'matilda service station': 'Matilda',
+  'on the run': 'On The Run',
+  'otr': 'On The Run',
+  'speedway': 'Speedway',
+  'speedway fuel': 'Speedway',
 }
 
 export function normaliseBrand(raw: string | null): string | null {
