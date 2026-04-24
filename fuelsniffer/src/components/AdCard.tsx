@@ -22,8 +22,8 @@ export default function AdCard() {
   if (DEV_PLACEHOLDER) {
     return (
       <div style={{
-        background: '#1a1a1a',
-        borderBottom: '1px solid #2a2a2a',
+        background: 'var(--color-bg-elevated)',
+        borderBottom: '1px solid var(--color-border)',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -34,15 +34,15 @@ export default function AdCard() {
           width: '100%',
           maxWidth: '320px',
           height: '50px',
-          background: '#2a2a2a',
-          border: '1px dashed #f59e0b',
+          background: 'var(--color-bg-elevated)',
+          border: '1px dashed var(--color-accent)',
           borderRadius: '4px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           fontSize: '11px',
           fontWeight: 700,
-          color: '#f59e0b',
+          color: 'var(--color-accent)',
           letterSpacing: '0.1em',
           textTransform: 'uppercase',
         }}>
@@ -54,8 +54,8 @@ export default function AdCard() {
 
   return (
     <div style={{
-      background: '#1a1a1a',
-      borderBottom: '1px solid #2a2a2a',
+      background: 'var(--color-bg-elevated)',
+      borderBottom: '1px solid var(--color-border)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',

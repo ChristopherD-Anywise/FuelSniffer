@@ -88,23 +88,23 @@ export default function RouteChipStrip({ routes, selectedIndex, onSelect }: Rout
               gap: '2px',
               padding: '10px 16px',
               borderRadius: '10px',
-              border: isSelected ? '2px solid #f59e0b' : '2px solid #2a2a2a',
-              background: isSelected ? 'rgba(245,158,11,0.12)' : '#1a1a1a',
-              color: isSelected ? '#ffffff' : '#8a8a8a',
+              border: isSelected ? '2px solid var(--color-accent)' : '2px solid var(--color-border)',
+              background: isSelected ? 'rgba(245,158,11,0.12)' : 'var(--color-bg-elevated)',
+              color: isSelected ? 'var(--color-text)' : 'var(--color-text-subtle)',
               cursor: 'pointer',
               flexShrink: 0,
-              transition: 'border-color 0.15s, background 0.15s, color 0.15s',
+              transition: 'border-color var(--motion-fast), background var(--motion-fast), color var(--motion-fast)',
               minWidth: '100px',
             }}
             aria-label={`${routeLabel(i)}: ${formatDistance(route.distanceMeters)}, ${formatDuration(route.durationSeconds)}`}
           >
-            <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: isSelected ? '#f59e0b' : '#555555' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.06em', color: isSelected ? 'var(--color-accent)' : 'var(--color-text-subtle)' }}>
               {routeLabel(i)}
             </span>
             <span style={{ fontSize: '15px', fontWeight: 900, fontVariantNumeric: 'tabular-nums' }}>
               {formatDistance(route.distanceMeters)}
             </span>
-            <span style={{ fontSize: '12px', fontWeight: 600, color: isSelected ? '#cccccc' : '#555555' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: isSelected ? 'var(--color-text-muted)' : 'var(--color-text-subtle)' }}>
               {formatDuration(route.durationSeconds)}
             </span>
           </button>

@@ -22,12 +22,12 @@ export default function TripStationList({ stations, start, end, selectedId, onSe
       <div style={{
         padding: '32px 16px',
         textAlign: 'center',
-        color: '#555555',
+        color: 'var(--color-text-subtle)',
         fontSize: '14px',
       }}>
         No stations found along this corridor.
         <br />
-        <span style={{ fontSize: '12px', color: '#444444' }}>Try widening the corridor.</span>
+        <span style={{ fontSize: '12px', color: 'var(--color-text-subtle)' }}>Try widening the corridor.</span>
       </div>
     )
   }
@@ -46,7 +46,7 @@ export default function TripStationList({ stations, start, end, selectedId, onSe
         // Colour: green → amber → red based on price in range
         const priceRange = maxPrice - minPrice
         const ratio = priceRange > 0 ? (station.priceCents - minPrice) / priceRange : 0
-        const priceColor = ratio < 0.33 ? '#22c55e' : ratio < 0.67 ? '#f59e0b' : '#ef4444'
+        const priceColor = ratio < 0.33 ? 'var(--color-price-down)' : ratio < 0.67 ? 'var(--color-accent)' : 'var(--color-price-up)'
 
         return (
           <div
@@ -62,15 +62,15 @@ export default function TripStationList({ stations, start, end, selectedId, onSe
               flexDirection: 'column',
               gap: '10px',
               padding: '14px 16px',
-              borderBottom: '1px solid #1a1a1a',
-              borderLeft: isSelected ? '3px solid #f59e0b' : '3px solid transparent',
+              borderBottom: '1px solid var(--color-bg-elevated)',
+              borderLeft: isSelected ? '3px solid var(--color-accent)' : '3px solid transparent',
               paddingLeft: isSelected ? '13px' : '16px',
-              background: isSelected ? '#1a0d00' : '#111111',
+              background: isSelected ? 'var(--color-accent-muted)' : 'var(--color-bg)',
               cursor: 'pointer',
-              transition: 'background 0.1s',
+              transition: 'background var(--motion-fast)',
             }}
-            onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = '#1a1a1a' }}
-            onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = '#111111' }}
+            onMouseEnter={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'var(--color-bg-elevated)' }}
+            onMouseLeave={e => { if (!isSelected) (e.currentTarget as HTMLDivElement).style.background = 'var(--color-bg)' }}
             aria-label={`${station.name}, ${priceDisplay} cents, approx ${detour} minute detour`}
           >
             {/* Top row */}
@@ -80,8 +80,8 @@ export default function TripStationList({ stations, start, end, selectedId, onSe
                 width: '26px',
                 height: '26px',
                 borderRadius: '6px',
-                background: rank === 0 ? '#f59e0b' : '#2a2a2a',
-                color: rank === 0 ? '#000000' : '#888888',
+                background: rank === 0 ? 'var(--color-accent)' : 'var(--color-border)',
+                color: rank === 0 ? 'var(--color-accent-fg)' : 'var(--color-text-subtle)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -97,7 +97,7 @@ export default function TripStationList({ stations, start, end, selectedId, onSe
                 <div style={{
                   fontSize: '14px',
                   fontWeight: 700,
-                  color: '#ffffff',
+                  color: 'var(--color-text)',
                   whiteSpace: 'nowrap',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
@@ -105,7 +105,7 @@ export default function TripStationList({ stations, start, end, selectedId, onSe
                 }}>
                   {station.name}
                 </div>
-                <div style={{ fontSize: '11px', color: '#8a8a8a' }}>
+                <div style={{ fontSize: '11px', color: 'var(--color-text-subtle)' }}>
                   {station.brand ?? 'Independent'}
                   {station.suburb ? ` · ${station.suburb}` : ''}
                 </div>
@@ -121,12 +121,12 @@ export default function TripStationList({ stations, start, end, selectedId, onSe
                   lineHeight: 1,
                   marginBottom: '3px',
                 }}>
-                  {priceDisplay}<span style={{ fontSize: '13px', color: '#8a8a8a', fontWeight: 600 }}>¢</span>
+                  {priceDisplay}<span style={{ fontSize: '13px', color: 'var(--color-text-subtle)', fontWeight: 600 }}>¢</span>
                 </div>
                 <div style={{
                   fontSize: '11px',
                   fontWeight: 700,
-                  color: '#888888',
+                  color: 'var(--color-text-subtle)',
                   whiteSpace: 'nowrap',
                 }}>
                   ≈+{detour} min

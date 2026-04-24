@@ -87,17 +87,17 @@ export default function TripForm({ onResult, onError, loading, setLoading }: Tri
 
   const labelStyle: React.CSSProperties = {
     fontSize: '11px', fontWeight: 800, textTransform: 'uppercase',
-    letterSpacing: '0.08em', color: '#888888', marginBottom: '6px', display: 'block',
+    letterSpacing: '0.08em', color: 'var(--color-text-subtle)', marginBottom: '6px', display: 'block',
   }
-  const errorStyle: React.CSSProperties = { fontSize: '11px', color: '#ef4444', marginTop: '4px' }
+  const errorStyle: React.CSSProperties = { fontSize: '11px', color: 'var(--color-danger)', marginTop: '4px' }
 
   return (
     <form
       onSubmit={handleSubmit}
       aria-label="Trip planner"
       style={{
-        background: '#1a1a1a',
-        border: '1px solid #2a2a2a',
+        background: 'var(--color-bg-elevated)',
+        border: '1px solid var(--color-border)',
         borderRadius: '12px',
         padding: '20px',
         display: 'flex',
@@ -126,9 +126,9 @@ export default function TripForm({ onResult, onError, loading, setLoading }: Tri
             title="Use my current location"
             style={{
               height: '40px', width: '40px', borderRadius: '8px',
-              border: '1px solid #2a2a2a',
-              background: geoStatus === 'denied' ? 'rgba(239,68,68,0.15)' : '#1a1a1a',
-              color: geoStatus === 'loading' ? '#f59e0b' : geoStatus === 'denied' ? '#ef4444' : '#8a8a8a',
+              border: '1px solid var(--color-border)',
+              background: geoStatus === 'denied' ? 'rgba(239,68,68,0.15)' : 'var(--color-bg-elevated)',
+              color: geoStatus === 'loading' ? 'var(--color-accent)' : geoStatus === 'denied' ? 'var(--color-danger)' : 'var(--color-text-subtle)',
               cursor: loading || geoStatus === 'loading' ? 'not-allowed' : 'pointer',
               display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
             }}
@@ -170,9 +170,9 @@ export default function TripForm({ onResult, onError, loading, setLoading }: Tri
           disabled={loading}
           style={{
             width: '100%', height: '40px', borderRadius: '8px',
-            border: '1px solid #2a2a2a', background: '#1a1a1a',
+            border: '1px solid var(--color-border)', background: 'var(--color-bg-elevated)',
             paddingLeft: '12px', paddingRight: '12px',
-            fontSize: '14px', color: '#ffffff', outline: 'none', boxSizing: 'border-box',
+            fontSize: '14px', color: 'var(--color-text)', outline: 'none', boxSizing: 'border-box',
           }}
         >
           {FUEL_TYPES.map(f => <option key={f.id} value={f.id}>{f.label}</option>)}
@@ -183,7 +183,7 @@ export default function TripForm({ onResult, onError, loading, setLoading }: Tri
       <div>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
           <label htmlFor="trip-corridor" style={{ ...labelStyle, marginBottom: 0 }}>Corridor width</label>
-          <span style={{ fontSize: '13px', fontWeight: 700, color: '#ffffff', fontVariantNumeric: 'tabular-nums' }}>
+          <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--color-text)', fontVariantNumeric: 'tabular-nums' }}>
             {corridorKm < 1 ? `${corridorKm * 1000}m` : `${corridorKm}km`}
           </span>
         </div>
@@ -194,7 +194,7 @@ export default function TripForm({ onResult, onError, loading, setLoading }: Tri
           value={corridorKm}
           onChange={e => setCorridorKm(Number(e.target.value))}
           disabled={loading}
-          style={{ accentColor: '#f59e0b', width: '100%' }}
+          style={{ accentColor: 'var(--color-accent)', width: '100%' }}
           aria-label={`Corridor width: ${corridorKm}km`}
         />
       </div>
@@ -207,8 +207,8 @@ export default function TripForm({ onResult, onError, loading, setLoading }: Tri
         aria-busy={loading}
         style={{
           height: '44px', borderRadius: '8px', border: 'none',
-          background: loading || !start || !end ? '#2a2a2a' : '#f59e0b',
-          color: loading || !start || !end ? '#555555' : '#000000',
+          background: loading || !start || !end ? 'var(--color-border)' : 'var(--color-accent)',
+          color: loading || !start || !end ? 'var(--color-text-subtle)' : 'var(--color-accent-fg)',
           fontSize: '14px', fontWeight: 900, textTransform: 'uppercase',
           letterSpacing: '0.06em',
           cursor: loading || !start || !end ? 'not-allowed' : 'pointer',

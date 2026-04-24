@@ -6,6 +6,7 @@ import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 import type { Route } from '@/lib/providers/routing'
 import type { CorridorStation } from '@/lib/trip/corridor-query'
+import { getCssVar } from '@/lib/theme/getCssVar'
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -34,7 +35,6 @@ function TripMapLayers({ routes, selectedRouteIndex, stations, selectedStationId
 
   // Draw route polylines
   useEffect(() => {
-    // Remove old polylines
     polylinesRef.current.forEach(p => p.remove())
     polylinesRef.current = []
 
@@ -45,7 +45,7 @@ function TripMapLayers({ routes, selectedRouteIndex, stations, selectedStationId
       if (i === selectedRouteIndex) return
       const latlngs = route.polyline.map(c => [c.lat, c.lng] as [number, number])
       const poly = L.polyline(latlngs, {
-        color: '#555555',
+        color: getCssVar('--color-text-subtle', '#555555'),
         weight: 3,
         opacity: 0.6,
         dashArray: '8 6',
@@ -64,7 +64,6 @@ function TripMapLayers({ routes, selectedRouteIndex, stations, selectedStationId
       }).addTo(map)
       polylinesRef.current.push(poly)
 
-      // Fit bounds to selected route
       const bounds = L.latLngBounds(latlngs)
       map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 })
     }
@@ -77,7 +76,6 @@ function TripMapLayers({ routes, selectedRouteIndex, stations, selectedStationId
 
   // Render station markers
   useEffect(() => {
-    // Remove old markers
     markersRef.current.forEach(m => m.remove())
     markersRef.current.clear()
 
@@ -88,13 +86,21 @@ function TripMapLayers({ routes, selectedRouteIndex, stations, selectedStationId
     const maxPrice = Math.max(...prices)
     const priceRange = maxPrice - minPrice
 
+    // Read theme tokens once for this render
+    const colorDown = getCssVar('--color-price-down', '#22c55e')
+    const colorAccent = getCssVar('--color-accent', '#f59e0b')
+    const colorUp = getCssVar('--color-price-up', '#ef4444')
+    const colorText = getCssVar('--color-text', '#ffffff')
+    const colorTextSubtle = getCssVar('--color-text-subtle', '#888888')
+    const colorBg = getCssVar('--color-popup-bg', '#1a1a1a')
+
     stations.forEach(station => {
       const ratio = priceRange > 0 ? (station.priceCents - minPrice) / priceRange : 0
-      const colour = ratio < 0.33 ? '#22c55e' : ratio < 0.67 ? '#f59e0b' : '#ef4444'
-      // price_cents is already c/L (e.g. 197.9), do not divide by 10.
+      const colour = ratio < 0.33 ? colorDown : ratio < 0.67 ? colorAccent : colorUp
       const priceText = station.priceCents.toFixed(1)
 
       const isSelected = station.stationId === selectedStationId
+      const selectedRing = isSelected ? `,0 0 0 3px ${colorText}` : ''
 
       const icon = L.divIcon({
         className: '',
@@ -103,7 +109,7 @@ function TripMapLayers({ routes, selectedRouteIndex, stations, selectedStationId
           background:${colour};
           display:flex;align-items:center;justify-content:center;
           color:#fff;font-weight:700;font-size:12px;font-family:Inter,system-ui,sans-serif;
-          box-shadow:0 2px 6px rgba(0,0,0,0.35)${isSelected ? ',0 0 0 3px #ffffff' : ''};
+          box-shadow:0 2px 6px rgba(0,0,0,0.35)${selectedRing};
           white-space:nowrap;
         ">${priceText}</div>`,
         iconSize: [48, 28],
@@ -117,10 +123,10 @@ function TripMapLayers({ routes, selectedRouteIndex, stations, selectedStationId
       })
 
       marker.bindPopup(
-        `<div style="font-family:Inter,system-ui,sans-serif;min-width:180px;">
+        `<div style="font-family:Inter,system-ui,sans-serif;min-width:180px;color:${colorText};background:${colorBg};padding:8px;border-radius:8px;">
           <div style="font-weight:700;font-size:14px;margin-bottom:4px;">${station.name}</div>
-          <div style="font-size:12px;color:#888;margin-bottom:6px;">${station.brand ?? 'Independent'}${station.suburb ? ' · ' + station.suburb : ''}</div>
-          <div style="font-size:22px;font-weight:900;color:${colour};">${priceText}<span style="font-size:13px;font-weight:500;color:#888">¢</span></div>
+          <div style="font-size:12px;color:${colorTextSubtle};margin-bottom:6px;">${station.brand ?? 'Independent'}${station.suburb ? ' · ' + station.suburb : ''}</div>
+          <div style="font-size:22px;font-weight:900;color:${colour};">${priceText}<span style="font-size:13px;font-weight:500;color:${colorTextSubtle}">¢</span></div>
         </div>`,
         { maxWidth: 240, className: 'station-popup' }
       )
@@ -141,11 +147,12 @@ function TripMapLayers({ routes, selectedRouteIndex, stations, selectedStationId
 
   // Open popup for selected station
   useEffect(() => {
+    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (selectedStationId !== null) {
       const marker = markersRef.current.get(selectedStationId)
       if (marker) {
         marker.openPopup()
-        map.panTo(marker.getLatLng(), { animate: true, duration: 0.4 })
+        map.panTo(marker.getLatLng(), { animate: !prefersReducedMotion, duration: 0.4 })
       }
     } else {
       map.closePopup()
@@ -160,7 +167,6 @@ interface TripMapProps extends TripMapInnerProps {
 }
 
 export default function TripMap({ routes, selectedRouteIndex, stations, selectedStationId, onStationClick, className }: TripMapProps) {
-  // Default to Brisbane if no routes
   const center: [number, number] = [-27.4698, 153.0251]
 
   return (
