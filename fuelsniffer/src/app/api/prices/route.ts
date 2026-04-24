@@ -1,6 +1,14 @@
 import { NextResponse } from 'next/server'
-import { getLatestPrices } from '@/lib/db/queries/prices'
+import { getLatestPrices, applyEffectivePrices } from '@/lib/db/queries/prices'
+import { getSession } from '@/lib/session'
+import { db } from '@/lib/db/client'
+import { sql } from 'drizzle-orm'
 import { z } from 'zod'
+
+interface UserProgrammeRow {
+  programme_id: string
+  paused: boolean
+}
 
 const PricesQuerySchema = z.object({
   fuel: z
@@ -19,16 +27,6 @@ const PricesQuerySchema = z.object({
     ),
   lat: z.string().optional().transform(v => v ? parseFloat(v) : undefined),
   lng: z.string().optional().transform(v => v ? parseFloat(v) : undefined),
-  changeHours: z
-    .string()
-    .optional()
-    .default('24')
-    .pipe(
-      z.string()
-       .regex(/^\d+$/)
-       .transform(Number)
-       .pipe(z.number().min(1).max(168))
-    ),
 })
 
 export async function GET(req: Request) {
@@ -43,7 +41,6 @@ export async function GET(req: Request) {
     radius: searchParams.get('radius') ?? undefined,
     lat: searchParams.get('lat') ?? undefined,
     lng: searchParams.get('lng') ?? undefined,
-    changeHours: searchParams.get('changeHours') ?? undefined,
   })
 
   if (!parsed.success) {
@@ -55,12 +52,35 @@ export async function GET(req: Request) {
     ? { lat: parsed.data.lat, lng: parsed.data.lng }
     : undefined
 
-  const stations = await getLatestPrices(
-    parsed.data.fuel,
-    parsed.data.radius,
-    userLocation,
-    parsed.data.changeHours
-  )
+  try {
+    const stations = await getLatestPrices(
+      parsed.data.fuel,
+      parsed.data.radius,
+      userLocation
+    )
 
-  return NextResponse.json(stations, { status: 200 })
+    // SP-6: Load enrolled programme IDs for the authenticated user (non-blocking)
+    let enrolledIds: string[] = []
+    try {
+      const session = await getSession(req)
+      if (session) {
+        const rows = await db.execute(sql`
+          SELECT programme_id, paused
+          FROM user_programmes
+          WHERE user_id = ${session.userId}
+        `) as unknown as UserProgrammeRow[]
+        // Only include non-paused enrolments in the effective price calculation
+        enrolledIds = rows.filter(r => !r.paused).map(r => r.programme_id)
+      }
+    } catch {
+      // Session or DB error — continue with pylon-only prices
+      enrolledIds = []
+    }
+
+    applyEffectivePrices(stations, enrolledIds, parsed.data.fuel)
+
+    return NextResponse.json(stations, { status: 200 })
+  } catch {
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

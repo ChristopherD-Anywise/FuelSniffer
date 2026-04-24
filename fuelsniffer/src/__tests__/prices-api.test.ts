@@ -12,10 +12,12 @@ vi.mock('@/lib/db/client', () => ({
   db: { execute: mockDbExecute },
 }))
 
-// Mock getLatestPrices for route handler tests
+// Mock getLatestPrices and applyEffectivePrices for route handler tests
 const mockGetLatestPrices = vi.fn().mockResolvedValue([])
+const mockApplyEffectivePrices = vi.fn((results: unknown[]) => results)
 vi.mock('@/lib/db/queries/prices', () => ({
   getLatestPrices: mockGetLatestPrices,
+  applyEffectivePrices: mockApplyEffectivePrices,
 }))
 
 const MOCK_STATION = {
@@ -129,7 +131,7 @@ describe('GET /api/prices', () => {
     const req = new Request('http://localhost/api/prices?fuel=2')
     const res = await GET(req as any)
     expect(res.status).toBe(200)
-    expect(mockGetLatestPrices).toHaveBeenCalledWith(2, 20, undefined, 24)
+    expect(mockGetLatestPrices).toHaveBeenCalledWith(2, 20, undefined)
   })
 
   it('returns stations sorted cheapest first (preserves db order)', async () => {
