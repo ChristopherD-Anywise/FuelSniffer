@@ -1,0 +1,51 @@
+{
+  "code": "Ok",
+  "routes": [
+    {
+      "geometry": "nftfD_v}d\\nzDo}@nzD_|BnzD_|BnzD_|B~xF_|BnwHozDnwHowHnwHowH~uJ_vJ~rNotL~rN_vJ",
+      "legs": [
+        {
+          "summary": "M1",
+          "weight": 3720.5,
+          "duration": 3720.5,
+          "steps": [],
+          "distance": 88400.2
+        }
+      ],
+      "weight_name": "routability",
+      "weight": 3720.5,
+      "duration": 3720.5,
+      "distance": 88400.2
+    },
+    {
+      "geometry": "nftfD_v}d\\~rNozDntL_yFvwI_sFpvJowH~uJ_vJntLotLnwH_sN",
+      "legs": [
+        {
+          "summary": "Pacific Motorway",
+          "weight": 3980.1,
+          "duration": 3980.1,
+          "steps": [],
+          "distance": 91200.8
+        }
+      ],
+      "weight_name": "routability",
+      "weight": 3980.1,
+      "duration": 3980.1,
+      "distance": 91200.8
+    }
+  ],
+  "waypoints": [
+    {
+      "hint": "abc123",
+      "distance": 12.5,
+      "name": "Queen Street",
+      "location": [153.02, -27.47]
+    },
+    {
+      "hint": "def456",
+      "distance": 8.2,
+      "name": "Surfers Paradise Boulevard",
+      "location": [153.43, -28.00]
+    }
+  ]
+}

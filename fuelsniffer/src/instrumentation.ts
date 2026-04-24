@@ -14,5 +14,9 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { startScheduler } = await import('./lib/scraper/scheduler')
     startScheduler()
+
+    // SP-4: Start cycle engine compute scheduler (nightly 03:30 AEST)
+    const { startCycleScheduler } = await import('./lib/cycle/scheduler')
+    startCycleScheduler()
   }
 }
