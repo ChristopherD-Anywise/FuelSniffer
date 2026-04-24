@@ -139,6 +139,98 @@
         "costco",
         "costco wholesale"
       ]
+    },
+    {
+      "code": "mobil",
+      "display": "Mobil",
+      "aliases": [
+        "mobil",
+        "mobil 1",
+        "exxonmobil",
+        "mobil fuel"
+      ]
+    },
+    {
+      "code": "otr",
+      "display": "OTR",
+      "aliases": [
+        "otr",
+        "on the run",
+        "on the run fuel",
+        "otr fuel"
+      ]
+    },
+    {
+      "code": "matilda",
+      "display": "Matilda",
+      "aliases": [
+        "matilda",
+        "matilda service station",
+        "matilda fuel"
+      ]
+    },
+    {
+      "code": "vibe",
+      "display": "Vibe",
+      "aliases": [
+        "vibe",
+        "vibe energy",
+        "vibe petrol"
+      ]
+    },
+    {
+      "code": "budget",
+      "display": "Budget Petrol",
+      "aliases": [
+        "budget",
+        "budget petrol",
+        "budget fuel",
+        "budget petroleum"
+      ]
+    },
+    {
+      "code": "reddy_express",
+      "display": "Reddy Express",
+      "aliases": [
+        "reddy express",
+        "reddy",
+        "reddy fuel"
+      ]
+    },
+    {
+      "code": "better_choice",
+      "display": "Better Choice",
+      "aliases": [
+        "better choice",
+        "better choice fuel"
+      ]
+    },
+    {
+      "code": "ior",
+      "display": "IOR",
+      "aliases": [
+        "ior",
+        "ior petroleum",
+        "ior fuel"
+      ]
+    },
+    {
+      "code": "speedway",
+      "display": "Speedway",
+      "aliases": [
+        "speedway",
+        "speedway fuel",
+        "speedway petroleum"
+      ]
+    },
+    {
+      "code": "x_convenience",
+      "display": "X Convenience",
+      "aliases": [
+        "x convenience",
+        "x conv",
+        "xc fuel"
+      ]
     }
   ]
 }
