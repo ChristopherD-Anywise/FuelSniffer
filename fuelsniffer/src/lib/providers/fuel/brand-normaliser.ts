@@ -64,8 +64,7 @@ const ALIASES: Record<string, string> = {
   'better choice petroleum': 'Better Choice',
   'wesco': 'Wesco',
   'peak': 'Peak',
-  // NT-specific
-  'puma energy': 'Puma',
+  // NT-specific (puma / puma energy already mapped above)
   // NSW / national additional
   'caltex woolworths': 'Woolworths',
   'budget': 'Budget',
