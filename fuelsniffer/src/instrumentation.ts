@@ -23,5 +23,9 @@ export async function register() {
     // All networks OFF by default — enable via FILLIP_BOT_*_ENABLED env vars
     const { startBotScheduler } = await import('./lib/social-bot/scheduler')
     startBotScheduler()
+
+    // SP-5: Start alerts scheduler (weekly digest + subscription cleanup)
+    const { startAlertsScheduler } = await import('./lib/alerts/scheduler')
+    startAlertsScheduler()
   }
 }

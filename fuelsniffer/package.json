@@ -19,6 +19,7 @@
     "@atproto/api": "^0.19.11",
     "@resvg/resvg-js": "^2.6.2",
     "@serwist/next": "^9.5.7",
+    "@types/web-push": "^3.6.4",
     "axios": "^1.13.6",
     "date-fns": "^4.1.0",
     "drizzle-orm": "^0.45.1",
@@ -37,6 +38,7 @@
     "satori": "^0.26.0",
     "serwist": "^9.5.7",
     "twitter-api-v2": "^1.29.0",
+    "web-push": "^3.6.7",
     "zod": "^3.23.8"
   },
   "devDependencies": {

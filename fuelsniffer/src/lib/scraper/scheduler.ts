@@ -66,7 +66,21 @@ export function startScheduler(): void {
     setTimeout(() => {
       console.log(`[scheduler:${provider.id}] Startup scrape (D-11, delay=${delayMs}ms)`)
       runProviderScrape(provider)
-        .then(result => triggerIntradayRefresh(provider.id, result.pricesUpserted))
+        .then(result => {
+          triggerIntradayRefresh(provider.id, result.pricesUpserted)
+          // SP-5: Post-scrape alerts evaluator (non-blocking)
+          if (result.error === null && result.pricesUpserted > 0) {
+            queueMicrotask(() => {
+              import('@/lib/alerts/evaluator')
+                .then(({ runAlertsEvaluator }) =>
+                  runAlertsEvaluator({ providerId: provider.id })
+                )
+                .catch(err =>
+                  console.error(`[scheduler:${provider.id}] alerts evaluator failed (non-fatal):`, err)
+                )
+            })
+          }
+        })
         .catch(err => {
           console.error(`[scheduler:${provider.id}] Startup scrape failed:`, err)
         })
@@ -77,7 +91,21 @@ export function startScheduler(): void {
   for (const { provider, cron: cronExpr, tz } of PROVIDER_SCHEDULES) {
     cron.schedule(cronExpr, () => {
       runProviderScrape(provider)
-        .then(result => triggerIntradayRefresh(provider.id, result.pricesUpserted))
+        .then(result => {
+          triggerIntradayRefresh(provider.id, result.pricesUpserted)
+          // SP-5: Post-scrape alerts evaluator (non-blocking)
+          if (result.error === null && result.pricesUpserted > 0) {
+            queueMicrotask(() => {
+              import('@/lib/alerts/evaluator')
+                .then(({ runAlertsEvaluator }) =>
+                  runAlertsEvaluator({ providerId: provider.id })
+                )
+                .catch(err =>
+                  console.error(`[scheduler:${provider.id}] alerts evaluator failed (non-fatal):`, err)
+                )
+            })
+          }
+        })
         .catch(err => {
           console.error(`[scheduler:${provider.id}] Scheduled scrape failed:`, err)
         })
