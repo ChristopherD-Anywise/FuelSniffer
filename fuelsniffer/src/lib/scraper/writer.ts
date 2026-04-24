@@ -57,7 +57,8 @@ export async function runProviderScrape(provider: FuelPriceProvider): Promise<Sc
       await db
         .insert(stations)
         .values(normStations.map(s => ({
-          id:             s.id,
+          // SP-1: do NOT pass id — surrogate BIGSERIAL is assigned by postgres.
+          // The upstream provider ID lives in externalId.
           name:           s.name,
           brand:          s.brand,
           address:        s.address,
@@ -77,7 +78,8 @@ export async function runProviderScrape(provider: FuelPriceProvider): Promise<Sc
           ...(s.sourceMetadata !== undefined ? { sourceMetadata: s.sourceMetadata } : {}),
         })))
         .onConflictDoUpdate({
-          target: stations.id,
+          // SP-1: conflict target is the unique constraint on (source_provider, external_id)
+          target: [stations.sourceProvider, stations.externalId],
           set: {
             name:        sql`excluded.name`,
             brand:       sql`excluded.brand`,
