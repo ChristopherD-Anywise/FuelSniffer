@@ -33,51 +33,55 @@ export async function GET(req: Request) {
 
   const { station, fuel, hours } = parsed.data
 
-  // For ranges > 7 days, use daily aggregates for performance
-  if (hours > 168) {
+  try {
+    // For ranges > 7 days, use daily aggregates for performance
+    if (hours > 168) {
+      const rows = await db.execute(sql`
+        SELECT day_bucket AS bucket, avg_price_cents AS avg_price,
+               min_price_cents AS min_price, max_price_cents AS max_price
+        FROM daily_prices
+        WHERE station_id = ${station} AND fuel_type_id = ${fuel}
+          AND day_bucket >= NOW() - ${hours + ' hours'}::interval
+        ORDER BY day_bucket ASC
+      `)
+      return NextResponse.json(rows)
+    }
+
+    // Try hourly_prices cagg first (fast, pre-aggregated).
+    // Falls back to raw price_readings if cagg has no data yet (fresh install).
     const rows = await db.execute(sql`
-      SELECT day_bucket AS bucket, avg_price_cents AS avg_price,
-             min_price_cents AS min_price, max_price_cents AS max_price
-      FROM daily_prices
-      WHERE station_id = ${station} AND fuel_type_id = ${fuel}
-        AND day_bucket >= NOW() - ${hours + ' hours'}::interval
-      ORDER BY day_bucket ASC
-    `)
-    return NextResponse.json(rows)
-  }
-
-  // Try hourly_prices cagg first (fast, pre-aggregated).
-  // Falls back to raw price_readings if cagg has no data yet (fresh install).
-  const rows = await db.execute(sql`
-    SELECT
-      bucket,
-      avg_price_cents AS avg_price,
-      min_price_cents AS min_price,
-      max_price_cents AS max_price
-    FROM hourly_prices
-    WHERE station_id = ${station}
-      AND fuel_type_id = ${fuel}
-      AND bucket >= NOW() - ${hours + ' hours'}::interval
-    ORDER BY bucket ASC
-  `)
-
-  if (rows.length === 0) {
-    // Cagg might not have materialized yet — query raw readings
-    const rawRows = await db.execute(sql`
       SELECT
-        DATE_TRUNC('hour', recorded_at) AS bucket,
-        AVG(price_cents)::NUMERIC(6,1) AS avg_price,
-        MIN(price_cents) AS min_price,
-        MAX(price_cents) AS max_price
-      FROM price_readings
+        bucket,
+        avg_price_cents AS avg_price,
+        min_price_cents AS min_price,
+        max_price_cents AS max_price
+      FROM hourly_prices
       WHERE station_id = ${station}
         AND fuel_type_id = ${fuel}
-        AND recorded_at >= NOW() - ${hours + ' hours'}::interval
-      GROUP BY DATE_TRUNC('hour', recorded_at)
+        AND bucket >= NOW() - ${hours + ' hours'}::interval
       ORDER BY bucket ASC
     `)
-    return NextResponse.json(rawRows)
-  }
 
-  return NextResponse.json(rows)
+    if (rows.length === 0) {
+      // Cagg might not have materialized yet — query raw readings
+      const rawRows = await db.execute(sql`
+        SELECT
+          DATE_TRUNC('hour', recorded_at) AS bucket,
+          AVG(price_cents)::NUMERIC(6,1) AS avg_price,
+          MIN(price_cents) AS min_price,
+          MAX(price_cents) AS max_price
+        FROM price_readings
+        WHERE station_id = ${station}
+          AND fuel_type_id = ${fuel}
+          AND recorded_at >= NOW() - ${hours + ' hours'}::interval
+        GROUP BY DATE_TRUNC('hour', recorded_at)
+        ORDER BY bucket ASC
+      `)
+      return NextResponse.json(rawRows)
+    }
+
+    return NextResponse.json(rows)
+  } catch {
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

@@ -1,6 +1,7 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    container_name: fillip-postgres
+    image: postgis/postgis:17-3.4-alpine
     stop_grace_period: 30s
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U fuelsniffer -d fuelsniffer"]
@@ -20,6 +21,7 @@ services:
     restart: always
 
   db-backup:
+    container_name: fillip-db-backup
     image: postgres:17-alpine
     depends_on:
       postgres:
@@ -59,12 +61,19 @@ services:
     restart: always
 
   app:
+    container_name: fillip-app
     build: .
     environment:
       DATABASE_URL: postgresql://fuelsniffer:${DB_PASSWORD}@postgres:5432/fuelsniffer
       SESSION_SECRET: ${SESSION_SECRET}
       QLD_API_TOKEN: ${QLD_API_TOKEN}
       HEALTHCHECKS_PING_URL: ${HEALTHCHECKS_PING_URL}
+      MAPBOX_TOKEN: ${MAPBOX_TOKEN:-}
+      APP_NAME: ${APP_NAME:-Fillip}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:4000}
+      APP_DEFAULT_THEME: ${APP_DEFAULT_THEME:-system}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Fillip}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@fillip.local}
       TZ: Australia/Brisbane
       NODE_ENV: production
     depends_on:
@@ -75,6 +84,7 @@ services:
     restart: always
 
   cloudflared:
+    container_name: fillip-cloudflared
     image: cloudflare/cloudflared:latest
     restart: always
     command: tunnel --no-autoupdate --url http://app:3000

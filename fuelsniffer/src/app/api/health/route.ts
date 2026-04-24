@@ -56,16 +56,20 @@ export function buildHealthResponse(
  * }
  */
 export async function GET() {
-  const [latest] = await db
-    .select()
-    .from(scrapeHealth)
-    .orderBy(desc(scrapeHealth.scrapedAt))
-    .limit(1)
+  try {
+    const [latest] = await db
+      .select()
+      .from(scrapeHealth)
+      .orderBy(desc(scrapeHealth.scrapedAt))
+      .limit(1)
 
-  const response = buildHealthResponse(latest ?? null)
+    const response = buildHealthResponse(latest ?? null)
 
-  // Use 503 status for degraded to help uptime monitors detect failures
-  const httpStatus = response.status === 'ok' ? 200 : 503
+    // Use 503 status for degraded to help uptime monitors detect failures
+    const httpStatus = response.status === 'ok' ? 200 : 503
 
-  return NextResponse.json(response, { status: httpStatus })
+    return NextResponse.json(response, { status: httpStatus })
+  } catch {
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

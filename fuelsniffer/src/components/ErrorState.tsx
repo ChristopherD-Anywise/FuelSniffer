@@ -8,10 +8,10 @@ export default function ErrorState({ onRetry }: { onRetry: () => void }) {
       alignItems: 'center',
       justifyContent: 'center',
       padding: '60px 24px',
-      background: '#111111',
+      background: 'var(--color-bg)',
       height: '100%',
     }}>
-      <div style={{ fontSize: 15, fontWeight: 700, color: '#ef4444', marginBottom: 8 }}>
+      <div style={{ fontSize: 15, fontWeight: 700, color: 'var(--color-danger)', marginBottom: 8 }}>
         Failed to load prices
       </div>
       <button
@@ -19,8 +19,8 @@ export default function ErrorState({ onRetry }: { onRetry: () => void }) {
         style={{
           marginTop: 12,
           padding: '10px 24px',
-          background: '#f59e0b',
-          color: '#000000',
+          background: 'var(--color-accent)',
+          color: 'var(--color-accent-fg)',
           border: 'none',
           borderRadius: 8,
           fontSize: 13,
