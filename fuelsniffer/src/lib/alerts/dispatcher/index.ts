@@ -13,7 +13,7 @@
 import { createHash } from 'crypto'
 import { db } from '@/lib/db/client'
 import { alertDeliveries, alerts, webPushSubscriptions } from '@/lib/db/schema'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { checkRateLimit } from './rateLimit'
 import { isInQuietHours } from './quietHours'
 import { buildPushPayload } from './templates/push'
