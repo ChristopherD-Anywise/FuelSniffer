@@ -37,7 +37,7 @@ describe('findOrCreateUser', () => {
     mockDb.transaction = vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
       const tx = { execute: vi.fn() }
       return fn(tx)
-    }) as typeof mockDb.transaction
+    }) as unknown as typeof mockDb.transaction
   })
 
   it('returns existing user when oauth identity row exists', async () => {
@@ -51,7 +51,7 @@ describe('findOrCreateUser', () => {
           .mockResolvedValueOnce([]),
       }
       return fn(tx)
-    }) as typeof mockDb.transaction
+    }) as unknown as typeof mockDb.transaction
 
     const result = await findOrCreateUser(makeIdentity())
     expect(result.userId).toBe('existing-user-uuid')
@@ -72,7 +72,7 @@ describe('findOrCreateUser', () => {
           .mockResolvedValueOnce([]),
       }
       return fn(tx)
-    }) as typeof mockDb.transaction
+    }) as unknown as typeof mockDb.transaction
 
     const result = await findOrCreateUser(makeIdentity({ emailVerified: true }))
     expect(result.userId).toBe('email-matched-user-uuid')
@@ -97,7 +97,7 @@ describe('findOrCreateUser', () => {
       }
       insertedUser = 'new-user-uuid'
       return fn(tx)
-    }) as typeof mockDb.transaction
+    }) as unknown as typeof mockDb.transaction
 
     const result = await findOrCreateUser(makeIdentity({ emailVerified: false }))
     expect(result.isNew).toBe(true)
@@ -119,7 +119,7 @@ describe('findOrCreateUser', () => {
           .mockResolvedValueOnce([]),
       }
       return fn(tx)
-    }) as typeof mockDb.transaction
+    }) as unknown as typeof mockDb.transaction
 
     const result = await findOrCreateUser(makeIdentity())
     expect(result.userId).toBe('brand-new-uuid')
@@ -136,7 +136,7 @@ describe('findOrCreateUser', () => {
           .mockResolvedValueOnce([]),
       }
       return fn(tx)
-    }) as typeof mockDb.transaction
+    }) as unknown as typeof mockDb.transaction
 
     const identity = makeIdentity({ providerId: 'magic-link', emailVerified: true })
     const result = await findOrCreateUser(identity)
@@ -156,7 +156,7 @@ describe('findOrCreateUser', () => {
           .mockResolvedValueOnce([]),
       }
       return fn(tx)
-    }) as typeof mockDb.transaction
+    }) as unknown as typeof mockDb.transaction
 
     const identity = makeIdentity({ providerId: 'magic-link', emailVerified: true })
     const result = await findOrCreateUser(identity)

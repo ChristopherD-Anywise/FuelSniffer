@@ -64,7 +64,7 @@ describe('assertAllowed', () => {
           .mockResolvedValueOnce([]),
       }
       return fn(tx)
-    }) as typeof mockDb.transaction
+    }) as unknown as typeof mockDb.transaction
 
     await expect(
       assertAllowed({ userId: 'new-user', isNew: true, inviteCode: 'INVALID' })
@@ -88,7 +88,7 @@ describe('assertAllowed', () => {
           }),
       }
       return fn(tx)
-    }) as typeof mockDb.transaction
+    }) as unknown as typeof mockDb.transaction
 
     await expect(
       assertAllowed({ userId: 'new-user', isNew: true, inviteCode: 'VALIDCODE' })

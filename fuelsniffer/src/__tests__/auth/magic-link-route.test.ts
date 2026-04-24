@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 // Set required env vars before imports
 process.env.SESSION_SECRET = 'test-session-secret-that-is-at-least-32-chars'
 process.env.APP_PUBLIC_URL = 'http://localhost:4000'
-process.env.NODE_ENV = 'test'
+vi.stubEnv('NODE_ENV', 'test')
 
 vi.mock('@/lib/db/client', () => ({
   db: {
