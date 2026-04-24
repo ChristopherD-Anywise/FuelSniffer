@@ -1,17 +1,13 @@
 'use client'
 
 import { useState, useEffect } from 'react'
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  CartesianGrid,
-} from 'recharts'
+import dynamic from 'next/dynamic'
 import { format, formatDistanceToNowStrict } from 'date-fns'
 import type { PriceResult } from '@/lib/db/queries/prices'
 import { FUEL_TYPES } from '@/components/FuelSelect'
+import { SlotVerdict, SlotTrueCost, SlotShareButton, SlotAlertButton } from '@/components/slots'
+
+const PriceChart = dynamic(() => import('@/components/PriceChart'), { ssr: false })
 
 interface ChartPoint {
   time: number
@@ -37,23 +33,22 @@ function approxDistKm(lat1: number, lng1: number, lat2: number, lng2: number): n
 
 function PriceChangeIndicator({ change }: { change: number | null }) {
   if (change === null || change === undefined) return null
-
   if (change > 0) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-red-500 text-sm font-semibold">
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, color: 'var(--color-price-up)', fontSize: 14, fontWeight: 600 }}>
         ▲ {Math.abs(change).toFixed(1)}¢
       </span>
     )
   }
   if (change < 0) {
     return (
-      <span className="inline-flex items-center gap-0.5 text-emerald-600 text-sm font-semibold">
+      <span style={{ display: 'inline-flex', alignItems: 'center', gap: 2, color: 'var(--color-price-down)', fontSize: 14, fontWeight: 600 }}>
         ▼ {Math.abs(change).toFixed(1)}¢
       </span>
     )
   }
   return (
-    <span className="text-slate-500 text-sm">
+    <span style={{ color: 'var(--color-text-subtle)', fontSize: 14 }}>
       — 0¢
     </span>
   )
@@ -79,7 +74,6 @@ export default function StationDetail({
   const priceTime = station.source_ts ? new Date(station.source_ts) : new Date(station.recorded_at)
   const ago = formatDistanceToNowStrict(priceTime, { addSuffix: false }) + ' ago'
 
-  // Fetch chart data
   useEffect(() => {
     setLoading(true)
     fetch(`/api/prices/history?station=${station.id}&fuel=${fuelId}&hours=${hours}`)
@@ -99,12 +93,10 @@ export default function StationDetail({
       .finally(() => setLoading(false))
   }, [station.id, fuelId, hours])
 
-  // Compute chart Y domain
-  const domain = data.length > 0
+  const domain: [number, number] = data.length > 0
     ? [Math.floor(Math.min(...data.map(d => d.min)) - 2), Math.ceil(Math.max(...data.map(d => d.max)) + 2)]
     : [0, 300]
 
-  // Nearby alternatives within 2km
   const nearby = allStations
     .filter(s => s.id !== station.id)
     .map(s => ({
@@ -115,84 +107,137 @@ export default function StationDetail({
     .sort((a, b) => parseFloat(a.price_cents) - parseFloat(b.price_cents))
     .slice(0, 3)
 
-  const stationDist = station.distance_km
-
   return (
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/20 z-40"
+        style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 40 }}
         onClick={onClose}
         aria-hidden="true"
       />
 
-      {/* Panel — desktop: right side panel, mobile: bottom sheet */}
-      <div
-        className={[
-          'fixed z-50 bg-white overflow-y-auto',
-          // Mobile
-          'inset-x-0 bottom-0 max-h-[85vh] rounded-t-2xl shadow-xl detail-panel-mobile',
-          // Desktop
-          'md:inset-x-auto md:right-0 md:top-0 md:bottom-0 md:max-h-none md:w-[400px] md:rounded-none md:shadow-xl md:border-l md:border-slate-200 md:detail-panel-desktop',
-        ].join(' ')}
+      {/* Panel — desktop: right side, mobile: bottom sheet */}
+      <aside
+        aria-label={`Station details: ${station.name}`}
+        style={{
+          position: 'fixed',
+          zIndex: 50,
+          background: 'var(--color-bg)',
+          overflowY: 'auto',
+          // Mobile: bottom sheet
+          bottom: 0,
+          left: 0,
+          right: 0,
+          maxHeight: '85vh',
+          borderRadius: '16px 16px 0 0',
+          boxShadow: 'var(--shadow-md)',
+        }}
+        className="md:inset-y-0 md:right-0 md:left-auto md:bottom-auto md:top-0 md:w-[400px] md:max-h-none md:rounded-none md:border-l"
       >
-        <div className="p-6">
-          {/* ── Header ── */}
-          <div className="relative mb-6">
+        {/* Mobile grab handle */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'center',
+          padding: '10px 0 4px',
+        }} className="md:hidden">
+          <div style={{
+            width: 36,
+            height: 4,
+            borderRadius: 2,
+            background: 'var(--color-border)',
+          }} />
+        </div>
+
+        <div style={{ padding: '16px 24px 24px' }}>
+          {/* Header */}
+          <div style={{ position: 'relative', marginBottom: 20 }}>
             {/* Close button */}
             <button
               onClick={onClose}
-              className="absolute -top-1 -right-1 w-8 h-8 flex items-center justify-center rounded-full hover:bg-slate-100 transition-colors text-slate-500 hover:text-slate-600"
-              aria-label="Close"
+              aria-label="Close station detail"
+              style={{
+                position: 'absolute',
+                top: -4,
+                right: -4,
+                width: 32,
+                height: 32,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                borderRadius: '50%',
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer',
+                color: 'var(--color-text-subtle)',
+              }}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </button>
 
-            {/* Hero price */}
-            <div className="flex items-baseline gap-2 mb-1">
-              <span className="text-5xl font-extrabold tabular-nums text-slate-900 leading-none">
-                {price.toFixed(1)}
-              </span>
-              <span className="text-lg text-slate-500 font-medium">c/L</span>
+            {/* SP-4 verdict slot */}
+            <div style={{ marginBottom: 8 }}>
+              <SlotVerdict station={station} />
             </div>
 
-            {/* 24h change */}
-            <div className="mb-3">
+            {/* Hero price */}
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 8, marginBottom: 4 }}>
+              <span style={{ fontSize: 48, fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text)', lineHeight: 1 }}>
+                {price.toFixed(1)}
+              </span>
+              <span style={{ fontSize: 18, color: 'var(--color-text-subtle)', fontWeight: 500, marginBottom: 6 }}>c/L</span>
+            </div>
+
+            {/* SP-6 true-cost slot */}
+            <SlotTrueCost station={station} context="detail" />
+
+            {/* 24h change + time */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
               <PriceChangeIndicator change={station.price_change} />
-              <span className="text-xs text-slate-500 ml-2">{ago}</span>
+              <span style={{ fontSize: 12, color: 'var(--color-text-subtle)' }}>{ago}</span>
+            </div>
+
+            {/* Action buttons row (SP-5, SP-8 stubs) */}
+            <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+              <SlotAlertButton station={station} disabled />
+              <SlotShareButton station={station} disabled />
             </div>
 
             {/* Station name + brand */}
-            <div className="text-lg font-bold text-slate-900">{station.name}</div>
+            <div style={{ fontSize: 18, fontWeight: 700, color: 'var(--color-text)' }}>{station.name}</div>
             {station.brand && (
-              <div className="text-sm text-slate-500 mt-0.5">{station.brand}</div>
+              <div style={{ fontSize: 14, color: 'var(--color-text-subtle)', marginTop: 2 }}>{station.brand}</div>
             )}
 
             {/* Address + distance */}
-            <div className="text-sm text-slate-500 mt-1">
+            <div style={{ fontSize: 13, color: 'var(--color-text-subtle)', marginTop: 4 }}>
               {addr}
               {station.distance_km != null && (
-                <span className="text-slate-500"> · {station.distance_km.toFixed(1)} km</span>
+                <span> · {station.distance_km.toFixed(1)} km</span>
               )}
             </div>
           </div>
 
-          {/* ── Fuel Type Tabs ── */}
-          <div className="mb-6">
-            <div className="flex flex-wrap gap-1.5">
+          {/* Fuel Type Tabs */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
               {FUEL_TYPES.map(fuel => (
                 <button
                   key={fuel.id}
                   onClick={() => onFuelChange(fuel.id)}
-                  className={[
-                    'px-3 py-1 rounded-full text-xs font-medium transition-colors',
-                    fuel.id === fuelId
-                      ? 'bg-sky-500 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-                  ].join(' ')}
+                  style={{
+                    padding: '4px 12px',
+                    borderRadius: 20,
+                    fontSize: 12,
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    border: `1px solid ${fuel.id === fuelId ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                    background: fuel.id === fuelId ? 'var(--color-accent)' : 'var(--color-bg-elevated)',
+                    color: fuel.id === fuelId ? 'var(--color-accent-fg)' : 'var(--color-text-muted)',
+                    transition: 'all var(--motion-fast)',
+                  }}
                 >
                   {fuel.label}
                 </button>
@@ -200,21 +245,25 @@ export default function StationDetail({
             </div>
           </div>
 
-          {/* ── Price History Chart ── */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className="text-sm font-semibold text-slate-700">Price History</h3>
-              <div className="flex gap-1">
+          {/* Price History Chart */}
+          <div style={{ marginBottom: 20 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>Price History</h3>
+              <div style={{ display: 'flex', gap: 4 }}>
                 {([24, 72, 168, 720, 2160] as const).map(h => (
                   <button
                     key={h}
                     onClick={() => setHours(h)}
-                    className={[
-                      'px-2.5 py-0.5 rounded-full text-xs font-medium transition-colors',
-                      hours === h
-                        ? 'bg-sky-500 text-white'
-                        : 'bg-slate-100 text-slate-500 hover:bg-slate-200',
-                    ].join(' ')}
+                    style={{
+                      padding: '2px 10px',
+                      borderRadius: 20,
+                      fontSize: 11,
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      border: `1px solid ${hours === h ? 'var(--color-accent)' : 'var(--color-border)'}`,
+                      background: hours === h ? 'var(--color-accent)' : 'var(--color-bg-elevated)',
+                      color: hours === h ? 'var(--color-accent-fg)' : 'var(--color-text-subtle)',
+                    }}
                   >
                     {h === 24 ? '24h' : h === 72 ? '3d' : h === 168 ? '7d' : h === 720 ? '30d' : '90d'}
                   </button>
@@ -223,95 +272,49 @@ export default function StationDetail({
             </div>
 
             {loading ? (
-              <div className="h-[160px] flex items-center justify-center text-sm text-slate-500">
+              <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'var(--color-text-subtle)' }}>
                 Loading...
               </div>
             ) : data.length === 0 ? (
-              <div className="h-[160px] flex items-center justify-center text-sm text-slate-500">
+              <div style={{ height: 160, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 13, color: 'var(--color-text-subtle)' }}>
                 Not enough history yet
               </div>
             ) : (
-              <>
-                {/* Desktop: fixed 360px, Mobile: full width */}
-                <div className="hidden md:block">
-                  <AreaChart width={360} height={160} data={data} margin={{ top: 4, right: 8, bottom: 0, left: -12 }}>
-                    <defs>
-                      <linearGradient id={`detail-grad-${station.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                    <YAxis domain={domain} tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} tickFormatter={v => `${v}¢`} />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null
-                        const d = payload[0].payload as ChartPoint
-                        return (
-                          <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs shadow-lg">
-                            <div className="font-semibold text-slate-700">{format(new Date(d.time), 'EEE d MMM, HH:mm')}</div>
-                            <div className="text-sky-500 mt-0.5">{d.avg.toFixed(1)}¢/L</div>
-                          </div>
-                        )
-                      }}
-                    />
-                    <Area type="monotone" dataKey="avg" stroke="#0ea5e9" strokeWidth={2} fill={`url(#detail-grad-${station.id})`} dot={false} activeDot={{ r: 3, strokeWidth: 2, fill: '#fff', stroke: '#0ea5e9' }} />
-                  </AreaChart>
-                </div>
-                <div className="md:hidden">
-                  <AreaChart width={Math.min(window.innerWidth - 48, 600)} height={160} data={data} margin={{ top: 4, right: 8, bottom: 0, left: -12 }}>
-                    <defs>
-                      <linearGradient id={`detail-grad-m-${station.id}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.2} />
-                        <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                    <YAxis domain={domain} tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} tickFormatter={v => `${v}¢`} />
-                    <Tooltip
-                      content={({ active, payload }) => {
-                        if (!active || !payload?.length) return null
-                        const d = payload[0].payload as ChartPoint
-                        return (
-                          <div className="bg-white border border-slate-200 rounded-lg px-3 py-2 text-xs shadow-lg">
-                            <div className="font-semibold text-slate-700">{format(new Date(d.time), 'EEE d MMM, HH:mm')}</div>
-                            <div className="text-sky-500 mt-0.5">{d.avg.toFixed(1)}¢/L</div>
-                          </div>
-                        )
-                      }}
-                    />
-                    <Area type="monotone" dataKey="avg" stroke="#0ea5e9" strokeWidth={2} fill={`url(#detail-grad-m-${station.id})`} dot={false} activeDot={{ r: 3, strokeWidth: 2, fill: '#fff', stroke: '#0ea5e9' }} />
-                  </AreaChart>
-                </div>
-              </>
+              <PriceChart data={data} stationId={station.id} domain={domain} width={352} height={160} />
             )}
           </div>
 
-          {/* ── Nearby Alternatives ── */}
+          {/* Nearby Alternatives */}
           {nearby.length > 0 && (
-            <div className="mb-6">
-              <h3 className="text-sm font-semibold text-slate-700 mb-3">Nearby Alternatives</h3>
-              <div className="space-y-2">
+            <div style={{ marginBottom: 20 }}>
+              <h3 style={{ fontSize: 13, fontWeight: 600, color: 'var(--color-text)', marginBottom: 12, marginTop: 0 }}>Nearby Alternatives</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 {nearby.map(s => {
                   const sPrice = parseFloat(s.price_cents)
-                  const distDelta = s.dist
                   return (
-                    <div key={s.id} className="flex items-center gap-3 p-3 bg-slate-50 rounded-lg">
-                      <span className="text-lg font-extrabold tabular-nums text-slate-900">
+                    <div key={s.id} style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      padding: '10px 12px',
+                      background: 'var(--color-bg-elevated)',
+                      borderRadius: 'var(--radius-md)',
+                    }}>
+                      <span style={{ fontSize: 18, fontWeight: 800, fontVariantNumeric: 'tabular-nums', color: 'var(--color-text)' }}>
                         {sPrice.toFixed(1)}
                       </span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-medium text-slate-700 truncate">{s.name}</div>
-                        <div className="text-xs text-slate-500">{distDelta.toFixed(1)}km away</div>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: 13, fontWeight: 500, color: 'var(--color-text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{s.name}</div>
+                        <div style={{ fontSize: 11, color: 'var(--color-text-subtle)' }}>{s.dist.toFixed(1)}km away</div>
                       </div>
+                      {/* SP-4 verdict mini-chip slot */}
+                      <SlotVerdict station={s} />
                       {sPrice < price ? (
-                        <span className="text-xs font-semibold text-emerald-600">
+                        <span style={{ fontSize: 11, fontWeight: 600, color: 'var(--color-price-down)', flexShrink: 0 }}>
                           {(price - sPrice).toFixed(1)}¢ cheaper
                         </span>
                       ) : sPrice > price ? (
-                        <span className="text-xs font-medium text-slate-500">
+                        <span style={{ fontSize: 11, fontWeight: 500, color: 'var(--color-text-subtle)', flexShrink: 0 }}>
                           +{(sPrice - price).toFixed(1)}¢
                         </span>
                       ) : null}
@@ -322,13 +325,25 @@ export default function StationDetail({
             </div>
           )}
 
-          {/* ── Navigation Buttons ── */}
-          <div className="flex gap-3">
+          {/* Navigation Buttons */}
+          <div style={{ display: 'flex', gap: 12 }}>
             <a
               href={googleUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-xl text-sm font-semibold transition-colors"
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '12px 0',
+                background: 'var(--color-accent)',
+                color: 'var(--color-accent-fg)',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
             >
               Google Maps
             </a>
@@ -336,13 +351,26 @@ export default function StationDetail({
               href={appleUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-1 flex items-center justify-center gap-2 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-sm font-semibold transition-colors"
+              style={{
+                flex: 1,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                padding: '12px 0',
+                background: 'var(--color-bg-elevated)',
+                color: 'var(--color-text)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-lg)',
+                fontSize: 13,
+                fontWeight: 600,
+                textDecoration: 'none',
+              }}
             >
               Apple Maps
             </a>
           </div>
         </div>
-      </div>
+      </aside>
     </>
   )
 }

@@ -115,15 +115,15 @@ export default function TripClient() {
     <main
       id="main-content"
       tabIndex={-1}
-      style={{ minHeight: '100dvh', background: '#111111', color: '#ffffff' }}
+      style={{ minHeight: '100dvh', background: 'var(--color-bg)', color: 'var(--color-text)' }}
     >
       {/* Header */}
-      <div style={{ background: '#111111', borderBottom: '3px solid #f59e0b' }}>
+      <div style={{ background: 'var(--color-bg)', borderBottom: '3px solid var(--color-accent)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 16px', height: '52px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <Link
               href="/dashboard"
-              style={{ color: '#8a8a8a', textDecoration: 'none', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}
+              style={{ color: 'var(--color-text-subtle)', textDecoration: 'none', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '4px' }}
               aria-label="Back to dashboard"
             >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -131,10 +131,10 @@ export default function TripClient() {
               </svg>
               Back
             </Link>
-            <span style={{ color: '#2a2a2a' }}>|</span>
+            <span style={{ color: 'var(--color-border)' }}>|</span>
             <span style={{ fontSize: '16px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '-0.01em' }}>
-              FUEL<span style={{ color: '#f59e0b' }}>SNIFFER</span>
-              <span style={{ color: '#8a8a8a', fontWeight: 600, fontSize: '14px' }}> · Trip Planner</span>
+              FILLIP<span style={{ color: 'var(--color-accent)' }}>.</span>
+              <span style={{ color: 'var(--color-text-subtle)', fontWeight: 600, fontSize: '14px' }}> · Trip Planner</span>
             </span>
           </div>
         </div>
@@ -168,7 +168,7 @@ export default function TripClient() {
                 borderRadius: '8px',
                 padding: '12px 14px',
                 fontSize: '14px',
-                color: '#ef4444',
+                color: 'var(--color-danger)',
               }}
             >
               {state.message}
@@ -178,7 +178,7 @@ export default function TripClient() {
           {state.phase === 'results' && (
             <>
               <div>
-                <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#888888', marginBottom: '10px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-subtle)', marginBottom: '10px' }}>
                   Route options
                 </div>
                 <RouteChipStrip
@@ -189,13 +189,13 @@ export default function TripClient() {
               </div>
 
               <div>
-                <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#888888', marginBottom: '4px' }}>
+                <div style={{ fontSize: '11px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--color-text-subtle)', marginBottom: '4px' }}>
                   Stations along route
-                  <span style={{ color: '#444444', fontWeight: 600, marginLeft: '6px', textTransform: 'none', letterSpacing: 'normal' }}>
+                  <span style={{ color: 'var(--color-text-subtle)', fontWeight: 600, marginLeft: '6px', textTransform: 'none', letterSpacing: 'normal' }}>
                     ({state.stations.length} found)
                   </span>
                 </div>
-                <div style={{ border: '1px solid #2a2a2a', borderRadius: '10px', overflow: 'hidden' }}>
+                <div style={{ border: '1px solid var(--color-border)', borderRadius: '10px', overflow: 'hidden' }}>
                   <TripStationList
                     stations={state.stations}
                     start={state.formValues.start}
@@ -220,7 +220,7 @@ export default function TripClient() {
           style={{
             borderRadius: '12px',
             overflow: 'hidden',
-            border: '1px solid #2a2a2a',
+            border: '1px solid var(--color-border)',
             minHeight: '400px',
             position: 'relative',
           }}
@@ -229,19 +229,19 @@ export default function TripClient() {
           {state.phase === 'loading' && (
             <div style={{
               position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#111111', zIndex: 10, flexDirection: 'column', gap: '12px',
+              background: 'var(--color-bg)', zIndex: 10, flexDirection: 'column', gap: '12px',
             }}>
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" strokeWidth="2" strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="var(--color-accent)" strokeWidth="2" strokeLinecap="round" style={{ animation: 'spin 1s linear infinite' }}>
                 <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
               </svg>
-              <span style={{ color: '#888888', fontSize: '14px' }}>Finding route…</span>
+              <span style={{ color: 'var(--color-text-subtle)', fontSize: '14px' }}>Finding route…</span>
             </div>
           )}
 
           {(state.phase === 'idle' || state.phase === 'error') && (
             <div style={{
               position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
-              background: '#111111', flexDirection: 'column', gap: '8px', color: '#444444',
+              background: 'var(--color-bg)', flexDirection: 'column', gap: '8px', color: 'var(--color-text-subtle)',
             }}>
               <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
                 <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>

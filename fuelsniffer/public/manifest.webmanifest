@@ -1,0 +1,66 @@
+{
+  "name": "Fillip — fuel prices that decide for you",
+  "short_name": "Fillip",
+  "description": "Real-time Queensland fuel prices. Find the cheapest nearby and plan fuel stops for your trips.",
+  "start_url": "/dashboard?utm_source=pwa",
+  "id": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#111111",
+  "theme_color": "#f59e0b",
+  "categories": ["navigation", "travel", "utilities", "finance"],
+  "dir": "ltr",
+  "lang": "en-AU",
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-192-maskable.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-monochrome-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "monochrome"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Cheapest near me",
+      "url": "/dashboard?sort=price",
+      "description": "Find the cheapest fuel near your location"
+    },
+    {
+      "name": "Trip planner",
+      "url": "/dashboard/trip",
+      "description": "Find fuel stops on your route"
+    },
+    {
+      "name": "My alerts",
+      "url": "/dashboard?alerts=1",
+      "description": "View and manage price alerts"
+    }
+  ]
+}

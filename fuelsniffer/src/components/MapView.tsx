@@ -10,6 +10,7 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css'
 import type { PriceResult } from '@/lib/db/queries/prices'
 import { getPinColour } from '@/lib/map-utils'
 import StationPopup from '@/components/StationPopup'
+import { getCssVar } from '@/lib/theme/getCssVar'
 
 delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -58,6 +59,11 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
 
     if (stations.length === 0) return
 
+    // Read theme tokens at marker creation time
+    const clusterBg = getCssVar('--map-cluster-bg', '#f59e0b')
+    const clusterText = getCssVar('--map-cluster-text', '#000000')
+    const clusterBorder = getCssVar('--map-cluster-border', '#111111')
+
     const clusterGroup = L.markerClusterGroup({
       maxClusterRadius: 50,
       spiderfyOnMaxZoom: true,
@@ -67,13 +73,14 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
         const count = cluster.getChildCount()
         return L.divIcon({
           className: '',
-          html: `<div style="
+          // aria-label provided via title on the container for screen readers
+          html: `<div title="${count} stations clustered, double-click to expand" style="
   width:36px;height:36px;border-radius:50%;
-  background:#f59e0b;color:#000000;
+  background:${clusterBg};color:${clusterText};
   display:flex;align-items:center;justify-content:center;
   font-weight:900;font-size:13px;font-family:Inter,system-ui,sans-serif;
   box-shadow:0 2px 6px rgba(0,0,0,0.4);
-  border:2px solid #111111;
+  border:2px solid ${clusterBorder};
 ">${count}</div>`,
           iconSize: [36, 36],
           iconAnchor: [18, 18],
@@ -97,7 +104,7 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
           background:${colour};
           display:flex;align-items:center;justify-content:center;
           color:#fff;font-weight:700;font-size:12px;font-family:Inter,system-ui,sans-serif;
-          box-shadow:0 2px 6px rgba(0,0,0,0.2);
+          box-shadow:0 2px 6px rgba(0,0,0,0.2),0 0 0 1px rgba(0,0,0,0.2);
           white-space:nowrap;
         ">${priceText}</div>`,
         iconSize: [48, 28],
@@ -109,6 +116,7 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
         icon,
         alt: ariaLabel,
         title: ariaLabel,
+        keyboard: true,
       })
 
       // Create a DOM container for the React popup
@@ -167,20 +175,25 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
       userMarkerRef.current = null
     }
     if (userLocation) {
+      const accent = getCssVar('--color-accent', '#f59e0b')
+      const bg = getCssVar('--color-bg', '#111111')
       const icon = L.divIcon({
         className: '',
-        html: `<div style="width:14px;height:14px;border-radius:50%;background:#f59e0b;
-                border:3px solid #111111;box-shadow:0 0 0 2px #f59e0b,0 2px 6px rgba(0,0,0,0.4);"></div>`,
+        html: `<div style="width:14px;height:14px;border-radius:50%;background:${accent};
+                border:3px solid ${bg};box-shadow:0 0 0 2px ${accent},0 2px 6px rgba(0,0,0,0.4);"
+                title="Your location"></div>`,
         iconSize: [14, 14],
         iconAnchor: [7, 7],
       })
+      const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches
       userMarkerRef.current = L.marker([userLocation.lat, userLocation.lng], { icon, interactive: false }).addTo(map)
-      map.panTo([userLocation.lat, userLocation.lng], { animate: true, duration: 0.5 })
+      map.panTo([userLocation.lat, userLocation.lng], { animate: !prefersReducedMotion, duration: 0.5 })
     }
   }, [userLocation, map])
 
   // Open popup for selected station — zoom to uncluster, then pan so popup is fully visible
   useEffect(() => {
+    const prefersReducedMotion = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches
     if (selectedId) {
       const marker = markersRef.current.get(selectedId)
       const cluster = clusterRef.current
@@ -193,7 +206,7 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
             if (!popup) return
             const px = map.latLngToContainerPoint(marker.getLatLng())
             const mapSize = map.getSize()
-            const popupHeight = 420 // approximate popup height in px
+            const popupHeight = 420
             const popupWidth  = 320
             const PAD = 16
             let dx = 0
@@ -201,7 +214,7 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
             if (px.y - popupHeight - PAD < 0) dy = px.y - popupHeight - PAD
             if (px.x + popupWidth / 2 + PAD > mapSize.x) dx = px.x + popupWidth / 2 + PAD - mapSize.x
             if (px.x - popupWidth / 2 - PAD < 0) dx = px.x - popupWidth / 2 - PAD
-            if (dx !== 0 || dy !== 0) map.panBy([dx, dy], { animate: true, duration: 0.25 })
+            if (dx !== 0 || dy !== 0) map.panBy([dx, dy], { animate: !prefersReducedMotion, duration: 0.25 })
           }, 50)
         })
       }
@@ -234,15 +247,29 @@ export default function MapView({ stations, selectedId, activeFuel, onPinClick, 
     : [DEFAULT_CENTER.lat, DEFAULT_CENTER.lng] as [number, number]
 
   return (
-    <MapContainer
-      center={center}
-      zoom={12}
-      className="w-full h-full"
-      style={{ minHeight: '300px' }}
-      zoomControl={false}
+    <div
+      role="application"
+      aria-roledescription="Interactive map of fuel stations"
+      aria-label="Fuel station map"
+      style={{ width: '100%', height: '100%', position: 'relative' }}
     >
-      <TileLayer url={OSM_TILE_URL} attribution={OSM_ATTRIBUTION} />
-      <PriceMarkers stations={stations} selectedId={selectedId} activeFuel={activeFuel} onPinClick={onPinClick} userLocation={userLocation} isVisible={isVisible} fitBounds={fitBounds} onFitBoundsDone={onFitBoundsDone} />
-    </MapContainer>
+      {/* Skip map link for keyboard users */}
+      <a
+        href="#station-list"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:top-2 focus:left-2 focus:bg-[var(--color-accent)] focus:text-[var(--color-accent-fg)] focus:px-3 focus:py-1 focus:rounded focus:text-sm focus:font-medium"
+      >
+        Skip map, go to station list
+      </a>
+      <MapContainer
+        center={center}
+        zoom={12}
+        className="w-full h-full"
+        style={{ minHeight: '300px', width: '100%', height: '100%' }}
+        zoomControl={false}
+      >
+        <TileLayer url={OSM_TILE_URL} attribution={OSM_ATTRIBUTION} />
+        <PriceMarkers stations={stations} selectedId={selectedId} activeFuel={activeFuel} onPinClick={onPinClick} userLocation={userLocation} isVisible={isVisible} fitBounds={fitBounds} onFitBoundsDone={onFitBoundsDone} />
+      </MapContainer>
+    </div>
   )
 }

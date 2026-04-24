@@ -44,8 +44,8 @@ export default function NavigateButton({ start, station, end }: NavigateButtonPr
           paddingLeft: '14px',
           paddingRight: '14px',
           borderRadius: '8px',
-          background: '#f59e0b',
-          color: '#000000',
+          background: 'var(--color-accent)',
+          color: 'var(--color-accent-fg)',
           fontSize: '12px',
           fontWeight: 800,
           textDecoration: 'none',
@@ -56,7 +56,7 @@ export default function NavigateButton({ start, station, end }: NavigateButtonPr
         }}
         aria-label={`Navigate to ${station.name} via ${primaryLabel}`}
       >
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <polygon points="3 11 22 2 13 21 11 13 3 11"/>
         </svg>
         {primaryLabel}
@@ -73,9 +73,9 @@ export default function NavigateButton({ start, station, end }: NavigateButtonPr
           paddingLeft: '10px',
           paddingRight: '10px',
           borderRadius: '8px',
-          border: '1px solid #2a2a2a',
+          border: '1px solid var(--color-border)',
           background: 'transparent',
-          color: '#8a8a8a',
+          color: 'var(--color-text-subtle)',
           fontSize: '11px',
           fontWeight: 700,
           textDecoration: 'none',

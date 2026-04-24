@@ -28,7 +28,7 @@ function handleArrowKey(e: React.KeyboardEvent, index: number) {
 
 export default function StationList({ stations, selectedId, onSelect, cardRefsMap }: StationListProps) {
   return (
-    <div className="overflow-y-auto" style={{ background: '#111111' }}>
+    <div className="overflow-y-auto station-list" style={{ background: 'var(--color-bg)' }} role="list" aria-label="Fuel stations">
       {stations.map((station, index) => (
         <React.Fragment key={station.id}>
           <StationCard

@@ -2,10 +2,11 @@
 @import '../styles/tokens.css';
 
 /*
- * SP-0 (Fillip rebrand) — globals.css now consumes theme tokens from
- * tokens.css. The previous WCAG audit comment (2026-04-12)
- * is preserved in git history; SP-3 will run a fresh contrast pass over
- * both themes and re-record findings.
+ * SP-3 (UX Core) — extends SP-0 globals with:
+ * - Reduced-motion support
+ * - Forced-colors (Windows high-contrast) support
+ * - Touch target minimum sizes
+ * - Font variable wiring
  */
 
 *,
@@ -21,7 +22,7 @@ body {
   padding: 0;
   background: var(--color-bg);
   color: var(--color-text);
-  font-family: -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif;
+  font-family: var(--font-sans, -apple-system, BlinkMacSystemFont, 'Inter', 'Segoe UI', sans-serif);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -58,4 +59,56 @@ body {
 .station-list::-webkit-scrollbar-thumb {
   background: var(--color-scrollbar-thumb);
   border-radius: 2px;
+}
+
+/* ── Reduced motion ──────────────────────────────────────────────────────────
+   Disables all transitions and animations for users who prefer reduced motion.
+   Leaflet map animations are handled separately in MapView.tsx / TripMap.tsx
+   by reading window.matchMedia at runtime.
+*/
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Forced colors (Windows high-contrast mode) ──────────────────────────────
+   Price pins and chips use background-only for colour coding — add explicit
+   borders so they remain perceivable in forced-colors mode.
+*/
+@media (forced-colors: active) {
+  [data-slot="verdict"],
+  [data-slot="truecost"] {
+    border: 1px solid ButtonText;
+  }
+}
+
+/* ── Touch target minimum ────────────────────────────────────────────────────
+   Ensure interactive elements meet the 44px × 44px minimum (Apple HIG).
+   Applied to mobile nav tabs and filter chips specifically.
+*/
+.touch-target-min {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* ── Screen reader only utility ─────────────────────────────────────────────
+   Tailwind's sr-only is available, but this ensures it works even without
+   Tailwind processing (e.g. in Storybook stories loaded standalone).
+*/
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
 }

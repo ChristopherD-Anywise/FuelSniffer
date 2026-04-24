@@ -62,9 +62,11 @@ cp .env.example .env
 # fill in DB_PASSWORD, QLD_API_TOKEN, SESSION_SECRET, MAPBOX_TOKEN
 docker compose up -d postgres
 cd fuelsniffer  # this folder; rename deferred per SP-0 spec §10 Q4
-npm install
+npm install --legacy-peer-deps
 npm run dev   # http://localhost:4000
 ```
+
+> Use `npm install --legacy-peer-deps` until Storybook 9 is released (currently used in SP-3 for component dev; `@storybook/nextjs` 8.x doesn't support Next 16's peer constraint).
 
 Tests:
 
