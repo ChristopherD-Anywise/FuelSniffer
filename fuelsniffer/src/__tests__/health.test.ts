@@ -18,7 +18,7 @@ vi.mock('@/lib/db/client', () => ({
   },
 }))
 
-import { buildHealthResponse } from '@/app/api/health/route'
+import { buildHealthResponse, buildNationalHealthResponse } from '@/app/api/health/route'
 
 describe('buildHealthResponse', () => {
   beforeEach(() => {
@@ -98,5 +98,61 @@ describe('buildHealthResponse', () => {
     expect(response).toHaveProperty('last_scrape_at')
     expect(response).toHaveProperty('minutes_ago')
     expect(response).toHaveProperty('prices_last_run')
+  })
+})
+
+// ── SP-1: buildNationalHealthResponse ────────────────────────────────────────
+
+describe('buildNationalHealthResponse — SP-1 per-provider shape', () => {
+  it('returns overall=ok when all providers are healthy', () => {
+    const rows = [
+      { provider: 'qld', scrapedAt: new Date('2026-03-23T05:58:00Z'), pricesUpserted: 1820, error: null },
+      { provider: 'nsw', scrapedAt: new Date('2026-03-23T05:59:00Z'), pricesUpserted: 2614, error: null },
+    ]
+    const result = buildNationalHealthResponse(rows)
+    expect(result.overall).toBe('ok')
+    expect(result.providers.qld.status).toBe('ok')
+    expect(result.providers.nsw.status).toBe('ok')
+  })
+
+  it('returns overall=degraded when any provider has an error', () => {
+    const rows = [
+      { provider: 'qld', scrapedAt: new Date('2026-03-23T05:58:00Z'), pricesUpserted: 1820, error: null },
+      { provider: 'wa',  scrapedAt: new Date('2026-03-23T05:59:00Z'), pricesUpserted: 0,    error: 'RSS 503' },
+    ]
+    const result = buildNationalHealthResponse(rows)
+    expect(result.overall).toBe('degraded')
+    expect(result.providers.wa.status).toBe('degraded')
+    expect(result.providers.wa.lastError).toBe('RSS 503')
+  })
+
+  it('returns overall=ok for empty providers list', () => {
+    const result = buildNationalHealthResponse([])
+    expect(result.overall).toBe('ok')
+    expect(result.providers).toEqual({})
+  })
+
+  it('lastSuccessAt is null when provider has an error', () => {
+    const rows = [
+      { provider: 'wa', scrapedAt: new Date('2026-03-23T05:59:00Z'), pricesUpserted: 0, error: 'timeout' },
+    ]
+    const result = buildNationalHealthResponse(rows)
+    expect(result.providers.wa.lastSuccessAt).toBeNull()
+  })
+
+  it('lastSuccessAt is an ISO string when provider is ok', () => {
+    const rows = [
+      { provider: 'qld', scrapedAt: new Date('2026-03-23T05:58:00Z'), pricesUpserted: 100, error: null },
+    ]
+    const result = buildNationalHealthResponse(rows)
+    expect(result.providers.qld.lastSuccessAt).toBe('2026-03-23T05:58:00.000Z')
+  })
+
+  it('rowsLastRun reflects pricesUpserted', () => {
+    const rows = [
+      { provider: 'nsw', scrapedAt: new Date('2026-03-23T05:58:00Z'), pricesUpserted: 2614, error: null },
+    ]
+    const result = buildNationalHealthResponse(rows)
+    expect(result.providers.nsw.rowsLastRun).toBe(2614)
   })
 })

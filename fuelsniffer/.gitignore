@@ -37,8 +37,10 @@ yarn-error.log*
 # Track .env.example (template with no real secrets)
 !.env.example
 
-# data volumes
+# data volumes (postgres, etc.)
 data/
+# — but keep static lookup data in source
+!src/lib/data/
 
 # backup volumes
 backups/

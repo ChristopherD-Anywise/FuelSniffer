@@ -1,0 +1,35 @@
+{
+  "code": "Ok",
+  "routes": [
+    {
+      "geometry": "nftfD_v}d\\n}@~oR~{B~lV~{Bnh\\~{Bnh\\~{Bnh\\?~bmA",
+      "legs": [
+        {
+          "summary": "Warrego Highway",
+          "weight": 5580.0,
+          "duration": 5580.0,
+          "steps": [],
+          "distance": 128000.0
+        }
+      ],
+      "weight_name": "routability",
+      "weight": 5580.0,
+      "duration": 5580.0,
+      "distance": 128000.0
+    }
+  ],
+  "waypoints": [
+    {
+      "hint": "ghi789",
+      "distance": 14.1,
+      "name": "Queen Street",
+      "location": [153.02, -27.47]
+    },
+    {
+      "hint": "jkl012",
+      "distance": 6.8,
+      "name": "Ruthven Street",
+      "location": [151.95, -27.56]
+    }
+  ]
+}
