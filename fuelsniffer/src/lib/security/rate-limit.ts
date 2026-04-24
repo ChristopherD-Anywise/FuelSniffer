@@ -98,6 +98,9 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
   '/api/csp-report': { maxRequests: 10, windowMs: 60_000 },
   '/api/trip/route': { maxRequests: 30, windowMs: 60_000 },
   '/api/trip/stations': { maxRequests: 30, windowMs: 60_000 },
+  // Auth routes — magic-link has its own DB-backed per-email rate limit in addition
+  '/api/auth/magic-link/request': { maxRequests: 10, windowMs: 60_000 },
+  '/api/auth/oauth': { maxRequests: 30, windowMs: 60_000 },
 }
 
 /**
