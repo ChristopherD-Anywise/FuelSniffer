@@ -9,6 +9,7 @@ import {
   timestamp,
   numeric,
   varchar,
+  jsonb,
 } from 'drizzle-orm/pg-core'
 
 /**
@@ -17,7 +18,7 @@ import {
  * D-06: Only stations within ~50km of North Lakes are stored (filtered at ingest).
  */
 export const stations = pgTable('stations', {
-  id:          integer('id').primaryKey(),   // QLD API SiteId
+  id:          integer('id').primaryKey(),   // QLD API SiteId (pre-0015); surrogate BIGSERIAL post-0015
   name:        text('name').notNull(),
   brand:       text('brand'),
   address:     text('address'),
@@ -29,6 +30,12 @@ export const stations = pgTable('stations', {
   lastSeenAt:     timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
   externalId:     text('external_id').notNull(),
   sourceProvider: text('source_provider').notNull(),
+  // SP-1 jurisdiction fields (migration 0014)
+  state:          varchar('state', { length: 3 }).notNull().default('QLD'),
+  region:         text('region'),
+  jurisdiction:   text('jurisdiction').notNull().default('AU-QLD'),
+  timezone:       text('timezone').notNull().default('Australia/Brisbane'),
+  sourceMetadata: jsonb('source_metadata'),
 })
 
 /**
@@ -47,6 +54,8 @@ export const priceReadings = pgTable('price_readings', {
   priceCents:     numeric('price_cents', { precision: 6, scale: 1 }).notNull(),
   sourceTs:       timestamp('source_ts', { withTimezone: true }).notNull(), // TransactionDateUtc from API
   sourceProvider: text('source_provider').notNull(),
+  // SP-1: WA T+1 effective date (migration 0016). For non-WA: validFrom = recordedAt.
+  validFrom:      timestamp('valid_from', { withTimezone: true }),
 })
 
 /**
@@ -60,6 +69,8 @@ export const scrapeHealth = pgTable('scrape_health', {
   pricesUpserted:  integer('prices_upserted').notNull(),
   durationMs:      integer('duration_ms').notNull(),
   error:           text('error'),  // NULL = success
+  // SP-1: per-provider tracking (migration 0017)
+  provider:        text('provider').notNull().default('qld'),
 })
 
 // Type exports for use in scraper and API routes
@@ -123,3 +134,17 @@ export const waitlistSignups = pgTable('waitlist_signups', {
 
 export type WaitlistSignup = typeof waitlistSignups.$inferSelect
 export type NewWaitlistSignup = typeof waitlistSignups.$inferInsert
+
+/**
+ * Canonical fuel types lookup table (SP-1, migration 0013).
+ * Bridges QLD integer FuelId codes and NSW/WA/NT/TAS string codes.
+ * price_readings.fuel_type_id references the canonical id.
+ */
+export const fuelTypes = pgTable('fuel_types', {
+  id:          integer('id').primaryKey(),
+  code:        text('code').notNull().unique(),
+  displayName: text('display_name').notNull(),
+})
+
+export type FuelType = typeof fuelTypes.$inferSelect
+export type NewFuelType = typeof fuelTypes.$inferInsert
