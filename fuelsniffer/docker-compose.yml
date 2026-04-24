@@ -74,6 +74,15 @@ services:
       APP_DEFAULT_THEME: ${APP_DEFAULT_THEME:-system}
       EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Fillip}
       EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@fillip.local}
+      # Auth v2 (SP-2)
+      MAGIC_LINK_TTL_MINUTES: ${MAGIC_LINK_TTL_MINUTES:-15}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+      APPLE_PRIVATE_KEY_P8: ${APPLE_PRIVATE_KEY_P8:-}
       TZ: Australia/Brisbane
       NODE_ENV: production
     depends_on:

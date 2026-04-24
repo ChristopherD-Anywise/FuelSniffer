@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { buildSecurityHeaders } from '@/lib/security/headers'
 import { checkRateLimit, getRateLimitConfig } from '@/lib/security/rate-limit'
+import { getSession } from '@/lib/session'
 
 /**
  * Simple non-cryptographic hash for IP rate limiting keys.
@@ -18,8 +19,18 @@ function hashIp(ip: string): string {
   return Math.abs(hash).toString(36)
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
+
+  // ── Session gate for /dashboard routes ────────────────────────────────────
+  // Auth API routes handle their own auth state; skip them.
+  if (pathname.startsWith('/dashboard') && !pathname.startsWith('/api/auth')) {
+    const session = await getSession(request)
+    if (!session) {
+      const loginUrl = new URL(`/login?next=${encodeURIComponent(pathname)}`, request.url)
+      return NextResponse.redirect(loginUrl, { status: 302 })
+    }
+  }
 
   // Rate limiting (API routes only, skip /api/health for monitoring probes)
   const rateLimitConfig = getRateLimitConfig(pathname)
