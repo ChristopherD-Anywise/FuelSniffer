@@ -6,13 +6,20 @@ import type { FuelPriceProvider } from '@/lib/providers/fuel'
 
 // ── Healthchecks.io dead-man's-switch ────────────────────────────────────────
 
-async function pingHealthchecks(): Promise<void> {
-  const pingUrl = process.env.HEALTHCHECKS_PING_URL
+/**
+ * Ping the Healthchecks.io dead-man's switch for a specific provider.
+ *
+ * Per-provider env vars (SP-1): HEALTHCHECKS_PING_URL_{QLD,NSW,WA,NT,TAS}
+ * Falls back to the legacy HEALTHCHECKS_PING_URL if no per-provider var is set.
+ */
+async function pingHealthchecks(providerId: string): Promise<void> {
+  const perProviderKey = `HEALTHCHECKS_PING_URL_${providerId.toUpperCase()}`
+  const pingUrl = process.env[perProviderKey] ?? process.env.HEALTHCHECKS_PING_URL
   if (!pingUrl) return
   try {
     await axios.get(pingUrl, { timeout: 5000 })
   } catch {
-    console.error('[scraper] healthchecks.io ping failed — monitoring may alert')
+    console.error(`[scraper:${providerId}] healthchecks.io ping failed — monitoring may alert`)
   }
 }
 
@@ -62,6 +69,12 @@ export async function runProviderScrape(provider: FuelPriceProvider): Promise<Sc
           lastSeenAt:     new Date(),
           externalId:     s.externalId,
           sourceProvider: s.sourceProvider,
+          // SP-1 jurisdiction fields (defaulted in schema if absent)
+          ...(s.state        !== undefined ? { state:          s.state }        : {}),
+          ...(s.jurisdiction !== undefined ? { jurisdiction:   s.jurisdiction } : {}),
+          ...(s.timezone     !== undefined ? { timezone:       s.timezone }     : {}),
+          ...(s.region       !== undefined ? { region:         s.region }       : {}),
+          ...(s.sourceMetadata !== undefined ? { sourceMetadata: s.sourceMetadata } : {}),
         })))
         .onConflictDoUpdate({
           target: stations.id,
@@ -103,15 +116,27 @@ export async function runProviderScrape(provider: FuelPriceProvider): Promise<Sc
     })
 
     if (newPriceRows.length > 0) {
-      await db.insert(priceReadings).values(newPriceRows)
+      await db.insert(priceReadings).values(
+        newPriceRows.map(p => ({
+          ...p,
+          // SP-1: include validFrom if present (WA T+1), otherwise omit (defaults to recordedAt via migration)
+          ...(p.validFrom !== undefined ? { validFrom: p.validFrom } : {}),
+        }))
+      )
     }
 
     const durationMs = Date.now() - startTime
     const pricesUpserted = newPriceRows.length
     const skipped = normPrices.length - newPriceRows.length
 
-    await db.insert(scrapeHealth).values({ pricesUpserted, durationMs, error: null })
-    await pingHealthchecks()
+    // SP-1: include provider in health row
+    await db.insert(scrapeHealth).values({
+      pricesUpserted,
+      durationMs,
+      error:    null,
+      provider: provider.id,
+    })
+    await pingHealthchecks(provider.id)
 
     console.log(`[scraper:${provider.id}] OK — ${pricesUpserted} new prices, ${skipped} unchanged in ${durationMs}ms`)
 
@@ -123,7 +148,12 @@ export async function runProviderScrape(provider: FuelPriceProvider): Promise<Sc
     console.error(`[scraper:${provider.id}] FAILED after ${durationMs}ms: ${errorMessage}`)
 
     try {
-      await db.insert(scrapeHealth).values({ pricesUpserted: 0, durationMs, error: errorMessage })
+      await db.insert(scrapeHealth).values({
+        pricesUpserted: 0,
+        durationMs,
+        error:    errorMessage,
+        provider: provider.id,
+      })
     } catch (dbErr) {
       console.error(`[scraper:${provider.id}] Could not write failure record:`, dbErr)
     }
