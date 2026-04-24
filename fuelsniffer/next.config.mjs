@@ -25,6 +25,9 @@ const nextConfig = {
   output: 'standalone',
   // Turbopack config (empty = use defaults, suppresses the webpack-config warning)
   turbopack: {},
+  // SP-8: @resvg/resvg-js uses native WASM/Node bindings that can't be bundled.
+  // Mark as external so Next.js passes them through at runtime.
+  serverExternalPackages: ['@resvg/resvg-js', 'satori'],
 }
 
 export default withBundleAnalyzer(nextConfig)

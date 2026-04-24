@@ -85,6 +85,28 @@ services:
       APPLE_PRIVATE_KEY_P8: ${APPLE_PRIVATE_KEY_P8:-}
       TZ: Australia/Brisbane
       NODE_ENV: production
+      # SP-8: Share card signing
+      SHARE_SIGNING_SECRET: ${SHARE_SIGNING_SECRET:-}
+      # SP-8: Social bot — all networks OFF by default (safe-by-default)
+      # Set to 'true' to enable each network after provisioning credentials
+      FILLIP_BOT_X_ENABLED: ${FILLIP_BOT_X_ENABLED:-false}
+      FILLIP_BOT_BLUESKY_ENABLED: ${FILLIP_BOT_BLUESKY_ENABLED:-false}
+      FILLIP_BOT_MASTODON_ENABLED: ${FILLIP_BOT_MASTODON_ENABLED:-false}
+      # Set SOCIAL_BOT_DISABLED=true to disable all networks regardless of per-network flags
+      SOCIAL_BOT_DISABLED: ${SOCIAL_BOT_DISABLED:-false}
+      # Set SOCIAL_DRY_RUN=false to actually post (default: true = log only)
+      SOCIAL_DRY_RUN: ${SOCIAL_DRY_RUN:-true}
+      # X (Twitter) credentials
+      SOCIAL_X_OAUTH_CLIENT_ID: ${SOCIAL_X_OAUTH_CLIENT_ID:-}
+      SOCIAL_X_OAUTH_CLIENT_SECRET: ${SOCIAL_X_OAUTH_CLIENT_SECRET:-}
+      SOCIAL_X_ACCESS_TOKEN: ${SOCIAL_X_ACCESS_TOKEN:-}
+      SOCIAL_X_ACCESS_SECRET: ${SOCIAL_X_ACCESS_SECRET:-}
+      # BlueSky credentials
+      SOCIAL_BLUESKY_HANDLE: ${SOCIAL_BLUESKY_HANDLE:-}
+      SOCIAL_BLUESKY_APP_PASSWORD: ${SOCIAL_BLUESKY_APP_PASSWORD:-}
+      # Mastodon credentials
+      SOCIAL_MASTODON_INSTANCE_URL: ${SOCIAL_MASTODON_INSTANCE_URL:-https://aus.social}
+      SOCIAL_MASTODON_ACCESS_TOKEN: ${SOCIAL_MASTODON_ACCESS_TOKEN:-}
     depends_on:
       postgres:
         condition: service_healthy
