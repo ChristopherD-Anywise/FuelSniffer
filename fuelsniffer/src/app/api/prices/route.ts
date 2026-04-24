@@ -19,16 +19,6 @@ const PricesQuerySchema = z.object({
     ),
   lat: z.string().optional().transform(v => v ? parseFloat(v) : undefined),
   lng: z.string().optional().transform(v => v ? parseFloat(v) : undefined),
-  changeHours: z
-    .string()
-    .optional()
-    .default('24')
-    .pipe(
-      z.string()
-       .regex(/^\d+$/)
-       .transform(Number)
-       .pipe(z.number().min(1).max(168))
-    ),
 })
 
 export async function GET(req: Request) {
@@ -43,7 +33,6 @@ export async function GET(req: Request) {
     radius: searchParams.get('radius') ?? undefined,
     lat: searchParams.get('lat') ?? undefined,
     lng: searchParams.get('lng') ?? undefined,
-    changeHours: searchParams.get('changeHours') ?? undefined,
   })
 
   if (!parsed.success) {
@@ -55,12 +44,15 @@ export async function GET(req: Request) {
     ? { lat: parsed.data.lat, lng: parsed.data.lng }
     : undefined
 
-  const stations = await getLatestPrices(
-    parsed.data.fuel,
-    parsed.data.radius,
-    userLocation,
-    parsed.data.changeHours
-  )
+  try {
+    const stations = await getLatestPrices(
+      parsed.data.fuel,
+      parsed.data.radius,
+      userLocation
+    )
 
-  return NextResponse.json(stations, { status: 200 })
+    return NextResponse.json(stations, { status: 200 })
+  } catch {
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

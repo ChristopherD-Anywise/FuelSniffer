@@ -1,0 +1,161 @@
+/*
+ * Fillip theme tokens — SP-3 (extended from SP-0)
+ *
+ * Token contract:
+ *  - All 21 inline-style components reference var(--color-*) from this file.
+ *  - Dark-theme values match the exact legacy hex values used before SP-0,
+ *    so dark mode is pixel-identical to the legacy FuelSniffer palette.
+ *  - Light-theme values give a polished light experience.
+ *  - SP-4 consumes --verdict-* tokens; SP-5 uses SlotAlertButton.
+ *  - SP-6 consumes --truecost-* tokens.
+ *  - SP-7 (trip pages) consumes the same token set.
+ *
+ * Brand accent is locked to amber (#f59e0b) per cross-cutting decision 5.
+ */
+
+:root,
+[data-theme='light'] {
+  /* Surfaces */
+  --color-bg: #ffffff;
+  --color-bg-elevated: #f5f5f7;
+  --color-surface: #ffffff;
+
+  /* Borders */
+  --color-border: #e4e4e7;
+
+  /* Text */
+  --color-text: #0f172a;
+  --color-text-muted: #475569;
+  --color-text-subtle: #64748b;
+
+  /* Brand accent */
+  --color-accent: #f59e0b;
+  --color-accent-fg: #111111;
+  --color-accent-muted: #fef3c7;
+
+  /* Semantic state */
+  --color-success: #16a34a;
+  --color-warn: #ca8a04;
+  --color-danger: #dc2626;
+
+  /* Price delta */
+  --color-price-down: #16a34a;
+  --color-price-up: #dc2626;
+  --color-price-flat: #64748b;
+
+  /* Focus */
+  --color-focus-ring: #2563eb;
+
+  /* Popup / overlay */
+  --color-popup-bg: #ffffff;
+  --color-popup-border: #e4e4e7;
+  --color-popup-close: #475569;
+
+  /* Scrollbar */
+  --color-scrollbar-track: #f5f5f7;
+  --color-scrollbar-thumb: #cbd5e1;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
+  --shadow-md: 0 4px 16px rgba(15, 23, 42, 0.08);
+
+  /* Motion */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+
+  /* Map */
+  --map-tile-filter: none;
+  --map-cluster-bg: #f59e0b;
+  --map-cluster-text: #111111;
+  --map-cluster-border: #ffffff;
+
+  /* Verdict tokens — reserved for SP-4 */
+  --verdict-fill-now: #16a34a;
+  --verdict-hold: #ca8a04;
+  --verdict-wait: #dc2626;
+  --verdict-uncertain: #64748b;
+
+  /* True-cost tokens — reserved for SP-6 */
+  --truecost-bg: #f5f5f7;
+  --truecost-border: #e4e4e7;
+  --truecost-saving: #16a34a;
+}
+
+[data-theme='dark'] {
+  /* Surfaces — exact legacy hex values, pixel-identical dark mode */
+  --color-bg: #111111;
+  --color-bg-elevated: #1a1a1a;
+  --color-surface: #1a1a1a;
+
+  /* Borders */
+  --color-border: #2a2a2a;
+
+  /* Text */
+  --color-text: #ffffff;
+  --color-text-muted: #cccccc;
+  --color-text-subtle: #8a8a8a;
+
+  /* Brand accent */
+  --color-accent: #f59e0b;
+  --color-accent-fg: #111111;
+  --color-accent-muted: #1a0d00;
+
+  /* Semantic state */
+  --color-success: #16a34a;
+  --color-warn: #ca8a04;
+  --color-danger: #dc2626;
+
+  /* Price delta */
+  --color-price-down: #22c55e;
+  --color-price-up: #ef4444;
+  --color-price-flat: #8a8a8a;
+
+  /* Focus */
+  --color-focus-ring: #60a5fa;
+
+  /* Popup / overlay */
+  --color-popup-bg: #1a1a1a;
+  --color-popup-border: #2a2a2a;
+  --color-popup-close: #8a8a8a;
+
+  /* Scrollbar */
+  --color-scrollbar-track: #111111;
+  --color-scrollbar-thumb: #2a2a2a;
+
+  /* Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 8px 32px rgba(0, 0, 0, 0.6);
+
+  /* Motion */
+  --motion-fast: 120ms;
+  --motion-base: 200ms;
+  --motion-slow: 320ms;
+
+  /* Map — dark tiles via CSS filter */
+  --map-tile-filter: invert(1) hue-rotate(180deg) brightness(0.95) contrast(0.9);
+  --map-cluster-bg: #f59e0b;
+  --map-cluster-text: #111111;
+  --map-cluster-border: #111111;
+
+  /* Verdict tokens — reserved for SP-4 */
+  --verdict-fill-now: #22c55e;
+  --verdict-hold: #f59e0b;
+  --verdict-wait: #ef4444;
+  --verdict-uncertain: #8a8a8a;
+
+  /* True-cost tokens — reserved for SP-6 */
+  --truecost-bg: #1a1a1a;
+  --truecost-border: #2a2a2a;
+  --truecost-saving: #22c55e;
+}

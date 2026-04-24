@@ -1,0 +1,26 @@
+{
+  "stations": [
+    {
+      "serviceStationName": "Test BP Hobart",
+      "address": "1 Collins St, Hobart TAS 7000",
+      "suburb": "Hobart",
+      "state": "TAS",
+      "postcode": "7000",
+      "brand": "BP",
+      "stationCode": "TAS001",
+      "latitude": -42.8821,
+      "longitude": 147.3272
+    },
+    {
+      "serviceStationName": "Test United Launceston",
+      "address": "2 St John St, Launceston TAS 7250",
+      "suburb": "Launceston",
+      "state": "TAS",
+      "postcode": "7250",
+      "brand": "United",
+      "stationCode": "TAS002",
+      "latitude": -41.4332,
+      "longitude": 147.1441
+    }
+  ]
+}

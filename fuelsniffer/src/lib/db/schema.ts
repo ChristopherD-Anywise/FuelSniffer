@@ -1,12 +1,19 @@
 import {
   pgTable,
+  pgEnum,
   integer,
   text,
   boolean,
   doublePrecision,
   serial,
+  bigserial,
   timestamp,
   numeric,
+  varchar,
+  jsonb,
+  date,
+  uuid,
+  time,
 } from 'drizzle-orm/pg-core'
 
 /**
@@ -15,7 +22,7 @@ import {
  * D-06: Only stations within ~50km of North Lakes are stored (filtered at ingest).
  */
 export const stations = pgTable('stations', {
-  id:          integer('id').primaryKey(),   // QLD API SiteId
+  id:          integer('id').primaryKey(),   // QLD API SiteId (pre-0015); surrogate BIGSERIAL post-0015
   name:        text('name').notNull(),
   brand:       text('brand'),
   address:     text('address'),
@@ -23,8 +30,16 @@ export const stations = pgTable('stations', {
   postcode:    text('postcode'),
   latitude:    doublePrecision('latitude').notNull(),
   longitude:   doublePrecision('longitude').notNull(),
-  isActive:    boolean('is_active').notNull().default(true),
-  lastSeenAt:  timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  isActive:       boolean('is_active').notNull().default(true),
+  lastSeenAt:     timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  externalId:     text('external_id').notNull(),
+  sourceProvider: text('source_provider').notNull(),
+  // SP-1 jurisdiction fields (migration 0014)
+  state:          varchar('state', { length: 3 }).notNull().default('QLD'),
+  region:         text('region'),
+  jurisdiction:   text('jurisdiction').notNull().default('AU-QLD'),
+  timezone:       text('timezone').notNull().default('Australia/Brisbane'),
+  sourceMetadata: jsonb('source_metadata'),
 })
 
 /**
@@ -40,8 +55,11 @@ export const priceReadings = pgTable('price_readings', {
   recordedAt:  timestamp('recorded_at', { withTimezone: true }).notNull(),
   stationId:   integer('station_id').notNull().references(() => stations.id),
   fuelTypeId:  integer('fuel_type_id').notNull(),
-  priceCents:  numeric('price_cents', { precision: 6, scale: 1 }).notNull(),
-  sourceTs:    timestamp('source_ts', { withTimezone: true }).notNull(), // TransactionDateUtc from API
+  priceCents:     numeric('price_cents', { precision: 6, scale: 1 }).notNull(),
+  sourceTs:       timestamp('source_ts', { withTimezone: true }).notNull(), // TransactionDateUtc from API
+  sourceProvider: text('source_provider').notNull(),
+  // SP-1: WA T+1 effective date (migration 0016). For non-WA: validFrom = recordedAt.
+  validFrom:      timestamp('valid_from', { withTimezone: true }),
 })
 
 /**
@@ -55,6 +73,8 @@ export const scrapeHealth = pgTable('scrape_health', {
   pricesUpserted:  integer('prices_upserted').notNull(),
   durationMs:      integer('duration_ms').notNull(),
   error:           text('error'),  // NULL = success
+  // SP-1: per-provider tracking (migration 0017)
+  provider:        text('provider').notNull().default('qld'),
 })
 
 // Type exports for use in scraper and API routes
@@ -96,3 +116,148 @@ export type InviteCode = typeof inviteCodes.$inferSelect
 export type NewInviteCode = typeof inviteCodes.$inferInsert
 export type Session = typeof sessions.$inferSelect
 export type NewSession = typeof sessions.$inferInsert
+
+/**
+ * Waitlist signups table — stores encrypted email addresses for the NSW waitlist.
+ * email_encrypted: AES-256-GCM ciphertext (iv:ciphertext:authTag, base64-encoded segments)
+ * email_hash: SHA-256 HMAC hex digest used for deduplication
+ * source: signup source identifier (e.g. "nsw-landing")
+ * ip_hash / ua_hash: hashed IP and User-Agent for abuse detection
+ * consent: whether the user explicitly opted in
+ */
+export const waitlistSignups = pgTable('waitlist_signups', {
+  id:             bigserial('id', { mode: 'number' }).primaryKey(),
+  emailEncrypted: text('email_encrypted').notNull(),
+  emailHash:      varchar('email_hash', { length: 64 }).notNull().unique(),
+  source:         varchar('source', { length: 32 }).notNull(),
+  ipHash:         varchar('ip_hash', { length: 64 }).notNull(),
+  uaHash:         varchar('ua_hash', { length: 64 }).notNull(),
+  consent:        boolean('consent').notNull().default(false),
+  createdAt:      timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export type WaitlistSignup = typeof waitlistSignups.$inferSelect
+export type NewWaitlistSignup = typeof waitlistSignups.$inferInsert
+
+/**
+ * Canonical fuel types lookup table (SP-1, migration 0013).
+ * Bridges QLD integer FuelId codes and NSW/WA/NT/TAS string codes.
+ * price_readings.fuel_type_id references the canonical id.
+ */
+export const fuelTypes = pgTable('fuel_types', {
+  id:          integer('id').primaryKey(),
+  code:        text('code').notNull().unique(),
+  displayName: text('display_name').notNull(),
+})
+
+export type FuelType = typeof fuelTypes.$inferSelect
+export type NewFuelType = typeof fuelTypes.$inferInsert
+
+/**
+ * Cycle signals table (SP-4).
+ * One row per (suburb_key, fuel_type_id, computed_for, algo_version).
+ * suburb_key format: lower(suburb)|lower(state)  e.g. 'chermside|qld'
+ * Phase B writes algo_version = 'forecast-v1'; query layer prefers higher priority.
+ */
+export const cycleSignals = pgTable('cycle_signals', {
+  id:            bigserial('id', { mode: 'number' }).primaryKey(),
+  suburbKey:     text('suburb_key').notNull(),
+  suburbDisplay: text('suburb_display').notNull(),
+  stateCode:     text('state_code').notNull(),
+  fuelTypeId:    integer('fuel_type_id').notNull(),
+  computedFor:   date('computed_for').notNull(),
+  computedAt:    timestamp('computed_at', { withTimezone: true }).notNull().defaultNow(),
+  signalState:   text('signal_state').notNull(),
+  confidence:    doublePrecision('confidence').notNull(),
+  label:         text('label').notNull(),
+  supporting:    jsonb('supporting').notNull(),
+  algoVersion:   text('algo_version').notNull().default('rule-v1'),
+})
+
+export type CycleSignal = typeof cycleSignals.$inferSelect
+export type NewCycleSignal = typeof cycleSignals.$inferInsert
+
+// ── SP-5: Alerts ──────────────────────────────────────────────────────────────
+
+export const alertTypeEnum = pgEnum('alert_type', [
+  'price_threshold',
+  'cycle_low',
+  'favourite_drop',
+  'weekly_digest',
+])
+
+export const deliveryStatusEnum = pgEnum('delivery_status', [
+  'queued',
+  'sent',
+  'delivered',
+  'failed',
+  'suppressed_quiet_hours',
+  'suppressed_rate_limit',
+  'bounced',
+])
+
+/**
+ * Alerts table — one row per user-configured alert.
+ */
+export const alerts = pgTable('alerts', {
+  id:               bigserial('id', { mode: 'number' }).primaryKey(),
+  userId:           uuid('user_id').notNull(),
+  type:             alertTypeEnum('type').notNull(),
+  criteriaJson:     jsonb('criteria_json').notNull(),
+  channels:         text('channels').array().notNull().default(['email', 'push']),
+  paused:           boolean('paused').notNull().default(false),
+  createdAt:        timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastFiredAt:      timestamp('last_fired_at', { withTimezone: true }),
+  lastEvaluatedAt:  timestamp('last_evaluated_at', { withTimezone: true }),
+  label:            text('label'),
+})
+
+export type Alert = typeof alerts.$inferSelect
+export type NewAlert = typeof alerts.$inferInsert
+
+/**
+ * Alert deliveries — log of fired alerts per channel.
+ * UNIQUE (alert_id, channel, dedup_key) prevents replays.
+ */
+export const alertDeliveries = pgTable('alert_deliveries', {
+  id:                bigserial('id', { mode: 'number' }).primaryKey(),
+  alertId:           bigserial('alert_id', { mode: 'number' }).notNull(),
+  firedAt:           timestamp('fired_at', { withTimezone: true }).notNull().defaultNow(),
+  channel:           text('channel').notNull(),
+  payloadHash:       text('payload_hash').notNull(),
+  dedupKey:          text('dedup_key').notNull(),
+  status:            deliveryStatusEnum('status').notNull(),
+  providerMessageId: text('provider_message_id'),
+  error:             text('error'),
+  retryCount:        integer('retry_count').notNull().default(0),
+})
+
+export type AlertDelivery = typeof alertDeliveries.$inferSelect
+export type NewAlertDelivery = typeof alertDeliveries.$inferInsert
+
+/**
+ * Web push subscriptions — one row per browser subscription.
+ */
+export const webPushSubscriptions = pgTable('web_push_subscriptions', {
+  id:          bigserial('id', { mode: 'number' }).primaryKey(),
+  userId:      uuid('user_id').notNull(),
+  endpoint:    text('endpoint').notNull(),
+  keysP256dh:  text('keys_p256dh').notNull(),
+  keysAuth:    text('keys_auth').notNull(),
+  ua:          text('ua'),
+  createdAt:   timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  lastSeenAt:  timestamp('last_seen_at', { withTimezone: true }).notNull().defaultNow(),
+  revokedAt:   timestamp('revoked_at', { withTimezone: true }),
+})
+
+export type WebPushSubscription = typeof webPushSubscriptions.$inferSelect
+export type NewWebPushSubscription = typeof webPushSubscriptions.$inferInsert
+
+/**
+ * Favourite stations — M2M between users and stations.
+ */
+export const favouriteStations = pgTable('favourite_stations', {
+  userId:    uuid('user_id').notNull(),
+  stationId: integer('station_id').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
