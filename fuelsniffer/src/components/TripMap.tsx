@@ -149,6 +149,8 @@ function TripMapLayers({ routes, selectedRouteIndex, stations, selectedStationId
     async function buildMarkers() {
       if (useCluster) {
         try {
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore — leaflet.markercluster JS entry has no matching TS declaration
           await import('leaflet.markercluster/dist/leaflet.markercluster.js')
           await import('leaflet.markercluster/dist/MarkerCluster.css')
           await import('leaflet.markercluster/dist/MarkerCluster.Default.css')

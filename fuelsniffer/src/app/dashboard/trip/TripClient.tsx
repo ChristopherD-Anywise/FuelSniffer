@@ -218,7 +218,7 @@ export default function TripClient() {
     state.phase === 'results' ? extractBrands(state.stations) : []
 
   const tripDistanceKm =
-    state.phase === 'results' ? (state.routeResult.primary.distance ?? 0) / 1000 : 0
+    state.phase === 'results' ? (state.routeResult.primary.distanceMeters ?? 0) / 1000 : 0
 
   return (
     <main
