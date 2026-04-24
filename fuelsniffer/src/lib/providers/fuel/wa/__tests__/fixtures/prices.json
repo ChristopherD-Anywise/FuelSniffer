@@ -1,0 +1,34 @@
+{
+  "prices": [
+    {
+      "site_id": "WA001",
+      "fuel_type": "ULP",
+      "price": 191.5,
+      "date": "2026-04-24"
+    },
+    {
+      "site_id": "WA001",
+      "fuel_type": "ULP",
+      "price": 185.9,
+      "date": "2026-04-25"
+    },
+    {
+      "site_id": "WA002",
+      "fuel_type": "PULP",
+      "price": "203.2",
+      "date": "2026-04-24"
+    },
+    {
+      "site_id": "WA001",
+      "fuel_type": "Diesel",
+      "price": 210.0,
+      "date": "2026-04-24"
+    },
+    {
+      "site_id": "WA001",
+      "fuel_type": "UNKNOWN_WA_FUEL",
+      "price": 150.0,
+      "date": "2026-04-24"
+    }
+  ]
+}

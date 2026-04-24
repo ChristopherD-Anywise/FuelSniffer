@@ -14,5 +14,10 @@ export async function register() {
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     const { startScheduler } = await import('./lib/scraper/scheduler')
     startScheduler()
+
+    // SP-8: Weekly social bot (Mon 07:00 AEST)
+    // All networks OFF by default — enable via FILLIP_BOT_*_ENABLED env vars
+    const { startBotScheduler } = await import('./lib/social-bot/scheduler')
+    startBotScheduler()
   }
 }

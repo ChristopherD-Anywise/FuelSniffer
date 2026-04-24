@@ -30,7 +30,8 @@ describe('isStale()', () => {
 
 describe('sortStations()', () => {
   const base = { id: 1, name: 'S', brand: null, address: null, suburb: null,
-                 latitude: 0, longitude: 0, recorded_at: new Date() }
+                 latitude: 0, longitude: 0, recorded_at: new Date(),
+                 source_ts: new Date(), price_change: 0 }
   it('sorts by price_cents ascending when sort=price', () => {
     const input = [
       { ...base, price_cents: '150.0', distance_km: 5 },

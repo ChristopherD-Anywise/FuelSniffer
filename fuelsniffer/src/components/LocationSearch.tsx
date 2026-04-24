@@ -112,7 +112,7 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
     <div ref={containerRef} style={{ position: 'relative', flexShrink: 0 }}>
       {/* Search icon */}
       <svg
-        style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: '#555555' }}
+        style={{ position: 'absolute', left: 10, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', color: 'var(--color-text-subtle)' }}
         width="14"
         height="14"
         viewBox="0 0 24 24"
@@ -135,12 +135,12 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
         style={{
           height: '36px',
           borderRadius: '8px',
-          border: '1px solid #2a2a2a',
-          background: '#1a1a1a',
+          border: '1px solid var(--color-border)',
+          background: 'var(--color-bg-elevated)',
           paddingLeft: '36px',
           paddingRight: '12px',
           fontSize: '14px',
-          color: '#ffffff',
+          color: 'var(--color-text)',
           width: '224px',
           outline: 'none',
         }}
@@ -149,8 +149,8 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
       {isOpen && (areas.length > 0 || stations.length > 0) && (
         <div style={{
           position: 'absolute',
-          background: '#1a1a1a',
-          border: '1px solid #2a2a2a',
+          background: 'var(--color-bg-elevated)',
+          border: '1px solid var(--color-border)',
           borderRadius: '8px',
           boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
           marginTop: '4px',
@@ -175,7 +175,7 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
                 paddingRight: '12px',
                 paddingTop: '8px',
                 paddingBottom: '8px',
-                background: highlightedIndex === i || hoveredArea === i ? '#2a2a2a' : 'transparent',
+                background: highlightedIndex === i || hoveredArea === i ? 'var(--color-border)' : 'transparent',
                 cursor: 'pointer',
                 border: 'none',
                 transition: 'background-color 150ms',
@@ -185,11 +185,11 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
               }}
             >
               <span style={{ display: 'flex', flexDirection: 'column', gap: '1px' }}>
-                <span style={{ fontSize: '14px', fontWeight: 600, color: '#ffffff' }}>
+                <span style={{ fontSize: '14px', fontWeight: 600, color: 'var(--color-text)' }}>
                   {area.suburb ?? area.label}
                 </span>
                 {area.stationCount != null && (
-                  <span style={{ fontSize: '11px', color: '#555555' }}>
+                  <span style={{ fontSize: '11px', color: 'var(--color-text-subtle)' }}>
                     {area.stationCount} station{area.stationCount !== 1 ? 's' : ''}
                   </span>
                 )}
@@ -198,11 +198,11 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
                 <span style={{
                   fontSize: '11px',
                   fontWeight: 700,
-                  background: '#1e1e1e',
-                  border: '1px solid #333',
+                  background: 'var(--color-bg)',
+                  border: '1px solid var(--color-border)',
                   borderRadius: '4px',
                   padding: '2px 6px',
-                  color: '#888',
+                  color: 'var(--color-text-subtle)',
                   flexShrink: 0,
                   marginLeft: '8px',
                 }}>
@@ -213,7 +213,7 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
           ))}
 
           {areas.length > 0 && stations.length > 0 && (
-            <div style={{ borderTop: '1px solid #2a2a2a', margin: '4px 0' }} />
+            <div style={{ borderTop: '1px solid var(--color-border)', margin: '4px 0' }} />
           )}
 
           {stations.map((station, i) => {
@@ -231,13 +231,13 @@ export default function LocationSearch({ onSelect }: LocationSearchProps) {
                   paddingRight: '12px',
                   paddingTop: '8px',
                   paddingBottom: '8px',
-                  background: highlightedIndex === globalIndex || hoveredStation === i ? '#2a2a2a' : 'transparent',
+                  background: highlightedIndex === globalIndex || hoveredStation === i ? 'var(--color-border)' : 'transparent',
                   cursor: 'pointer',
                   border: 'none',
                   transition: 'background-color 150ms',
                 }}
               >
-                <span style={{ fontSize: '14px', color: '#ffffff' }}>{station.name}</span>
+                <span style={{ fontSize: '14px', color: 'var(--color-text)' }}>{station.name}</span>
               </button>
             )
           })}

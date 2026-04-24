@@ -7,10 +7,12 @@ FROM node:22-alpine AS builder
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-# The package-lock.json was generated on macOS so it only records
-# @tailwindcss/oxide-darwin-arm64. Force-install the Linux musl variant
-# explicitly so the Tailwind build step can find its native binding.
-RUN npm ci && npm install @tailwindcss/oxide-linux-arm64-musl --no-save
+# The package-lock.json is generated on macOS and may miss Linux-specific
+# optional dependencies. Use npm install (not ci) to resolve platform
+# differences, then add the Linux musl Tailwind variant.
+RUN npm install --prefer-offline && \
+    npm install @tailwindcss/oxide-linux-arm64-musl --no-save && \
+    npm install @resvg/resvg-js-linux-arm64-musl --no-save 2>/dev/null || true
 
 COPY . .
 
@@ -24,6 +26,9 @@ RUN npm run build
 
 # ── Stage 2: runner ──────────────────────────────────────────────────────────
 FROM node:22-alpine AS runner
+LABEL org.opencontainers.image.title="Fillip"
+LABEL org.opencontainers.image.description="Fillip — find cheap fuel across Australia"
+LABEL org.opencontainers.image.source="https://github.com/cdenn/fuelsniffer"
 WORKDIR /app
 
 ENV NODE_ENV=production

@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import FilterBar from '@/components/FilterBar'
 import { FUEL_TYPES } from '@/components/FuelSelect'
 import StationList from '@/components/StationList'
@@ -11,6 +12,7 @@ import ErrorState from '@/components/ErrorState'
 import { sortStations } from '@/lib/dashboard-utils'
 import type { PriceResult } from '@/lib/db/queries/prices'
 import type { SortMode } from '@/lib/dashboard-utils'
+import StationDetail from '@/components/StationDetail'
 
 const MapView = dynamic(() => import('@/components/MapView'), { ssr: false })
 
@@ -19,8 +21,9 @@ function fuelLabel(id: string): string {
 }
 
 function IconMap({ active }: { active: boolean }) {
+  const color = active ? 'var(--color-accent)' : 'var(--color-text-subtle)'
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#f59e0b' : '#555555'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
       <line x1="8" y1="2" x2="8" y2="18"/>
       <line x1="16" y1="6" x2="16" y2="22"/>
@@ -29,21 +32,23 @@ function IconMap({ active }: { active: boolean }) {
 }
 
 function IconList({ active }: { active: boolean }) {
+  const color = active ? 'var(--color-accent)' : 'var(--color-text-subtle)'
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#f59e0b' : '#555555'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <line x1="8" y1="6" x2="21" y2="6"/>
       <line x1="8" y1="12" x2="21" y2="12"/>
       <line x1="8" y1="18" x2="21" y2="18"/>
-      <circle cx="3" cy="6" r="1" fill={active ? '#f59e0b' : '#555555'} stroke="none"/>
-      <circle cx="3" cy="12" r="1" fill={active ? '#f59e0b' : '#555555'} stroke="none"/>
-      <circle cx="3" cy="18" r="1" fill={active ? '#f59e0b' : '#555555'} stroke="none"/>
+      <circle cx="3" cy="6" r="1" fill={color} stroke="none"/>
+      <circle cx="3" cy="12" r="1" fill={color} stroke="none"/>
+      <circle cx="3" cy="18" r="1" fill={color} stroke="none"/>
     </svg>
   )
 }
 
 function IconTrends({ active }: { active: boolean }) {
+  const color = active ? 'var(--color-accent)' : 'var(--color-text-subtle)'
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={active ? '#f59e0b' : '#555555'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
     </svg>
   )
@@ -63,15 +68,14 @@ export default function DashboardClient() {
   const [loading,        setLoading]        = useState(true)
   const [error,          setError]          = useState(false)
   const [selectedId,     setSelectedId]     = useState<number | null>(null)
+  const [showDetail,     setShowDetail]     = useState(false)
   const [mobileTab,      setMobileTab]      = useState<MobileTab>('map')
   const [userLocation,   setUserLocation]   = useState<{ lat: number; lng: number } | null>(null)
   const [locationStatus, setLocationStatus] = useState<'idle' | 'loading' | 'active' | 'denied'>('idle')
   const [fitBounds,      setFitBounds]      = useState(false)
-  // Local radius drives the slider display immediately; URL is updated after dragging stops
   const [localRadius,    setLocalRadius]    = useState(radiusParam)
   const radiusDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  // Keep localRadius in sync when URL param changes externally (e.g. back/forward nav)
   useEffect(() => { setLocalRadius(radiusParam) }, [radiusParam])
 
   const cardRefsMap = useRef<Map<number, HTMLElement>>(new Map())
@@ -110,8 +114,14 @@ export default function DashboardClient() {
   }
 
   function handleCardSelect(id: number) {
-    setSelectedId(prev => prev === id ? null : id)
-    setMobileTab('map')
+    if (selectedId === id) {
+      setSelectedId(null)
+      setShowDetail(false)
+    } else {
+      setSelectedId(id)
+      setShowDetail(true)
+      setMobileTab('map')
+    }
   }
 
   function handlePinClick(id: number) {
@@ -154,9 +164,13 @@ export default function DashboardClient() {
   const stationCount = sortedStations.length
 
   const isMobileMapVisible = mobileTab === 'map'
+  const selectedStation = selectedId ? sortedStations.find(s => s.id === selectedId) : null
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#111111' }}>
+    <main id="main-content" tabIndex={-1} style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: 'var(--color-bg)' }}>
+      {/* Screen-reader only page heading */}
+      <h1 className="sr-only">Fillip — Fuel Prices Dashboard</h1>
+
       <FilterBar
         activeFuel={activeFuel}
         radius={localRadius}
@@ -173,25 +187,33 @@ export default function DashboardClient() {
 
       {/* Stat bar */}
       {!loading && !error && stationCount > 0 && (
-        <div style={{
-          display: 'flex',
-          borderBottom: '1px solid #2a2a2a',
-          background: '#1a1a1a',
-          flexShrink: 0,
-        }}>
+        <div
+          role="region"
+          aria-label="Price summary"
+          style={{
+            display: 'flex',
+            borderBottom: '1px solid var(--color-border)',
+            background: 'var(--color-bg-elevated)',
+            flexShrink: 0,
+          }}>
           {([
-            { label: 'Cheapest', value: cheapest != null ? `${cheapest.toFixed(1)}¢` : '—', color: '#22c55e' },
-            { label: 'Area avg', value: avg      != null ? `${avg.toFixed(1)}¢`      : '—', color: '#f59e0b' },
-            { label: 'Stations', value: String(stationCount),                                color: '#f59e0b' },
-            { label: 'Dearest',  value: dearest  != null ? `${dearest.toFixed(1)}¢`  : '—', color: '#ef4444' },
+            { label: 'Cheapest', value: cheapest != null ? `${cheapest.toFixed(1)}¢` : '—', color: 'var(--color-price-down)' },
+            { label: 'Area avg', value: avg      != null ? `${avg.toFixed(1)}¢`      : '—', color: 'var(--color-accent)' },
+            { label: 'Stations', value: String(stationCount),                                color: 'var(--color-accent)' },
+            { label: 'Dearest',  value: dearest  != null ? `${dearest.toFixed(1)}¢`  : '—', color: 'var(--color-price-up)' },
           ] as const).map(({ label, value, color }, i, arr) => (
-            <div key={label} style={{
-              flex: 1,
-              textAlign: 'center',
-              padding: '8px 0',
-              borderRight: i < arr.length - 1 ? '1px solid #2a2a2a' : 'none',
-            }}>
-              <div style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#444444', marginBottom: 3 }}>
+            <div
+              key={label}
+              role="status"
+              aria-live="polite"
+              aria-atomic="true"
+              style={{
+                flex: 1,
+                textAlign: 'center',
+                padding: '8px 0',
+                borderRight: i < arr.length - 1 ? '1px solid var(--color-border)' : 'none',
+              }}>
+              <div style={{ fontSize: 9, fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--color-text-subtle)', marginBottom: 3 }}>
                 {label}
               </div>
               <div style={{ fontSize: 17, fontWeight: 900, fontVariantNumeric: 'tabular-nums', color }}>
@@ -209,8 +231,9 @@ export default function DashboardClient() {
       >
         {/* Station list */}
         <div
+          id="station-list"
           className={`station-list absolute inset-0 md:relative md:inset-auto h-full overflow-y-auto ${mobileTab === 'list' ? 'block' : 'hidden md:block'}`}
-          style={{ borderRight: '1px solid #2a2a2a' }}
+          style={{ borderRight: '1px solid var(--color-border)' }}
         >
           {loading && <LoadingSkeleton />}
           {!loading && error && <ErrorState onRetry={fetchPrices} />}
@@ -230,6 +253,7 @@ export default function DashboardClient() {
         {/* Map */}
         <div
           className={`absolute inset-0 md:relative md:inset-auto h-full ${mobileTab === 'map' ? 'block' : 'hidden md:block'}`}
+          style={{ position: 'relative' }}
         >
           <MapView
             stations={sortedStations}
@@ -241,13 +265,49 @@ export default function DashboardClient() {
             fitBounds={fitBounds}
             onFitBoundsDone={() => setFitBounds(false)}
           />
+
+          {/* Trip planner entry point */}
+          <Link
+            href="/dashboard/trip"
+            aria-label="Find fuel on my route"
+            title="Find fuel on my route"
+            style={{
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              zIndex: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              height: '36px',
+              padding: '0 12px',
+              borderRadius: '8px',
+              background: 'var(--color-bg)',
+              border: '1px solid var(--color-accent)',
+              color: 'var(--color-accent)',
+              fontSize: '12px',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              boxShadow: 'var(--shadow-md)',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+              <line x1="8" y1="2" x2="8" y2="18"/>
+              <line x1="16" y1="6" x2="16" y2="22"/>
+            </svg>
+            Route
+          </Link>
         </div>
       </div>
 
       {/* Mobile bottom nav */}
-      <div
+      <nav
+        aria-label="Main navigation"
         className="md:hidden flex-shrink-0 flex"
-        style={{ background: '#111111', borderTop: '1px solid #2a2a2a' }}
+        style={{ background: 'var(--color-bg)', borderTop: '1px solid var(--color-border)' }}
       >
         {([
           { tab: 'map'    as MobileTab, label: 'Map',    Icon: IconMap    },
@@ -257,7 +317,18 @@ export default function DashboardClient() {
           <button
             key={tab}
             onClick={() => setMobileTab(tab)}
-            style={{ flex: 1, padding: '10px 0 8px', textAlign: 'center', background: 'transparent', border: 'none', cursor: 'pointer' }}
+            aria-current={mobileTab === tab ? 'page' : undefined}
+            aria-label={label}
+            style={{
+              flex: 1,
+              padding: '10px 0 8px',
+              textAlign: 'center',
+              background: 'transparent',
+              border: 'none',
+              cursor: 'pointer',
+              minHeight: '48px',
+              minWidth: '48px',
+            }}
           >
             <Icon active={mobileTab === tab} />
             <div style={{
@@ -265,14 +336,25 @@ export default function DashboardClient() {
               fontWeight: 700,
               textTransform: 'uppercase',
               letterSpacing: '0.06em',
-              color: mobileTab === tab ? '#f59e0b' : '#444444',
+              color: mobileTab === tab ? 'var(--color-accent)' : 'var(--color-text-subtle)',
               marginTop: 2,
             }}>
               {label}
             </div>
           </button>
         ))}
-      </div>
-    </div>
+      </nav>
+
+      {/* Station detail panel */}
+      {showDetail && selectedStation && (
+        <StationDetail
+          station={selectedStation}
+          fuelId={activeFuel}
+          allStations={sortedStations}
+          onClose={() => { setShowDetail(false); setSelectedId(null) }}
+          onFuelChange={id => updateParam('fuel', id)}
+        />
+      )}
+    </main>
   )
 }

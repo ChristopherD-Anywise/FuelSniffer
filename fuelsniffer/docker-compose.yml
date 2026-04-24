@@ -1,6 +1,7 @@
 services:
   postgres:
-    image: postgres:17-alpine
+    container_name: fillip-postgres
+    image: postgis/postgis:17-3.4-alpine
     stop_grace_period: 30s
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U fuelsniffer -d fuelsniffer"]
@@ -20,6 +21,7 @@ services:
     restart: always
 
   db-backup:
+    container_name: fillip-db-backup
     image: postgres:17-alpine
     depends_on:
       postgres:
@@ -59,14 +61,52 @@ services:
     restart: always
 
   app:
+    container_name: fillip-app
     build: .
     environment:
       DATABASE_URL: postgresql://fuelsniffer:${DB_PASSWORD}@postgres:5432/fuelsniffer
       SESSION_SECRET: ${SESSION_SECRET}
       QLD_API_TOKEN: ${QLD_API_TOKEN}
       HEALTHCHECKS_PING_URL: ${HEALTHCHECKS_PING_URL}
+      MAPBOX_TOKEN: ${MAPBOX_TOKEN:-}
+      APP_NAME: ${APP_NAME:-Fillip}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:-http://localhost:4000}
+      APP_DEFAULT_THEME: ${APP_DEFAULT_THEME:-system}
+      EMAIL_FROM_NAME: ${EMAIL_FROM_NAME:-Fillip}
+      EMAIL_FROM_ADDRESS: ${EMAIL_FROM_ADDRESS:-no-reply@fillip.local}
+      # Auth v2 (SP-2)
+      MAGIC_LINK_TTL_MINUTES: ${MAGIC_LINK_TTL_MINUTES:-15}
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      APPLE_TEAM_ID: ${APPLE_TEAM_ID:-}
+      APPLE_CLIENT_ID: ${APPLE_CLIENT_ID:-}
+      APPLE_KEY_ID: ${APPLE_KEY_ID:-}
+      APPLE_PRIVATE_KEY_P8: ${APPLE_PRIVATE_KEY_P8:-}
       TZ: Australia/Brisbane
       NODE_ENV: production
+      # SP-8: Share card signing
+      SHARE_SIGNING_SECRET: ${SHARE_SIGNING_SECRET:-}
+      # SP-8: Social bot — all networks OFF by default (safe-by-default)
+      # Set to 'true' to enable each network after provisioning credentials
+      FILLIP_BOT_X_ENABLED: ${FILLIP_BOT_X_ENABLED:-false}
+      FILLIP_BOT_BLUESKY_ENABLED: ${FILLIP_BOT_BLUESKY_ENABLED:-false}
+      FILLIP_BOT_MASTODON_ENABLED: ${FILLIP_BOT_MASTODON_ENABLED:-false}
+      # Set SOCIAL_BOT_DISABLED=true to disable all networks regardless of per-network flags
+      SOCIAL_BOT_DISABLED: ${SOCIAL_BOT_DISABLED:-false}
+      # Set SOCIAL_DRY_RUN=false to actually post (default: true = log only)
+      SOCIAL_DRY_RUN: ${SOCIAL_DRY_RUN:-true}
+      # X (Twitter) credentials
+      SOCIAL_X_OAUTH_CLIENT_ID: ${SOCIAL_X_OAUTH_CLIENT_ID:-}
+      SOCIAL_X_OAUTH_CLIENT_SECRET: ${SOCIAL_X_OAUTH_CLIENT_SECRET:-}
+      SOCIAL_X_ACCESS_TOKEN: ${SOCIAL_X_ACCESS_TOKEN:-}
+      SOCIAL_X_ACCESS_SECRET: ${SOCIAL_X_ACCESS_SECRET:-}
+      # BlueSky credentials
+      SOCIAL_BLUESKY_HANDLE: ${SOCIAL_BLUESKY_HANDLE:-}
+      SOCIAL_BLUESKY_APP_PASSWORD: ${SOCIAL_BLUESKY_APP_PASSWORD:-}
+      # Mastodon credentials
+      SOCIAL_MASTODON_INSTANCE_URL: ${SOCIAL_MASTODON_INSTANCE_URL:-https://aus.social}
+      SOCIAL_MASTODON_ACCESS_TOKEN: ${SOCIAL_MASTODON_ACCESS_TOKEN:-}
     depends_on:
       postgres:
         condition: service_healthy
@@ -75,6 +115,7 @@ services:
     restart: always
 
   cloudflared:
+    container_name: fillip-cloudflared
     image: cloudflare/cloudflared:latest
     restart: always
     command: tunnel --no-autoupdate --url http://app:3000
