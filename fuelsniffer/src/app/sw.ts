@@ -1,3 +1,4 @@
+/// <reference lib="WebWorker" />
 /**
  * Fillip service worker — SP-3
  *
@@ -137,7 +138,7 @@ self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close()
   const url: string = (event.notification.data as { url?: string })?.url || '/dashboard'
   event.waitUntil(
-    clients.openWindow(url)
+    self.clients.openWindow(url)
   )
 })
 

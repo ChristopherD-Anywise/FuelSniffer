@@ -51,7 +51,7 @@ export const ShareButton: StoryObj = {
   name: 'SlotShareButton — disabled',
   render: () => (
     <div style={{ background: 'var(--color-bg)', padding: '16px' }}>
-      <SlotShareButton />
+      <SlotShareButton station={mockStation} />
     </div>
   ),
 }
@@ -60,7 +60,7 @@ export const AlertButton: StoryObj = {
   name: 'SlotAlertButton — disabled',
   render: () => (
     <div style={{ background: 'var(--color-bg)', padding: '16px' }}>
-      <SlotAlertButton />
+      <SlotAlertButton station={mockStation} />
     </div>
   ),
 }
