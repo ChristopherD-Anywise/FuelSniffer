@@ -1,11 +1,15 @@
 /**
  * Auth provider abstraction — SP-2 Auth v2.
  *
- * All three providers (magic-link, Google, Apple) implement this interface.
+ * Two providers (magic-link, Google) implement this interface.
  * Route handlers call resolveIdentity() → findOrCreateUser() → createSession().
+ *
+ * Apple Sign In was originally in scope but removed 2026-04-25 (no Apple
+ * Developer account; cost-driven decision). The abstraction stays generic
+ * so a future provider can plug in the same way.
  */
 
-export type AuthProviderId = 'magic-link' | 'google' | 'apple'
+export type AuthProviderId = 'magic-link' | 'google'
 
 export interface ResolvedIdentity {
   providerId: AuthProviderId
@@ -15,7 +19,7 @@ export interface ResolvedIdentity {
   email: string
   /** Whether the provider asserts the email is verified */
   emailVerified: boolean
-  /** Display name — Google always provides; Apple only on first sign-in */
+  /** Display name — Google always provides */
   displayName?: string
   /** Raw claims for debugging — never persisted */
   rawClaims?: Record<string, unknown>
@@ -36,8 +40,6 @@ export interface OAuthCallbackInput {
   nonce: string
   /** Redirect URI used in the authorize request */
   redirectUri: string
-  /** Apple only: first-signin user JSON from form_post body */
-  appleUser?: { name?: { firstName?: string; lastName?: string }; email?: string }
 }
 
 export type ProviderCallbackInput = MagicLinkCallbackInput | OAuthCallbackInput

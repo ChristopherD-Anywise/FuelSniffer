@@ -1,5 +1,5 @@
 -- Migration 0013: Auth v2 — users, OAuth identities, magic links, cohort gating
--- SP-2: Magic Link + Google/Apple OAuth
+-- SP-2: Magic Link + Google OAuth (Apple Sign In removed 2026-04-25)
 --
 -- Backfill note: existing sessions (migration 0003) are keyed by session ID only
 -- and reference invite_codes. There is no user email in the old sessions table,
@@ -30,7 +30,7 @@ CREATE TABLE IF NOT EXISTS users (
 CREATE TABLE IF NOT EXISTS oauth_identities (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id          UUID        NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  provider         TEXT        NOT NULL,  -- 'google' | 'apple'
+  provider         TEXT        NOT NULL,  -- 'google' (Apple removed 2026-04-25)
   provider_subject TEXT        NOT NULL,  -- stable per-provider user ID (sub claim)
   email_at_link    TEXT        NOT NULL,  -- email asserted at link time, for audit
   created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),

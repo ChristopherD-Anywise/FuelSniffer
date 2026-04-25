@@ -2,7 +2,8 @@ import { randomBytes, createHash } from 'node:crypto'
 
 /**
  * PKCE (Proof Key for Code Exchange) helpers.
- * Shared between Google and Apple OAuth providers.
+ * Used by Google OAuth provider. (Apple was removed 2026-04-25; helpers
+ * stay generic for future OAuth providers.)
  */
 
 /** Generate a random state value for OAuth CSRF protection */

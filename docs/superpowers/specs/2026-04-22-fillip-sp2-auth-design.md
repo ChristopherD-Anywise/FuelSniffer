@@ -1,11 +1,37 @@
-# Fillip SP-2 — Auth v2 (Magic Link + Google/Apple OAuth) — Design Spec
+# Fillip SP-2 — Auth v2 (Magic Link + Google OAuth) — Design Spec
 
-**Status:** Draft v1.1 (decisions amended 2026-04-23)
+**Status:** Draft v1.2 (Apple Sign In removed 2026-04-25)
 **Date:** 2026-04-22
 **Author:** cdenn
 **Parent spec:** `2026-04-22-fillip-master-design.md` (§5.3, §10 cross-cutting decisions)
 **Sub-project:** SP-2 — Auth v2
 **Type:** Sub-project design spec (one of several rolling out of the Fillip master)
+
+---
+
+## 0a. Amendment 2026-04-25 — Apple Sign In removed
+
+**Apple Sign In has been removed from SP-2.** The implementation shipped (provider, routes, login button, env vars, tests, the lot) but was deleted before launch. Rationale: no Apple Developer account, $99/yr cost not justified for MVP. Magic link covers iOS users adequately.
+
+**What changed:**
+- `src/lib/auth/providers/apple.ts` — deleted
+- `src/app/api/auth/oauth/apple/{start,callback}/route.ts` — deleted
+- `src/__tests__/auth/apple-provider.test.ts` — deleted
+- Apple test cases stripped from `src/__tests__/auth/oauth-route.test.ts`
+- "Continue with Apple" button removed from `src/app/login/page.tsx`
+- `AuthProviderId` type narrowed from `'magic-link' | 'google' | 'apple'` → `'magic-link' | 'google'`
+- `appleUser` field removed from `OAuthCallbackInput`
+- `APPLE_TEAM_ID`, `APPLE_CLIENT_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY_P8` env vars removed from `docker-compose.yml` and `.env.example`
+
+**What stays:**
+- `appleWebApp` metadata + `apple-touch-icon` PNG link in `layout.tsx` (PWA on iOS — different concern from Sign In)
+- Apple Maps deep-links in `NavigateButton.tsx` (station navigation — different concern)
+- Generic OAuth abstraction in `oauth-state.ts` and `pkce.ts` (kept generic so a future provider plugs in cleanly)
+- Database `oauth_identities.provider` column stays free-form `TEXT` (was never CHECK-constrained); existing schema accepts the change without a migration
+
+**To re-add Apple later:** restore the deleted files from git history of the commit that removed them, re-add the env vars to docker-compose + .env.example, re-add the button to login/page.tsx, broaden the `AuthProviderId` union, and re-add the Apple-side test mock to `oauth-route.test.ts`. The deletion is reversible by `git revert`.
+
+The body of this spec below STILL discusses Apple in detail — preserved as design rationale and as a re-implementation reference if the decision reverses.
 
 ---
 
@@ -16,7 +42,7 @@ Cross-cutting decisions from master spec §10 override v1 where they conflict:
 | Topic | v1 said | **Now (v1.1)** |
 |---|---|---|
 | Email provider | Pending — Resend recommended | **Resend** (confirmed). `EmailProvider` interface still required so SES/Postmark remain swappable post-MVP. |
-| Apple Sign In | Pending — needs Developer account ($99/yr) and `.p8` ownership | **Confirmed in scope.** Apple Developer account to be provisioned before SP-2 implementation; `.p8` private key stored as env var (consistent with existing `MAPBOX_TOKEN` / `SESSION_SECRET` pattern in docker-compose). |
+| ~~Apple Sign In~~ | ~~Pending — needs Developer account ($99/yr) and `.p8` ownership~~ | ~~**Confirmed in scope.** Apple Developer account to be provisioned before SP-2 implementation; `.p8` private key stored as env var.~~ → **REVERSED 2026-04-25** — Apple removed entirely (see §0a above). |
 | Domain | TBD | **`fillip.clarily.au`** — magic-link callback URLs, OAuth redirect URIs, and email-from headers all bind to this. |
 | Existing `session.ts` | Treated as pre-existing | **Net-new.** Worktree audit on 2026-04-23 confirmed neither `src/lib/session.ts` nor `src/app/api/auth/` exist in the FuelSniffer codebase today. SP-2 creates both from scratch. |
 

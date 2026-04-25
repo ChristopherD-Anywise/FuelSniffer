@@ -1,6 +1,7 @@
 /**
  * OAuth state/PKCE/nonce cookie management.
- * Shared between Google and Apple OAuth start/callback routes.
+ * Used by Google OAuth start/callback routes. Apple was removed 2026-04-25;
+ * abstraction stays generic so a future provider can plug in without changes.
  */
 
 const STATE_COOKIE = '__Host-fillip_oauth_state'

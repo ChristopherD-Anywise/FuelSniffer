@@ -163,8 +163,9 @@ MVP coverage = ~75 % of AU population, 100 % legal, 100 % free. Each state adapt
 
 - **Drop:** invite codes as user-facing flow (keep table + admin tool for beta cohort gating)
 - **Add:** magic-link email auth (primary)
-- **Add:** Google OAuth + Apple OAuth (one-click options)
+- **Add:** Google OAuth (one-click option)
 - **Drop:** passwords entirely
+- **Removed 2026-04-25:** Apple Sign In was originally in scope (cross-cutting decision #8, see §10) but pulled before launch — no Apple Developer account, $99/yr cost not justified for MVP. Magic link covers iOS users adequately. Easy to add back later: see git history of `src/lib/auth/providers/apple.ts`.
 
 Existing JWT session model in `src/lib/session.ts` is fine to keep; only the *signup/login* surface changes.
 
@@ -222,8 +223,9 @@ Each sub-project below gets its **own design spec + implementation plan** when s
 ┌──────────────┐      ┌────────────────┐     ┌────────────────┐
 │ SP-1 National │      │ SP-2 Auth v2   │     │ SP-3 UX core   │
 │ data adapters │      │ (magic link +  │     │ (dark mode,    │
-│ (NSW/WA/NT/   │      │  Google/Apple) │     │  PWA, perf,    │
-│  TAS/ACT)     │      │                │     │  a11y, cards)  │
+│ (NSW/WA/NT/   │      │  Google)*      │     │  PWA, perf,    │
+│  TAS/ACT)     │      │ *Apple removed │     │  a11y, cards)  │
+│               │      │  pre-launch    │     │                │
 └──────┬────────┘      └───────┬────────┘     └────────┬───────┘
        │                       │                       │
        └───────────┬───────────┘                       │
@@ -317,7 +319,7 @@ These decisions apply across multiple sub-projects and were resolved before any 
 | 5 | Brand accent colour | **Keep amber** (`#f59e0b`) — no rebrand recolour |
 | 6 | Final domain | **`fillip.clarily.au`** (subdomain on existing Clarily property) |
 | 7 | SP-0 dark mode handling | **Light mode is the default** post-rebrand; **toggle ships in SP-0** so users can opt back into dark while SP-3 finalises the proper theme system |
-| 8 | Apple Sign In | **Yes — in scope for SP-2** (Apple Developer account to be provisioned) |
+| 8 | Apple Sign In | ~~Yes — in scope for SP-2~~ → **REVERSED 2026-04-25.** Apple Sign In removed before launch (no Apple Developer account; $99/yr cost not justified for MVP). Magic link covers iOS users. Files deleted; can be re-added later via git history of `src/lib/auth/providers/apple.ts`. |
 
 ### Still open (deferred to their owning sub-project)
 
