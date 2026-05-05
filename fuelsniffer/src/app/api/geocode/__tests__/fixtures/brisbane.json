@@ -1,0 +1,25 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "id": "dXJuOm1ieHBsYzpCcmlzYmFuZQ",
+      "geometry": { "type": "Point", "coordinates": [153.0251, -27.4698] },
+      "properties": {
+        "full_address": "Brisbane, Queensland, Australia",
+        "name": "Brisbane",
+        "place_formatted": "Queensland, Australia"
+      }
+    },
+    {
+      "type": "Feature",
+      "id": "dXJuOm1ieHBsYzpCcmlzYmFuZV9DaXR5",
+      "geometry": { "type": "Point", "coordinates": [153.0280, -27.4705] },
+      "properties": {
+        "full_address": "Brisbane City, Queensland 4000, Australia",
+        "name": "Brisbane City",
+        "place_formatted": "Queensland 4000, Australia"
+      }
+    }
+  ]
+}

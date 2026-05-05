@@ -104,7 +104,12 @@ function PriceMarkers({ stations, selectedId, activeFuel, onPinClick, userLocati
         iconAnchor: [24, 14],
       })
 
-      const marker = L.marker([station.latitude, station.longitude], { icon })
+      const ariaLabel = `${station.name}, ${activeFuelRef.current} ${priceText}¢`
+      const marker = L.marker([station.latitude, station.longitude], {
+        icon,
+        alt: ariaLabel,
+        title: ariaLabel,
+      })
 
       // Create a DOM container for the React popup
       const popupContainer = document.createElement('div')

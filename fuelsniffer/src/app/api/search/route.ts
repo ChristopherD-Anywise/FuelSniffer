@@ -34,45 +34,49 @@ export async function GET(req: Request) {
 
   const q = parsed.data.q
 
-  const rows = await db.execute(sql`
-    SELECT
-      postcode,
-      -- Take the most common non-null suburb for this postcode
-      (
-        SELECT suburb
-        FROM stations s2
-        WHERE s2.postcode = s.postcode
-          AND s2.suburb IS NOT NULL
-          AND s2.is_active = true
-        GROUP BY suburb
-        ORDER BY COUNT(*) DESC
-        LIMIT 1
-      ) AS suburb,
-      AVG(latitude)::numeric(10,6)  AS lat,
-      AVG(longitude)::numeric(10,6) AS lng,
-      COUNT(*)::int                 AS station_count
-    FROM stations s
-    WHERE is_active = true
-      AND (
-        suburb ILIKE ${'%' + q + '%'}
-        OR postcode LIKE ${q + '%'}
-      )
-    GROUP BY postcode
-    ORDER BY station_count DESC
-    LIMIT 8
-  `)
+  try {
+    const rows = await db.execute(sql`
+      SELECT
+        postcode,
+        -- Take the most common non-null suburb for this postcode
+        (
+          SELECT suburb
+          FROM stations s2
+          WHERE s2.postcode = s.postcode
+            AND s2.suburb IS NOT NULL
+            AND s2.is_active = true
+          GROUP BY suburb
+          ORDER BY COUNT(*) DESC
+          LIMIT 1
+        ) AS suburb,
+        AVG(latitude)::numeric(10,6)  AS lat,
+        AVG(longitude)::numeric(10,6) AS lng,
+        COUNT(*)::int                 AS station_count
+      FROM stations s
+      WHERE is_active = true
+        AND (
+          suburb ILIKE ${'%' + q + '%'}
+          OR postcode LIKE ${q + '%'}
+        )
+      GROUP BY postcode
+      ORDER BY station_count DESC
+      LIMIT 8
+    `)
 
-  const results: SearchResult[] = (rows as unknown as Array<Record<string, unknown>>).map(row => ({
-    type: 'area' as const,
-    suburb: row.suburb ? String(row.suburb) : undefined,
-    postcode: row.postcode ? String(row.postcode) : undefined,
-    label: row.suburb
-      ? `${row.suburb}${row.postcode ? ` (${row.postcode})` : ''}`
-      : `Postcode ${row.postcode}`,
-    lat: Number(row.lat),
-    lng: Number(row.lng),
-    stationCount: Number(row.station_count),
-  }))
+    const results: SearchResult[] = (rows as unknown as Array<Record<string, unknown>>).map(row => ({
+      type: 'area' as const,
+      suburb: row.suburb ? String(row.suburb) : undefined,
+      postcode: row.postcode ? String(row.postcode) : undefined,
+      label: row.suburb
+        ? `${row.suburb}${row.postcode ? ` (${row.postcode})` : ''}`
+        : `Postcode ${row.postcode}`,
+      lat: Number(row.lat),
+      lng: Number(row.lng),
+      stationCount: Number(row.station_count),
+    }))
 
-  return NextResponse.json(results, { status: 200 })
+    return NextResponse.json(results, { status: 200 })
+  } catch {
+    return Response.json({ error: 'Internal server error' }, { status: 500 })
+  }
 }

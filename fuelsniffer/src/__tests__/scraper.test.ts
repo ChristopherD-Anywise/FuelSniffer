@@ -25,6 +25,13 @@ vi.mock('@/lib/scraper/client', () => ({
   }),
 }))
 
+vi.mock('@/lib/providers/fuel/qld/client', () => ({
+  createApiClient: vi.fn().mockReturnValue({
+    getFullSiteDetails: vi.fn().mockResolvedValue({ sites: [] }),
+    getSitesPrices: vi.fn().mockResolvedValue({ SitePrices: [] }),
+  }),
+}))
+
 describe('shouldInsertRow — D-09: always insert regardless of price change', () => {
   it('returns true when price has not changed (D-09: consistent time series)', () => {
     expect(shouldInsertRow(145.9, 145.9)).toBe(true)
@@ -54,7 +61,7 @@ describe('runScrapeJob — integration with mocked dependencies', () => {
   })
 
   it('returns { error: non-null } when API client throws', async () => {
-    const { createApiClient } = await import('@/lib/scraper/client')
+    const { createApiClient } = await import('@/lib/providers/fuel/qld/client')
     vi.mocked(createApiClient).mockImplementationOnce(() => {
       throw new Error('QLD_API_TOKEN environment variable is not set')
     })

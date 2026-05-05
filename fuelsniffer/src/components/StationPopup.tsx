@@ -106,8 +106,8 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
       {/* Price + time */}
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 2 }}>
         <span style={{ fontSize: 32, fontWeight: 900, color: '#ffffff', lineHeight: 1, fontVariantNumeric: 'tabular-nums' } as React.CSSProperties}>{price.toFixed(1)}</span>
-        <span style={{ fontSize: 14, color: '#555555', fontWeight: 500 }}>¢/L</span>
-        <span style={{ fontSize: 12, color: '#555555', marginLeft: 'auto' }}>{ago}</span>
+        <span style={{ fontSize: 14, color: '#8a8a8a', fontWeight: 500 }}>¢/L</span>
+        <span style={{ fontSize: 12, color: '#8a8a8a', marginLeft: 'auto' }}>{ago}</span>
       </div>
 
       {/* Period change */}
@@ -115,7 +115,7 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
         <div style={{
           display: 'flex', alignItems: 'center', gap: 4,
           fontSize: 13, fontWeight: 600, marginBottom: 8,
-          color: periodChange > 0 ? '#ef4444' : periodChange < 0 ? '#22c55e' : '#555555',
+          color: periodChange > 0 ? '#ef4444' : periodChange < 0 ? '#22c55e' : '#8a8a8a',
         }}>
           {periodChange !== 0 && (
             <svg width="12" height="12" viewBox="0 0 12 12" fill="currentColor">
@@ -136,7 +136,7 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
 
       {/* Station info */}
       <div style={{ fontSize: 15, fontWeight: 700, color: '#ffffff', marginBottom: 1 }}>{station.name}</div>
-      {station.brand && <div style={{ fontSize: 12, color: '#555555' }}>{station.brand}</div>}
+      {station.brand && <div style={{ fontSize: 12, color: '#8a8a8a' }}>{station.brand}</div>}
       <div style={{ fontSize: 13, color: '#888888', marginBottom: 10 }}>{addr}</div>
 
       {/* Ad banner */}
@@ -152,7 +152,7 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
               padding: '3px 10px', borderRadius: 12,
               border: `1px solid ${hours === t.hours ? '#f59e0b' : '#2a2a2a'}`,
               background: hours === t.hours ? '#f59e0b' : '#1a1a1a',
-              color: hours === t.hours ? '#000000' : '#555555',
+              color: hours === t.hours ? '#000000' : '#8a8a8a',
               fontSize: 11, fontWeight: hours === t.hours ? 700 : 500, cursor: 'pointer',
             }}
           >
@@ -164,11 +164,11 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
       {/* Chart */}
       <div style={{ marginBottom: 10 }}>
         {loading ? (
-          <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#555555' }}>
+          <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#8a8a8a' }}>
             Loading...
           </div>
         ) : data.length === 0 ? (
-          <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#555555' }}>
+          <div style={{ height: 120, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, color: '#8a8a8a' }}>
             Not enough history yet
           </div>
         ) : (
@@ -180,8 +180,8 @@ export default function StationPopup({ station, fuelId }: StationPopupProps) {
               </linearGradient>
             </defs>
             <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#555555' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-            <YAxis domain={domain} tick={{ fontSize: 10, fill: '#555555' }} tickLine={false} axisLine={false} tickFormatter={v => `${v}¢`} />
+            <XAxis dataKey="label" tick={{ fontSize: 10, fill: '#8a8a8a' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+            <YAxis domain={domain} tick={{ fontSize: 10, fill: '#8a8a8a' }} tickLine={false} axisLine={false} tickFormatter={v => `${v}¢`} />
             <Tooltip content={({ active, payload }) => {
               if (!active || !payload?.length) return null
               const d = payload[0].payload as ChartPoint

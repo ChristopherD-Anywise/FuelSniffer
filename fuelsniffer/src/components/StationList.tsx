@@ -14,6 +14,18 @@ interface StationListProps {
 
 const AD_AFTER_INDEX = 2
 
+function handleArrowKey(e: React.KeyboardEvent, index: number) {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    const next = document.querySelector(`[data-station-index="${index + 1}"]`) as HTMLElement | null
+    next?.focus()
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    const prev = document.querySelector(`[data-station-index="${index - 1}"]`) as HTMLElement | null
+    prev?.focus()
+  }
+}
+
 export default function StationList({ stations, selectedId, onSelect, cardRefsMap }: StationListProps) {
   return (
     <div className="overflow-y-auto" style={{ background: '#111111' }}>
@@ -24,6 +36,8 @@ export default function StationList({ stations, selectedId, onSelect, cardRefsMa
             isSelected={station.id === selectedId}
             onClick={() => onSelect(station.id)}
             rank={index + 1}
+            stationIndex={index}
+            onArrowKey={(e) => handleArrowKey(e, index)}
             cardRef={cardRefsMap ? (el) => {
               if (el) cardRefsMap.set(station.id, el)
               else cardRefsMap.delete(station.id)

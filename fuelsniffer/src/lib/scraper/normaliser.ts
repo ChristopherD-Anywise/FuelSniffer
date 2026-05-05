@@ -1,5 +1,6 @@
 import type { SiteDetails, SitePrice } from './client'
 import type { NewPriceReading, NewStation } from '@/lib/db/schema'
+import { postcodeToSuburb } from '@/lib/data/qld-postcodes'
 
 // ── Price encoding ────────────────────────────────────────────────────────────
 
@@ -50,54 +51,34 @@ export function toUtcDate(isoString: string): Date {
   return new Date(isoString)
 }
 
-// ── Geographic filter ─────────────────────────────────────────────────────────
-
-// D-06 (locked): Only store stations within ~50km of North Lakes
-const NORTH_LAKES_LAT = -27.2353
-const NORTH_LAKES_LNG = 153.0189
-const MAX_RADIUS_KM = 50
-
-function haversineDistanceKm(
-  lat1: number, lng1: number,
-  lat2: number, lng2: number
-): number {
-  const R = 6371
-  const dLat = ((lat2 - lat1) * Math.PI) / 180
-  const dLng = ((lng2 - lng1) * Math.PI) / 180
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLng / 2) ** 2
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
-}
-
-/**
- * Returns true if the given coordinates are within MAX_RADIUS_KM of North Lakes.
- * D-06: Applied at ingest time — stations outside this radius are never stored.
- */
-export function isWithinRadius(lat: number, lng: number): boolean {
-  return haversineDistanceKm(NORTH_LAKES_LAT, NORTH_LAKES_LNG, lat, lng) <= MAX_RADIUS_KM
-}
-
 // ── API response normalisation ────────────────────────────────────────────────
 
 /**
- * Extract suburb from a QLD API address string.
- * The Direct API has no suburb field, but the address usually ends with
- * "SUBURB_NAME QLD POSTCODE" or "SUBURB_NAME, QLD POSTCODE".
- * We extract the suburb by taking the token(s) before "QLD" if present,
- * otherwise fall back to the second-to-last comma-delimited segment.
+ * Extract suburb from a QLD API address string, falling back to a
+ * static postcode→suburb lookup when the address has no suburb info.
+ *
+ * The Direct API typically returns bare street addresses (e.g. "1256 Anzac Avenue"),
+ * so the postcode fallback populates suburb for ~99% of stations.
  */
-export function extractSuburb(address: string | null): string | null {
-  if (!address) return null
-  // Match "... SUBURB QLD POSTCODE" or "... SUBURB, QLD POSTCODE"
-  const m = address.match(/,\s*([^,]+?)\s*,?\s*QLD\b/i)
-  if (m) return m[1].trim()
-  // Fallback: second segment of comma-split (e.g. "123 Main St, NORTH LAKES, 4509")
-  const parts = address.split(',').map(p => p.trim()).filter(Boolean)
-  if (parts.length >= 2) return parts[parts.length - 2] || null
-  return null
+export function extractSuburb(
+  address: string | null,
+  postcode: string | null
+): string | null {
+  if (address) {
+    // Primary: "... SUBURB, QLD POSTCODE" — pull the token before "QLD".
+    const m = address.match(/,\s*([^,]+?)\s*,?\s*QLD\b/i)
+    if (m) return m[1].trim()
+    // Secondary: "STREET, SUBURB, POSTCODE" — exactly 3+ comma parts. A
+    // 2-part address like "123 Street, Suburb" would be picked up here
+    // too, except it's ambiguous with "Unit 5, 123 Street" so we require
+    // 3+ parts to avoid misclassifying the street number as the suburb.
+    const parts = address.split(',').map(p => p.trim()).filter(Boolean)
+    if (parts.length >= 3) {
+      const candidate = parts[parts.length - 2]
+      if (candidate) return candidate
+    }
+  }
+  return postcodeToSuburb(postcode)
 }
 
 /**
@@ -106,16 +87,18 @@ export function extractSuburb(address: string | null): string | null {
  */
 export function normaliseStation(site: SiteDetails): NewStation {
   return {
-    id:         site.SiteId,
-    name:       site.Name,
-    brand:      site.Brand ?? null,
-    address:    site.Address ?? null,
-    suburb:     extractSuburb(site.Address ?? null),
-    postcode:   site.Postcode ?? null,
-    latitude:   site.Lat,
-    longitude:  site.Lng,
-    isActive:   true,
-    lastSeenAt: new Date(),
+    id:             site.SiteId,
+    name:           site.Name,
+    brand:          site.Brand ?? null,
+    address:        site.Address ?? null,
+    suburb:         extractSuburb(site.Address ?? null, site.Postcode ?? null),
+    postcode:       site.Postcode ?? null,
+    latitude:       site.Lat,
+    longitude:      site.Lng,
+    isActive:       true,
+    lastSeenAt:     new Date(),
+    externalId:     site.SiteId.toString(),
+    sourceProvider: 'qld',
   }
 }
 
@@ -134,10 +117,11 @@ export function normalisePrice(
     const priceCents = rawToPrice(sitePrice.Price).toFixed(1)
     return {
       recordedAt,
-      stationId:   sitePrice.SiteId,
-      fuelTypeId:  sitePrice.FuelId,
-      priceCents:  priceCents,
-      sourceTs:    new Date(sitePrice.TransactionDateUtc),
+      stationId:      sitePrice.SiteId,
+      fuelTypeId:     sitePrice.FuelId,
+      priceCents:     priceCents,
+      sourceTs:       new Date(sitePrice.TransactionDateUtc),
+      sourceProvider: 'qld',
     }
   } catch (err) {
     console.error(

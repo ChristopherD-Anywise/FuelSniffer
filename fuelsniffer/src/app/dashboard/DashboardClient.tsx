@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useSearchParams, useRouter } from 'next/navigation'
 import dynamic from 'next/dynamic'
+import Link from 'next/link'
 import FilterBar from '@/components/FilterBar'
 import { FUEL_TYPES } from '@/components/FuelSelect'
 import StationList from '@/components/StationList'
@@ -156,7 +157,7 @@ export default function DashboardClient() {
   const isMobileMapVisible = mobileTab === 'map'
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#111111' }}>
+    <main id="main-content" tabIndex={-1} style={{ display: 'flex', flexDirection: 'column', height: '100dvh', background: '#111111' }}>
       <FilterBar
         activeFuel={activeFuel}
         radius={localRadius}
@@ -230,6 +231,7 @@ export default function DashboardClient() {
         {/* Map */}
         <div
           className={`absolute inset-0 md:relative md:inset-auto h-full ${mobileTab === 'map' ? 'block' : 'hidden md:block'}`}
+          style={{ position: 'relative' }}
         >
           <MapView
             stations={sortedStations}
@@ -241,6 +243,41 @@ export default function DashboardClient() {
             fitBounds={fitBounds}
             onFitBoundsDone={() => setFitBounds(false)}
           />
+
+          {/* Trip planner entry point — sits in the top-right of the map. */}
+          <Link
+            href="/dashboard/trip"
+            aria-label="Find fuel on my route"
+            title="Find fuel on my route"
+            style={{
+              position: 'absolute',
+              top: '12px',
+              right: '12px',
+              zIndex: 600,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              height: '36px',
+              padding: '0 12px',
+              borderRadius: '8px',
+              background: '#111111',
+              border: '1px solid rgba(245,158,11,0.4)',
+              color: '#f59e0b',
+              fontSize: '12px',
+              fontWeight: 800,
+              letterSpacing: '0.04em',
+              textTransform: 'uppercase',
+              textDecoration: 'none',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/>
+              <line x1="8" y1="2" x2="8" y2="18"/>
+              <line x1="16" y1="6" x2="16" y2="22"/>
+            </svg>
+            Route
+          </Link>
         </div>
       </div>
 
@@ -273,6 +310,6 @@ export default function DashboardClient() {
           </button>
         ))}
       </div>
-    </div>
+    </main>
   )
 }

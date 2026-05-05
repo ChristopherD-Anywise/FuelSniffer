@@ -1,0 +1,4 @@
+{
+  "code": "InvalidInput",
+  "message": "No road found within the maximum search radius for all coordinates."
+}
