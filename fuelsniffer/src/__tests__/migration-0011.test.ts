@@ -23,10 +23,14 @@ describe('Migration 0011: stations geom column', () => {
   })
 
   it('geom is populated for existing stations', async () => {
+    // Exclude test-fixture rows (source_provider = 'test') inserted by other test files.
+    // Those rows are intentionally not geocoded and are cleaned up by their own afterEach.
     const rows = await sql`
       SELECT COUNT(*)::int AS total,
              COUNT(geom)::int AS with_geom
-      FROM stations WHERE latitude IS NOT NULL
+      FROM stations
+      WHERE latitude IS NOT NULL
+        AND source_provider != 'test'
     `
     expect(rows[0].total).toBe(rows[0].with_geom)
   })
@@ -35,7 +39,9 @@ describe('Migration 0011: stations geom column', () => {
     const rows = await sql`
       SELECT latitude, longitude,
              ST_Y(geom) AS geom_lat, ST_X(geom) AS geom_lng
-      FROM stations LIMIT 1
+      FROM stations
+      WHERE source_provider != 'test'
+      LIMIT 1
     `
     if (rows.length > 0) {
       expect(Number(rows[0].geom_lat)).toBeCloseTo(Number(rows[0].latitude), 4)

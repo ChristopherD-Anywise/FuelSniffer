@@ -1,57 +1,88 @@
 import cron from 'node-cron'
-import { getProviders, registerProvider } from '@/lib/providers/fuel'
+import { registerProvider } from '@/lib/providers/fuel'
 import { QldFuelProvider } from '@/lib/providers/fuel/qld'
+import { NswFuelProvider } from '@/lib/providers/fuel/nsw/provider'
+import { TasFuelProvider } from '@/lib/providers/fuel/tas/provider'
+import { WaFuelProvider }  from '@/lib/providers/fuel/wa/provider'
+import { NtFuelProvider }  from '@/lib/providers/fuel/nt/provider'
 import { runProviderScrape } from './writer'
 import { sql } from 'drizzle-orm'
 import { db } from '@/lib/db/client'
+import type { FuelPriceProvider } from '@/lib/providers/fuel'
+
+// ── Per-provider schedule declarations ────────────────────────────────────────
+
+interface ProviderScheduleEntry {
+  provider: FuelPriceProvider
+  cron:     string
+  tz:       string
+}
 
 /**
- * Start the scrape + maintenance schedulers.
- * Called once from src/instrumentation.ts when the Next.js server starts.
+ * D-11 (locked): Each provider runs immediately on startup, then on its declared cadence.
+ * WA runs twice daily (06:30 and 14:30 WST) to capture both the confirmed
+ * effective prices and the day-ahead announced prices.
  *
  * node-cron v4 BREAKING CHANGES (v4.2.1 — do not use v3 patterns):
  * - 'scheduled' option is REMOVED — tasks start immediately when created
  * - 'runOnInit' option is REMOVED
  * - Use 'noOverlap: true' to prevent concurrent runs
- *
- * D-11 (locked): Run immediately on startup, then every 15 minutes.
+ */
+const PROVIDER_SCHEDULES: ProviderScheduleEntry[] = [
+  { provider: new QldFuelProvider(), cron: '*/15 * * * *',   tz: 'Australia/Brisbane' },
+  { provider: new NswFuelProvider(), cron: '*/15 * * * *',   tz: 'Australia/Sydney'   },
+  { provider: new TasFuelProvider(), cron: '*/15 * * * *',   tz: 'Australia/Hobart'   },
+  { provider: new NtFuelProvider(),  cron: '*/30 * * * *',   tz: 'Australia/Darwin'   },
+  { provider: new WaFuelProvider(),  cron: '30 6,14 * * *',  tz: 'Australia/Perth'    },
+]
+
+/**
+ * Start the scrape + maintenance schedulers.
+ * Called once from src/instrumentation.ts when the Next.js server starts.
  */
 export function startScheduler(): void {
-  registerProvider(new QldFuelProvider())
-  // NSW provider will be registered here in Phase 2
+  // Register all providers with the registry
+  for (const { provider } of PROVIDER_SCHEDULES) {
+    registerProvider(provider)
+  }
 
-  const providers = getProviders()
-  console.log(
-    `[scheduler] Registered ${providers.length} provider(s): ${providers.map(p => p.id).join(', ')}`
-  )
+  const providerIds = PROVIDER_SCHEDULES.map(p => p.provider.id).join(', ')
+  console.log(`[scheduler] Registered ${PROVIDER_SCHEDULES.length} provider(s): ${providerIds}`)
 
-  // D-11: Immediate first execution (before the cron schedule fires)
-  console.log('[scheduler] Starting — running immediate scrape on startup (D-11)')
-  runAllProviders().catch((err) => {
-    console.error('[scheduler] Immediate startup scrape failed:', err)
+  // D-11: Staggered immediate first execution — 30s apart per provider to avoid
+  // hammering the DB connection pool and external APIs on cold boot.
+  PROVIDER_SCHEDULES.forEach(({ provider }, idx) => {
+    const delayMs = idx * 30_000
+    setTimeout(() => {
+      console.log(`[scheduler:${provider.id}] Startup scrape (D-11, delay=${delayMs}ms)`)
+      runProviderScrape(provider).catch(err => {
+        console.error(`[scheduler:${provider.id}] Startup scrape failed:`, err)
+      })
+    }, delayMs)
   })
 
-  // Job 1: Scrape every 15 minutes
-  cron.schedule('*/15 * * * *', () => {
-    runAllProviders().catch((err) => {
-      console.error('[scheduler] Scheduled scrape failed:', err)
+  // Per-provider cron jobs
+  for (const { provider, cron: cronExpr, tz } of PROVIDER_SCHEDULES) {
+    cron.schedule(cronExpr, () => {
+      runProviderScrape(provider).catch(err => {
+        console.error(`[scheduler:${provider.id}] Scheduled scrape failed:`, err)
+      })
+    }, {
+      timezone:  tz,
+      noOverlap: true,
     })
-  }, {
-    timezone: 'Australia/Brisbane',
-    noOverlap: true,
-  })
+  }
 
-  // Job 2: Refresh hourly_prices materialized view every hour at :30
-  // CONCURRENT refresh allows read queries to continue during refresh.
+  // Job: Refresh hourly_prices materialized view every hour at :30
   cron.schedule('30 * * * *', () => {
     db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY hourly_prices`)
       .catch((err) => console.error('[scheduler] hourly_prices refresh failed:', err))
   }, {
-    timezone: 'Australia/Brisbane',
+    timezone:  'Australia/Brisbane',
     noOverlap: true,
   })
 
-  // Job 3: Nightly maintenance at 2:00am Brisbane time.
+  // Job: Nightly maintenance at 2:00am Brisbane time.
   // ORDER IS CRITICAL:
   //   1. Refresh daily_prices FIRST — captures today's data before raw rows are deleted
   //   2. Delete raw rows older than 7 days (D-04 locked)
@@ -60,23 +91,18 @@ export function startScheduler(): void {
     try {
       console.log('[scheduler] Starting nightly maintenance...')
 
-      // Step 1: Capture current data into daily_prices BEFORE deleting raw rows.
-      // This preserves historical daily min/max even after raw data expires.
       await db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY daily_prices`)
       console.log('[scheduler] daily_prices refreshed (pre-delete)')
 
-      // Step 2: Delete raw readings older than 7 days (D-04 locked)
       await db.execute(sql`
         DELETE FROM price_readings
         WHERE recorded_at < NOW() - INTERVAL '7 days'
       `)
       console.log('[scheduler] Deleted raw rows older than 7 days')
 
-      // Step 3: Refresh hourly_prices to reflect post-delete state
       await db.execute(sql`REFRESH MATERIALIZED VIEW CONCURRENTLY hourly_prices`)
       console.log('[scheduler] hourly_prices refreshed (post-delete)')
 
-      // Step 4: Evict expired route cache entries
       await db.execute(sql`DELETE FROM route_cache WHERE expires_at < NOW()`)
       console.log('[scheduler] Expired route_cache entries deleted')
 
@@ -85,15 +111,9 @@ export function startScheduler(): void {
       console.error('[scheduler] Nightly maintenance failed:', err)
     }
   }, {
-    timezone: 'Australia/Brisbane',
+    timezone:  'Australia/Brisbane',
     noOverlap: true,
   })
 
-  console.log('[scheduler] Running — scraping every 15 min, hourly view refresh, nightly cleanup (Australia/Brisbane)')
-}
-
-async function runAllProviders(): Promise<void> {
-  for (const provider of getProviders()) {
-    await runProviderScrape(provider)
-  }
+  console.log('[scheduler] Running — per-provider cron schedules active, nightly maintenance at 02:00 Brisbane')
 }

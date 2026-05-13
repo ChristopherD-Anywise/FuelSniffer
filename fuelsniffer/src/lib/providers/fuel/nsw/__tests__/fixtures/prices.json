@@ -1,0 +1,34 @@
+{
+  "prices": [
+    {
+      "stationCode": "NSW001",
+      "fuelType": "U91",
+      "price": 173.5,
+      "transactionDateutc": "2026-04-24T01:00:00Z"
+    },
+    {
+      "stationCode": "NSW001",
+      "fuelType": "DL",
+      "price": 195.9,
+      "transactionDateutc": "2026-04-24T01:00:00Z"
+    },
+    {
+      "stationCode": "ACT001",
+      "fuelType": "U91",
+      "price": 171.2,
+      "transactionDateutc": "2026-04-24T01:00:00Z"
+    },
+    {
+      "stationCode": "ACT002",
+      "fuelType": "P95",
+      "price": 183.7,
+      "transactionDateutc": "2026-04-24T01:00:00Z"
+    },
+    {
+      "stationCode": "NSW001",
+      "fuelType": "UNKNOWN_FUEL",
+      "price": 150.0,
+      "transactionDateutc": "2026-04-24T01:00:00Z"
+    }
+  ]
+}

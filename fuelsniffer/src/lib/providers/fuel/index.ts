@@ -1,19 +1,32 @@
+import type {
+  StationJurisdictionFields,
+  PriceValidFromField,
+  ProviderSchedule,
+  Jurisdiction,
+  FuelTypeMap,
+  CanonicalFuelType,
+} from './types'
+
 // ── Provider interface ────────────────────────────────────────────────────────
 
-export interface NormalisedStation {
+export interface NormalisedStation extends StationJurisdictionFields {
   id: number
   externalId: string
   sourceProvider: string
   name: string
   brand: string | null
   address: string | null
+  /**
+   * Suburb name. MUST be lower(suburb) per SP-1 §0 amendment.
+   * SP-4 cycle engine and SP-5 alerts use `${lower(suburb)}|${lower(state)}` as the composite key.
+   */
   suburb: string | null
   postcode: string | null
   latitude: number
   longitude: number
 }
 
-export interface NormalisedPrice {
+export interface NormalisedPrice extends PriceValidFromField {
   stationId: number
   fuelTypeId: number
   priceCents: string
@@ -35,6 +48,10 @@ export interface FuelPriceProvider {
   fetchPrices(recordedAt: Date): Promise<NormalisedPrice[]>
   healthCheck(): Promise<ProviderHealth>
 }
+
+// ── SP-1 type re-exports ──────────────────────────────────────────────────────
+
+export type { ProviderSchedule, Jurisdiction, FuelTypeMap, CanonicalFuelType }
 
 // ── Provider registry ─────────────────────────────────────────────────────────
 

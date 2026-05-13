@@ -1,0 +1,22 @@
+{
+  "prices": [
+    {
+      "stationCode": "TAS001",
+      "fuelType": "U91",
+      "price": 182.3,
+      "transactionDateutc": "2026-04-24T01:00:00Z"
+    },
+    {
+      "stationCode": "TAS001",
+      "fuelType": "DL",
+      "price": 198.5,
+      "transactionDateutc": "2026-04-24T01:00:00Z"
+    },
+    {
+      "stationCode": "TAS002",
+      "fuelType": "U91",
+      "price": 180.1,
+      "transactionDateutc": "2026-04-24T01:00:00Z"
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+{
+  "stations": [
+    {
+      "serviceStationName": "Test BP Parramatta",
+      "address": "1 Test St, Parramatta NSW 2150",
+      "suburb": "Parramatta",
+      "state": "NSW",
+      "postcode": "2150",
+      "brand": "BP",
+      "stationCode": "NSW001",
+      "latitude": -33.8136,
+      "longitude": 151.0034
+    },
+    {
+      "serviceStationName": "Test Shell Civic",
+      "address": "2 London Cct, Civic ACT 2601",
+      "suburb": "Civic",
+      "state": "ACT",
+      "postcode": "2601",
+      "brand": "Shell",
+      "stationCode": "ACT001",
+      "latitude": -35.2809,
+      "longitude": 149.1300
+    },
+    {
+      "serviceStationName": "Test Ampol Tuggeranong",
+      "address": "3 Anketell St, Greenway ACT 2900",
+      "suburb": "Greenway",
+      "state": "",
+      "postcode": "2900",
+      "brand": "Ampol",
+      "stationCode": "ACT002",
+      "latitude": -35.4215,
+      "longitude": 149.0735
+    }
+  ]
+}

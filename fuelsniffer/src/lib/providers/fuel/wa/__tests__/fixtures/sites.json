@@ -1,0 +1,24 @@
+{
+  "sites": [
+    {
+      "site_id": "WA001",
+      "name": "Test BP Perth",
+      "address": "1 Wellington St",
+      "suburb": "Perth",
+      "postcode": "6000",
+      "brand": "BP",
+      "latitude": -31.9505,
+      "longitude": 115.8605
+    },
+    {
+      "site_id": "WA002",
+      "name": "Test Better Choice Fremantle",
+      "address": "2 High St",
+      "suburb": "Fremantle",
+      "postcode": "6160",
+      "brand": "Better Choice",
+      "latitude": -32.0569,
+      "longitude": 115.7440
+    }
+  ]
+}
